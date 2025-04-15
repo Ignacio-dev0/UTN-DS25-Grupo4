@@ -12,4 +12,8 @@ Nuestro sistema tiene como objetivo brindar una plataforma para la reserva de ca
   Legajo: 33080
   Usuario de Slack: Dieguez Matias
   https://github.com/DieguezMatias
+
+  Name: Ariel Cayo
+  Legajo: 32680
+  User slack: arielcayo
 }
