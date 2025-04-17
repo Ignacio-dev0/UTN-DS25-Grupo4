@@ -10,12 +10,11 @@ Nuestro sistema tiene como objetivo brindar una plataforma para la reserva de ca
 
 ### Miembros del Equipo
 
-{
-Name: Dieguez Matias
-Legajo: 33080
-Usuario de Slack: Dieguez Matias
-https://github.com/DieguezMatias
-}
+- Matias Dieguez
+  
+  -Legajo: 33080
+  -Usuario de Slack: Dieguez Matias
+  -https://github.com/DieguezMatias
 
 - Ignacio Elian Benitez
 
