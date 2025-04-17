@@ -13,9 +13,10 @@ Nuestro sistema tiene como objetivo brindar una plataforma para la reserva de ca
 - Matias Dieguez
   
   -Legajo: 33080
-  -Usuario de Slack: Dieguez Matias
-  -https://github.com/DieguezMatias
-
+   - Legajo: 33507
+  - Usuario de Slack: Dieguez Matias
+  - https://github.com/DieguezMatias
+ 
 - Ignacio Elian Benitez
 
   - Legajo: 33507
