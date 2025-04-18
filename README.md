@@ -35,3 +35,8 @@ Nuestro sistema tiene como objetivo brindar una plataforma para la reserva de ca
   - https://github.com/ariel12C
   
  
+- Alexis Mendez
+
+  - Legajo: 27370
+  - Usuario de Slack: alemendez
+  - https://github.com/aleemendez
