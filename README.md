@@ -19,7 +19,7 @@ En este proyecto se implementarán las siguientes tecnologías:
 ### Miembros del Equipo
 
 - Matias Dieguez
-  
+
   - Legajo: 33080
   - Usuario de Slack: Dieguez Matias
   - https://github.com/DieguezMatias
@@ -41,10 +41,15 @@ En este proyecto se implementarán las siguientes tecnologías:
   - Legajo: 32680
   - Usuario de Slack: arielcayo
   - https://github.com/ariel12C
-  
  
 - Alexis Mendez
 
   - Legajo: 27370
   - Usuario de Slack: alemendez
   - https://github.com/aleemendez
+
+- Mauro Daniel Antar
+
+  - Legajo 32594
+  - Usuario de Slack: mauroantar
+  - https://github.com/MauroAntar
