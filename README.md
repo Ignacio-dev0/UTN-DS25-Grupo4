@@ -50,6 +50,6 @@ En este proyecto se implementarán las siguientes tecnologías:
 
 - Mauro Daniel Antar
 
-  - Legajo 32594
-  - Usuario de Slack: mauroantar
+  - Legajo: 32594
+  - Usuario de Slack: Antar Mauro
   - https://github.com/MauroAntar
