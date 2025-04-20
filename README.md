@@ -46,7 +46,7 @@ En este proyecto se implementarán las siguientes tecnologías:
 
   - Legajo: 27370
   - Usuario de Slack: alemendez
-  - https://github.com/aleemendez
+  - https://github.com/aleemendez 
 
 - Mauro Daniel Antar
 
