@@ -4,7 +4,7 @@
 
 ### Descripción
 
-Nuestro sistema tiene como objetivo brindar una plataforma para la reserva de canchas deportivas. En esta plataforma, los usuarios podrán realizar reservas para distintos deportes, como fútbol, tenis, básquet, vóley, entre otros.
+Nuestro sistema tiene como objetivo brindar una plataforma para la publicación y reserva de canchas deportivas.
 
 ---
 ## Estrategia de diseño de arquitectura
