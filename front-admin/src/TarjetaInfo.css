@@ -1,0 +1,13 @@
+.tarjeta {
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.2);
+  margin: 16px;
+  width: 250px;
+  transition: transform 0.2s ease;
+  color: white;
+}
+
+.tarjeta:hover {
+  transform: scale(1.05);
+}
