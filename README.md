@@ -1,6 +1,8 @@
 ## UTN-DS25-Grupo 4
 
 # CanchaYA
+# LINK docx BackLog CanchaYa
+https://docs.google.com/document/d/1y5J4jth5tO87Zypx5PhKmP9MzolIblxFHoj5UW7F7aM/edit?tab=t.2ltjmgw975ek
 
 ### Descripción
 
