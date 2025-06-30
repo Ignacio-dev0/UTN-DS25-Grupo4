@@ -1,3 +1,5 @@
+// src/pages/ReservaPage.jsx
+
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { datosDeportes } from '../data/canchas.js';
@@ -13,12 +15,12 @@ function ReservaPage() {
   let complejoDeLaCancha = null;
   let deporteDeLaCancha = null; 
 
-  // Buscamos la cancha Y su deporte
   for (const deporte of datosDeportes) {
     const encontrada = deporte.canchas.find(c => c.id === parseInt(canchaId));
     if (encontrada) {
       canchaSeleccionada = encontrada;
-      deporteDeLaCancha = deporte.deporte; 
+      deporteDeLaCancha = deporte.deporte;
+      break;
     }
   }
 
@@ -28,7 +30,7 @@ function ReservaPage() {
 
   if (!canchaSeleccionada || !complejoDeLaCancha) {
     return (
-      <div className="max-w-5xl mx-auto p-8 rounded-lg -mt-20 relative z-10">
+      <div className="bg-white max-w-5xl mx-auto p-8 rounded-lg shadow-2xl -mt-20 relative z-10">
         <h1 className="text-2xl font-bold text-red-600">Error: Cancha no encontrada</h1>
         <p className="text-gray-800 mt-4">No se pudo encontrar la información para la cancha con ID: {canchaId}.</p>
       </div>
@@ -42,7 +44,9 @@ function ReservaPage() {
           Reserva en: {complejoDeLaCancha.nombre}
         </h1>
         
-        <GaleriaFotos />
+        {/* Le pasamos la URL de la imagen principal al componente de la galería */}
+        <GaleriaFotos imageUrl={canchaSeleccionada.imageUrl} />
+
         <InfoCancha 
             cancha={canchaSeleccionada} 
             complejo={complejoDeLaCancha} 
