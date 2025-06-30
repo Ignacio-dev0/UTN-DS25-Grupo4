@@ -1,5 +1,3 @@
-// src/pages/HomePage.jsx
-
 import React, { useState, useMemo } from 'react';
 import CanchaCard from '../components/CanchaCard.jsx';
 import Buscador from '../components/Buscador.jsx';
