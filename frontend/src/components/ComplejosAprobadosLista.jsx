@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 function ComplejosAprobadosLista({ complejos }) {
   return (
@@ -11,9 +12,11 @@ function ComplejosAprobadosLista({ complejos }) {
               <p className="font-semibold text-primary">{complejo.nombreComplejo}</p>
               <p className="text-sm text-secondary">{complejo.ubicacion} - Aprobado el: {complejo.fechaAprobacion}</p>
             </div>
-            <button className="bg-primary border-primary text-light px-4 py-1 rounded-md text-sm font-medium hover:bg-secondary hover:border-secondary">
-              Ver Detalles
-            </button>
+            <Link to={`/micomplejo/${complejo.id}`}>
+              <button className="bg-primary border-primary text-light px-4 py-1 rounded-md text-sm font-medium hover:bg-secondary hover:border-secondary">
+                Ver Detalles
+              </button>
+            </Link>
           </li>
         ))}
       </ul>

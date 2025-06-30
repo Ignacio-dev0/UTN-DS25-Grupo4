@@ -1,5 +1,3 @@
-// src/pages/ReservaPage.jsx
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { datosDeportes } from '../data/canchas.js';
@@ -44,7 +42,6 @@ function ReservaPage() {
           Reserva en: {complejoDeLaCancha.nombre}
         </h1>
         
-        {/* Le pasamos la URL de la imagen principal al componente de la galería */}
         <GaleriaFotos imageUrl={canchaSeleccionada.imageUrl} />
 
         <InfoCancha 

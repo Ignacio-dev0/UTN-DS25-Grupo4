@@ -1,4 +1,3 @@
-// src/data/complejos.js
 export const datosComplejos = [
   { id: 1, nombre: 'Complejo El Potrero', balance: 285500, ubicacion: 'La Plata', cuit: '30-12345678-1' },
   { id: 2, nombre: 'Fútbol City', balance: 410300, ubicacion: 'City Bell', cuit: '30-12345678-2' },
