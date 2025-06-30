@@ -1,8 +1,5 @@
-// src/components/GaleriaFotos.jsx
-
 import React from 'react';
 
-// El componente ahora recibe la URL de la imagen como una prop
 function GaleriaFotos({ imageUrl }) {
   return (
     <div className="grid grid-cols-2 grid-rows-2 gap-2 h-80">
