@@ -28,7 +28,7 @@ function InfoCancha({ cancha, complejo, deporte }) {
           </div>
         )}
         <div>
-          <h2 className="text-2xl font-bold font-cinzel text-gray-800">
+          <h2 className="text-2xl font-bold font-lora text-gray-800">
             {complejo.nombre} - Cancha N°{cancha.noCancha}
           </h2>
           <button className="flex items-center text-sm text-yellow-500 mt-1">
