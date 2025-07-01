@@ -1,7 +1,7 @@
 import React from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { FaWifi, FaChalkboardUser } from "react-icons/fa";
-import { FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
+import { FaWifi, FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
+import { FaChalkboardUser } from "react-icons/fa6";
 import { IoIosBasketball } from "react-icons/io";
 import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis, MdRestaurant, MdFamilyRestroom, MdSportsHockey } from "react-icons/md";
 import { GiTennisRacket, GiTrophy, GiPartyPopper } from "react-icons/gi";
@@ -51,6 +51,7 @@ const ServicioItem = ({ servicio }) => {
 
 function InfoCancha({ cancha, complejo, deporte }) {
   const deporteIcono = deporteIconMap[deporte] || null;
+
   const position = [
     complejo.lat || -34.9214,
     complejo.lng || -57.9545
