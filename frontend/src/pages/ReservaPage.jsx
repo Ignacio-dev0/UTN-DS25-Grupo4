@@ -43,7 +43,7 @@ function ReservaPage() {
         </h1>
         
         <GaleriaFotos imageUrl={canchaSeleccionada.imageUrl} />
-
+        
         <InfoCancha 
             cancha={canchaSeleccionada} 
             complejo={complejoDeLaCancha} 
