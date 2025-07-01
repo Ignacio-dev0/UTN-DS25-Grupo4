@@ -1,11 +1,11 @@
 import React from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { FaFutbol, FaHockeyPuck, FaRegFutbol, FaWifi } from "react-icons/fa";
+import { FaWifi, FaChalkboardUser } from "react-icons/fa";
+import { FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
 import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis, MdOutlineStadium, MdRestaurant, MdFamilyRestroom, MdSportsHockey } from "react-icons/md";
+import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis, MdRestaurant, MdFamilyRestroom, MdSportsHockey } from "react-icons/md";
 import { GiTennisRacket, GiTrophy, GiPartyPopper } from "react-icons/gi";
 import { PiTShirtFill, PiCarFill } from "react-icons/pi";
-import { FaChalkboardUser } from "react-icons/fa6";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -24,27 +24,23 @@ const serviciosIconMap = {
   'Estacionamiento': <PiCarFill />,
   'Vestuarios': <PiTShirtFill />,
   'Buffet': <MdRestaurant />,
-  'Parrillas': <MdOutlineStadium />,
+  'Parrillas': <MdFamilyRestroom />,
   'Wi-Fi': <FaWifi />,
   'Kiosco': <MdRestaurant />,
-  'Canchas Techadas': <MdOutlineStadium />,
-  'Gradas': <MdOutlineStadium />,
-  'Tablero Electrónico': <FaChalkboardUser />,
-  'Gimnasio': <MdSportsTennis />,
   'Clases': <FaChalkboardUser />,
   'Confitería': <MdRestaurant />,
   'Club House': <MdFamilyRestroom />,
   'Pro-Shop': <PiTShirtFill />,
   'Tienda': <PiTShirtFill />,
-  'Sintético de Agua': <MdSportsHockey />,
   'Quincho': <MdFamilyRestroom />,
   'Cumpleaños': <GiPartyPopper />,
   'Escuelita deportiva': <FaChalkboardUser />,
   'Torneos': <GiTrophy />,
+  'Restaurante': <MdRestaurant />,
 };
 
 const ServicioItem = ({ servicio }) => {
-  const icono = serviciosIconMap[servicio] || <StarIcon className="w-5 h-5" />;
+  const icono = serviciosIconMap[servicio] || <StarIcon className="w-5 h-5 text-secondary" />;
   return (
     <div className="flex items-center gap-3">
       <span className="text-secondary text-2xl">{icono}</span>
@@ -64,7 +60,7 @@ function InfoCancha({ cancha, complejo, deporte }) {
     <div className="mt-8">
       <div className="flex items-center gap-4 mb-6">
         {deporteIcono && (
-          <div className="bg-secondary text-accent rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 border-2 border-white">
+          <div className="bg-secondary text-accent rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 border-2 border-white shadow-md">
             <span className="text-3xl">{deporteIcono}</span>
           </div>
         )}
@@ -80,7 +76,7 @@ function InfoCancha({ cancha, complejo, deporte }) {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
         <div className="flex flex-col gap-8">
-          <div className="bg-accent p-5 rounded-lg">
+          <div className="bg-accent p-5 rounded-lg shadow-md">
             <h3 className="text-xl font-bold text-primary mb-4">Servicios del Club</h3>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               {(complejo.servicios || []).map((servicio, index) => (
@@ -88,7 +84,7 @@ function InfoCancha({ cancha, complejo, deporte }) {
               ))}
             </div>
           </div>
-          <div className="bg-accent p-5 rounded-lg">
+          <div className="bg-accent p-5 rounded-lg shadow-md">
             <h3 className="text-xl font-bold text-primary mb-3">Horarios del Club</h3>
             <p className="text-primary font-medium whitespace-pre-line">
               {complejo.horarios || 'No especificado'}
@@ -97,7 +93,7 @@ function InfoCancha({ cancha, complejo, deporte }) {
         </div>
         <div className="flex flex-col">
           <h3 className="text-xl font-bold mb-2 text-primary">Ubicación</h3>
-          <div className="rounded-lg overflow-hidden border-4 border-accent h-full">
+          <div className="rounded-lg overflow-hidden border-4 border-accent shadow-lg h-80 lg:h-full">
             <MapContainer center={position} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
