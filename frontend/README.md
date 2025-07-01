@@ -11,5 +11,7 @@ react: ^19.1.0
 react-dom: ^19.1.0
 react-icons: ^5.5.0
 react-router-dom: ^7.6.2
+react-leaflet: ^5.0.0
+yet-another-react-lightbox: ^3.24.0
 tailwindcss: ^4.1.10
 

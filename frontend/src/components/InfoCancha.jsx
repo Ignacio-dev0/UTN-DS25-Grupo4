@@ -1,13 +1,17 @@
 import React from 'react';
-import { StarIcon, MapPinIcon } from '@heroicons/react/24/solid';
-import { FaFutbol, FaHockeyPuck } from "react-icons/fa";
+import { StarIcon } from '@heroicons/react/24/solid';
+import { FaFutbol, FaHockeyPuck, FaRegFutbol, FaWifi } from "react-icons/fa";
 import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis } from "react-icons/md";
-import { GiTennisRacket } from "react-icons/gi";
+import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis, MdOutlineStadium, MdRestaurant, MdFamilyRestroom, MdSportsHockey } from "react-icons/md";
+import { GiTennisRacket, GiTrophy, GiPartyPopper } from "react-icons/gi";
+import { PiTShirtFill, PiCarFill } from "react-icons/pi";
+import { FaChalkboardUser } from "react-icons/fa6";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
-const iconMap = {
+const deporteIconMap = {
   'Fútbol 5': <FaFutbol />,
-  'Fútbol 11': <FaFutbol />,
+  'Fútbol 11': <FaRegFutbol />,
   'Vóley': <MdSportsVolleyball />,
   'Básquet': <IoIosBasketball />,
   'Handball': <MdSportsHandball />,
@@ -16,12 +20,49 @@ const iconMap = {
   'Hockey': <FaHockeyPuck />,
 };
 
+const serviciosIconMap = {
+  'Estacionamiento': <PiCarFill />,
+  'Vestuarios': <PiTShirtFill />,
+  'Buffet': <MdRestaurant />,
+  'Parrillas': <MdOutlineStadium />,
+  'Wi-Fi': <FaWifi />,
+  'Kiosco': <MdRestaurant />,
+  'Canchas Techadas': <MdOutlineStadium />,
+  'Gradas': <MdOutlineStadium />,
+  'Tablero Electrónico': <FaChalkboardUser />,
+  'Gimnasio': <MdSportsTennis />,
+  'Clases': <FaChalkboardUser />,
+  'Confitería': <MdRestaurant />,
+  'Club House': <MdFamilyRestroom />,
+  'Pro-Shop': <PiTShirtFill />,
+  'Tienda': <PiTShirtFill />,
+  'Sintético de Agua': <MdSportsHockey />,
+  'Quincho': <MdFamilyRestroom />,
+  'Cumpleaños': <GiPartyPopper />,
+  'Escuelita deportiva': <FaChalkboardUser />,
+  'Torneos': <GiTrophy />,
+};
+
+const ServicioItem = ({ servicio }) => {
+  const icono = serviciosIconMap[servicio] || <StarIcon className="w-5 h-5" />;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-secondary text-2xl">{icono}</span>
+      <span className="font-medium text-primary">{servicio}</span>
+    </div>
+  );
+};
+
 function InfoCancha({ cancha, complejo, deporte }) {
-  const deporteIcono = iconMap[deporte] || null;
+  const deporteIcono = deporteIconMap[deporte] || null;
+  const position = [
+    complejo.lat || -34.9214,
+    complejo.lng || -57.9545
+  ];
 
   return (
     <div className="mt-8">
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-4 mb-6">
         {deporteIcono && (
           <div className="bg-secondary text-accent rounded-full w-14 h-14 flex items-center justify-center flex-shrink-0 border-2 border-white">
             <span className="text-3xl">{deporteIcono}</span>
@@ -33,23 +74,41 @@ function InfoCancha({ cancha, complejo, deporte }) {
           </h2>
           <button className="flex items-center text-sm text-yellow-500 mt-1">
             <StarIcon className="w-4 h-4 mr-1" />
-            <span>{cancha.puntaje.toFixed(1)} (Reseña)</span>
+            <span>{cancha.puntaje.toFixed(1)} (Ver Reseñas)</span>
           </button>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
-        <div>
-          <h3 className="text-xl font-bold mb-2">Servicios</h3>
-          <div className="bg-accent p-4 rounded-lg h-32">
-             <p className="text-primary">Placeholder para lista de servicios...</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+        <div className="flex flex-col gap-8">
+          <div className="bg-accent p-5 rounded-lg">
+            <h3 className="text-xl font-bold text-primary mb-4">Servicios del Club</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {(complejo.servicios || []).map((servicio, index) => (
+                <ServicioItem key={index} servicio={servicio} />
+              ))}
+            </div>
+          </div>
+          <div className="bg-accent p-5 rounded-lg">
+            <h3 className="text-xl font-bold text-primary mb-3">Horarios del Club</h3>
+            <p className="text-primary font-medium whitespace-pre-line">
+              {complejo.horarios || 'No especificado'}
+            </p>
           </div>
         </div>
-        <div>
-          <h3 className="text-xl font-bold mb-2">Ubicación</h3>
-          <div className="bg-accent p-4 rounded-lg h-32 flex items-center justify-center">
-            <MapPinIcon className="w-8 h-8 text-primary" />
-             <p className="text-primary ml-2">{complejo.ubicacion}</p>
+        <div className="flex flex-col">
+          <h3 className="text-xl font-bold mb-2 text-primary">Ubicación</h3>
+          <div className="rounded-lg overflow-hidden border-4 border-accent h-full">
+            <MapContainer center={position} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={position}>
+                <Popup>
+                  <b>{complejo.nombre}</b><br />{complejo.ubicacion}
+                </Popup>
+              </Marker>
+            </MapContainer>
           </div>
         </div>
       </div>

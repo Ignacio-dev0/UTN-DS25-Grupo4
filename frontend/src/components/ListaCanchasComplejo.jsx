@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowRightIcon, ArrowLeftIcon } from '@heroicons/react/24/solid';
+import { ArrowRightIcon, ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/solid';
 import MiniCanchaCard from './MiniCanchaCard.jsx';
+import FormularioNuevaCancha from './FormularioNuevaCancha.jsx';
 
 function ListaCanchasComplejo({ canchas }) {
   const [currentPage, setCurrentPage] = useState(0);
-  const CANCHAS_POR_PAGINA = 6;
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const CANCHAS_POR_PAGINA = 5;
 
   const totalPages = Math.ceil(canchas.length / CANCHAS_POR_PAGINA);
 
@@ -21,10 +23,15 @@ function ListaCanchasComplejo({ canchas }) {
     setCurrentPage((page) => Math.max(page - 1, 0));
   };
 
+  const handleGuardarCancha = (nuevaCancha) => {
+    console.log('Guardando nueva cancha:', nuevaCancha);
+    setMostrarModal(false);
+  };
+
   return (
     <div className="w-full md:w-2/3 p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Mis Canchas</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h2 className="text-2xl font-bold text-gray-800">Mis Canchas</h2>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
             <button
@@ -47,16 +54,24 @@ function ListaCanchasComplejo({ canchas }) {
           </div>
         )}
       </div>
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {canchasPaginadas.length > 0 ? (
-          canchasPaginadas.map(cancha => (
-            <MiniCanchaCard key={cancha.id} cancha={cancha} />
-          ))
-        ) : (
-          <p className="text-gray-500 col-span-full">Este complejo aún no tiene canchas registradas.</p>
-        )}
+        {canchasPaginadas.map(cancha => (
+          <MiniCanchaCard key={cancha.id} cancha={cancha} />
+        ))}
+        <button
+          onClick={() => setMostrarModal(true)}
+          className="border-2 border-dashed border-accent rounded-lg flex flex-col items-center justify-center text-accent hover:bg-accent hover:border-primary hover:text-primary transition-all duration-300 min-h-[220px] aspect-w-1 aspect-h-1"
+        >
+          <PlusIcon className="w-12 h-12" />
+          <span className="mt-2 font-semibold">Agregar Cancha</span>
+        </button>
       </div>
+      {mostrarModal && (
+        <FormularioNuevaCancha
+          onCerrar={() => setMostrarModal(false)}
+          onGuardar={handleGuardarCancha}
+        />
+      )}
     </div>
   );
 }
