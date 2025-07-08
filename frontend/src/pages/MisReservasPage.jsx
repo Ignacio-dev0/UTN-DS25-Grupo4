@@ -1,40 +1,66 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { misReservas as initialReservas } from '../data/reservas';
+import PerfilInfo from '../components/PerfilInfo';
+import ListaReservas from '../components/ListaReservas';
+import ModalReseña from '../components/ModalReseña';
 
 function MisReservasPage() {
-    const misReservas = [
-        { id: 1, complejoId: 1, canchaId: 101, complejo: 'Complejo El Potrero', cancha: 'Cancha N°5', fecha: '2025-07-10', hora: '20:00', estado: 'Confirmada' },
-        { id: 2, complejoId: 2, canchaId: 102, complejo: 'Fútbol City', cancha: 'Cancha N°1', fecha: '2025-07-12', hora: '21:00', estado: 'Confirmada' },
-        { id: 3, complejoId: 33, canchaId: 601, complejo: 'Club de Tenis La Plata', cancha: 'Cancha N°1', fecha: '2025-07-15', hora: '10:00', estado: 'Confirmada' },
-    ];
+    const [usuario, setUsuario] = useState({
+        id: 1,
+        nombre: 'Pepe González',
+        rol: 'Jugador Apasionado',
+        email: 'ignacio.dev@canchaya.com',
+        telefono: '+54 221 123-4567',
+        direccion: 'Calle Falsa 123, La Plata',
+        profileImageUrl: 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
+    });
+    
+    const [reservas, setReservas] = useState(initialReservas.filter(r => r.userId === usuario.id));
+    const [modalReseñaVisible, setModalReseñaVisible] = useState(false);
+    const [reservaParaReseñar, setReservaParaReseñar] = useState(null);
+
+    const handleOpenReseñaModal = (reserva) => {
+        setReservaParaReseñar(reserva);
+        setModalReseñaVisible(true);
+    };
+
+    const handleGuardarReseña = (datosReseña) => {
+        console.log('Guardando reseña:', datosReseña);
+        setReservas(reservas.map(r => 
+            r.id === datosReseña.reservaId ? { ...r, reseñada: true } : r
+        ));
+        setModalReseñaVisible(false);
+        setReservaParaReseñar(null);
+    };
+
+    const handleCancelReserva = (reservaId) => {
+        setReservas(reservas.map(r => 
+            r.id === reservaId ? { ...r, estado: 'Cancelada' } : r
+        ));
+    };
+    
+    const handleSaveProfile = (datosActualizados) => {
+        setUsuario(datosActualizados);
+    };
 
     return (
-        <div className="container mx-auto p-8 min-h-screen">
-            <h1 className="text-3xl font-bold font-lora text-primary border-b border-gray-300 pb-4 mb-8">
-                Mis Reservas
-            </h1>
-            <div className="space-y-4">
-                {misReservas.length > 0 ? (
-                    misReservas.map(reserva => (
-                        <div key={reserva.id} className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div>
-                                <p className="font-semibold text-primary text-lg">{reserva.complejo} - {reserva.cancha}</p>
-                                <p className="text-sm text-secondary">Fecha: {reserva.fecha} a las {reserva.hora}</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <span className="bg-accent text-primary font-bold text-sm px-3 py-1 rounded-full">Confirmada</span>
-                                <Link to={`/reserva/${reserva.canchaId}`}>
-                                    <button className="bg-primary text-light px-4 py-2 rounded-md text-sm font-medium hover:bg-secondary transition-colors whitespace-nowrap">
-                                        Ver Cancha
-                                    </button>
-                                </Link>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-center text-gray-500">Aún no tienes reservas.</p>
-                )}
+        <div className="max-w-7xl mx-auto p-6 md:p-8 rounded-lg relative z-10">
+            <div className="flex flex-col md:flex-row -mx-4">
+                <PerfilInfo usuario={usuario} onSave={handleSaveProfile} />
+                <ListaReservas 
+                    reservas={reservas} 
+                    onCancelReserva={handleCancelReserva}
+                    onDejarReseña={handleOpenReseñaModal}
+                />
             </div>
+
+            {modalReseñaVisible && (
+                <ModalReseña
+                    reserva={reservaParaReseñar}
+                    onGuardar={handleGuardarReseña}
+                    onCerrar={() => setModalReseñaVisible(false)}
+                />
+            )}
         </div>
     );
 }

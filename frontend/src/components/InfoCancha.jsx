@@ -69,7 +69,7 @@ function InfoCancha({ cancha, complejo, deporte }) {
           <h2 className="text-2xl font-bold font-lora text-gray-800">
             {complejo.nombre} - Cancha N°{cancha.noCancha}
           </h2>
-          <button className="flex items-center text-sm text-yellow-500 mt-1">
+          <button className="flex items-center text-sm text-canchaYellow mt-1">
             <StarIcon className="w-4 h-4 mr-1" />
             <span>{cancha.puntaje.toFixed(1)} (Ver Reseñas)</span>
           </button>

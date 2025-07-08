@@ -44,7 +44,7 @@ function CanchaCard({ cancha }) {
         <div className="flex justify-between items-start">
             <h3 className="text-lg font-bold text-light font-lora">{complejo.nombre}</h3>
             <div className="flex items-center text-sm flex-shrink-0 ml-2">
-                <StarIcon className="w-5 h-5 text-yellow-400 mr-1" />
+                <StarIcon className="w-5 h-5 text-canchaYellow mr-1" />
                 <span className="font-bold text-white">{cancha.puntaje?.toFixed(1)}</span>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { datosDeportes } from '../data/canchas.js';
 import { datosComplejos } from '../data/complejos.js';
@@ -8,20 +8,36 @@ import ListaCanchasComplejo from '../components/ListaCanchasComplejo.jsx';
 function MiComplejoPage() {
   const { complejoId } = useParams();
   const infoDelComplejo = datosComplejos.find(c => c.id === parseInt(complejoId));
-  const canchasDelComplejo = datosDeportes
-    .flatMap(deporte => 
-      deporte.canchas.map(cancha => ({
-        ...cancha,
-        deporte: deporte.deporte 
-      }))
-    ) 
-    .filter(cancha => cancha.complejoId === parseInt(complejoId));
+
+  const [canchas, setCanchas] = useState(
+    datosDeportes
+      .flatMap(deporte => 
+        deporte.canchas.map(cancha => ({
+          ...cancha,
+          deporte: deporte.deporte,
+          estado: 'habilitada'
+        }))
+      ) 
+      .filter(cancha => cancha.complejoId === parseInt(complejoId))
+  );
+  
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleDisableCancha = (canchaId) => {
+    setCanchas(canchas.map(c => 
+      c.id === canchaId 
+        ? { ...c, estado: c.estado === 'deshabilitada' ? 'habilitada' : 'deshabilitada' } 
+        : c
+    ));
+  };
+
+  const handleDeleteCancha = (canchaId) => {
+    setCanchas(canchas.filter(c => c.id !== canchaId));
+  };
 
   const ultimosAlquileres = [
     { id: 1, cancha: 'Cancha N°5', fecha: '29/06/2025', total: 28000 },
     { id: 2, cancha: 'Cancha N°1', fecha: '29/06/2025', total: 30000 },
-    { id: 3, cancha: 'Cancha N°2', fecha: '28/06/2025', total: 28000 },
-    { id: 4, cancha: 'Cancha N°5', fecha: '28/06/2025', total: 25000 },
   ];
 
   if (!infoDelComplejo) {
@@ -38,8 +54,18 @@ function MiComplejoPage() {
         Mi Complejo
       </h1>
       <div className="flex flex-col md:flex-row -mx-4">
-        <ComplejoInfo complejo={infoDelComplejo} alquileres={ultimosAlquileres} />
-        <ListaCanchasComplejo canchas={canchasDelComplejo} />
+        <ComplejoInfo 
+          complejo={infoDelComplejo} 
+          alquileres={ultimosAlquileres}
+          isEditing={isEditing}
+          onToggleEdit={() => setIsEditing(!isEditing)}
+        />
+        <ListaCanchasComplejo 
+          canchas={canchas} 
+          onDelete={handleDeleteCancha}
+          onDisable={handleDisableCancha}
+          isEditing={isEditing}
+        />
       </div>
     </div>
   );

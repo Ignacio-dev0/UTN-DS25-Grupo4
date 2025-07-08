@@ -10,9 +10,11 @@ function ResultadosPage() {
 
   const ciudadQuery = searchParams.get('ciudad');
   const deporteQuery = searchParams.get('deporte');
+  const fechaQuery = searchParams.get('fecha');
+  const horaQuery = searchParams.get('hora');
 
   const canchasEncontradas = useMemo(() => {
-    const todasLasCanchas = datosDeportes.flatMap(deporte => 
+    const todasLasCanchas = datosDeportes.flatMap(deporte =>
       deporte.canchas.map(cancha => ({
         ...cancha,
         deporte: deporte.deporte
@@ -24,19 +26,34 @@ function ResultadosPage() {
     if (deporteQuery) {
       canchasFiltradas = canchasFiltradas.filter(cancha => cancha.deporte === deporteQuery);
     }
-    
+
     if (ciudadQuery) {
       const complejosEnCiudad = datosComplejos
         .filter(c => c.ubicacion.toLowerCase().includes(ciudadQuery.toLowerCase()))
         .map(c => c.id);
-      
-      canchasFiltradas = canchasFiltradas.filter(cancha => 
+
+      canchasFiltradas = canchasFiltradas.filter(cancha =>
         complejosEnCiudad.includes(cancha.complejoId)
       );
     }
-    
+
+    if (fechaQuery && horaQuery) {
+      const fechaBusqueda = new Date(fechaQuery);
+      const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+      const diaBusqueda = diasSemana[fechaBusqueda.getDay()];
+      const horaBusqueda = horaQuery.replace('hs', '');
+
+      canchasFiltradas = canchasFiltradas.filter(cancha => {
+        return cancha.turnos.some(turno => 
+          turno.dia.toUpperCase() === diaBusqueda &&
+          turno.hora === horaBusqueda &&
+          turno.estado === 'disponible'
+        );
+      });
+    }
+
     return canchasFiltradas;
-  }, [ciudadQuery, deporteQuery]);
+  }, [ciudadQuery, deporteQuery, fechaQuery, horaQuery]);
 
   return (
     <div className=" min-h-screen ">

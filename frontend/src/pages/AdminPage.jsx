@@ -5,12 +5,41 @@ import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
 import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
 
 function AdminPage() {
-  // Estado para la pestaña activa ('solicitudes' o 'aprobados')
   const [activeTab, setActiveTab] = useState('solicitudes');
-  // Estados para manejar las listas y la selección
   const [solicitudes, setSolicitudes] = useState(mockSolicitudes);
   const [complejosAprobados, setComplejosAprobados] = useState(mockComplejosAprobados);
-  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(solicitudes[0]);
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(solicitudes[0] || null);
+
+  const handleApprove = (solicitudId) => {
+    const solicitudAprobada = solicitudes.find(s => s.id === solicitudId);
+    if (!solicitudAprobada) return;
+
+    const nuevoComplejo = {
+      id: complejosAprobados.length + 100, // Un ID único
+      nombreComplejo: solicitudAprobada.nombreComplejo,
+      ubicacion: 'Ubicación a definir', // Se podría tomar de la solicitud
+      adminEmail: `admin@${solicitudAprobada.nombreComplejo.toLowerCase().replace(/\s/g, '')}.com`,
+      fechaAprobacion: new Date().toISOString().slice(0, 10), // Fecha de hoy
+    };
+
+    setComplejosAprobados(prev => [nuevoComplejo, ...prev]);
+    const nuevasSolicitudes = solicitudes.filter(s => s.id !== solicitudId);
+    setSolicitudes(nuevasSolicitudes);
+
+    setSolicitudSeleccionada(nuevasSolicitudes[0] || null);
+  };
+  
+  const handleDecline = (solicitudId) => {
+    const nuevasSolicitudes = solicitudes.filter(s => s.id !== solicitudId);
+    setSolicitudes(nuevasSolicitudes);
+    setSolicitudSeleccionada(nuevasSolicitudes[0] || null);
+  };
+  
+  const handleRemoveApproved = (complejoId) => {
+      if (window.confirm("¿Estás seguro de que quieres eliminar este complejo de la lista de aprobados?")) {
+          setComplejosAprobados(prev => prev.filter(c => c.id !== complejoId));
+      }
+  };
 
   return (
     <div className=" max-w-7xl mx-auto rounded-lg relative z-10">
@@ -20,11 +49,11 @@ function AdminPage() {
             onClick={() => setActiveTab('solicitudes')}
             className={`px-3 py-2 font-medium text-sm rounded-md ${
               activeTab === 'solicitudes'
-                ? 'bg-primary text-light'
+                ? 'bg-secondary text-light'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Solicitudes
+            Solicitudes {solicitudes.length > 0 && `(${solicitudes.length})`}
           </button>
           <button
             onClick={() => setActiveTab('aprobados')}
@@ -41,9 +70,13 @@ function AdminPage() {
       <div>
         {activeTab === 'solicitudes' && (
           <div className="flex">
-            <SolicitudDetalle solicitud={solicitudSeleccionada} />
+            <SolicitudDetalle 
+              solicitud={solicitudSeleccionada}
+              onApprove={handleApprove}
+              onDecline={handleDecline}
+            />
             <ListaSolicitudes 
-              solicitudes={solicitudes.filter(s => s.id !== solicitudSeleccionada?.id)}
+              solicitudes={solicitudes}
               onSelect={setSolicitudSeleccionada} 
               solicitudActiva={solicitudSeleccionada}
             />
@@ -51,7 +84,10 @@ function AdminPage() {
         )}
         
         {activeTab === 'aprobados' && (
-          <ComplejosAprobadosLista complejos={complejosAprobados} />
+          <ComplejosAprobadosLista 
+            complejos={complejosAprobados}
+            onRemove={handleRemoveApproved}
+          />
         )}
       </div>
     </div>
