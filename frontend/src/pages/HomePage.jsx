@@ -4,30 +4,28 @@ import Buscador from '../components/Buscador.jsx';
 import FiltroDeporte from '../components/FiltroDeporte.jsx';
 import FaqSection from '../components/FaqSection.jsx';
 import { datosDeportes } from '../data/canchas.js';
+import { calcularInfoReseñas } from '../utils/calculos.js'; // Importamos la función
 
 function HomePage() {
   const [deporteSeleccionado, setDeporteSeleccionado] = useState('Populares');
-
   const canchasMostradas = useMemo(() => {
+    const canchasConPuntaje = datosDeportes.flatMap(deporte => 
+      deporte.canchas.map(cancha => {
+        const infoReseñas = calcularInfoReseñas(cancha.id);
+        return {
+          ...cancha,
+          puntaje: infoReseñas.promedio, 
+          cantidadReseñas: infoReseñas.cantidad,
+          deporte: deporte.deporte,
+        };
+      })
+    );
+
     if (deporteSeleccionado === 'Populares') {
-      return datosDeportes
-        .filter(deporte => deporte.canchas && deporte.canchas.length > 0)
-        .map(deporte => {
-          const mejorCancha = deporte.canchas.reduce((mejor, actual) =>
-            (actual.puntaje > mejor.puntaje) ? actual : mejor
-          );
-          return { ...mejorCancha, deporte: deporte.deporte };
-        });
+      return canchasConPuntaje.sort((a, b) => b.puntaje - a.puntaje).slice(0, 8);
     }
     
-    const deporteFiltrado = datosDeportes.find(d => d.deporte === deporteSeleccionado);
-    if (deporteFiltrado) {
-      return deporteFiltrado.canchas.map(cancha => ({
-        ...cancha,
-        deporte: deporteFiltrado.deporte
-      }));
-    }
-    return [];
+    return canchasConPuntaje.filter(c => c.deporte === deporteSeleccionado);
   }, [deporteSeleccionado]);
 
   return (
@@ -42,7 +40,7 @@ function HomePage() {
         />
 
         <section>
-          <h2 className="text-3xl font-bold font-cinzel text-light mb-6 text-center">
+          <h2 className="text-3xl font-bold font-lora text-primary mb-6 text-center">
             {deporteSeleccionado}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">

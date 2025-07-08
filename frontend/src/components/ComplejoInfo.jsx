@@ -10,8 +10,8 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit }) {
     <div className="w-full md:w-1/3 p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800">{complejo.nombre}</h2>
-        <button onClick={onToggleEdit} className="text-secondary hover:text-primary" title={isEditing ? "Finalizar Edición" : "Editar Canchas"}>
-          {isEditing ? <CheckIcon className="w-6 h-6" /> : <PencilIcon className="w-5 h-5" />}
+        <button onClick={onToggleEdit} className="text-secondary hover:text-green-400" title={isEditing ? "Finalizar Edición" : "Editar Canchas"}>
+          {isEditing ? <CheckIcon className="w-6 h-6" /> : <PencilIcon className="w-5 h-5 text-secondary hover:text-primary" />}
         </button>
       </div>
       

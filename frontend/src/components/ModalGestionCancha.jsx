@@ -51,7 +51,7 @@ function ModalGestionCancha({ cancha, onDisable, onDelete, onClose }) {
           {/* Botón Cancelar */}
           <button 
             onClick={onClose}
-            className="flex items-center justify-center gap-3 w-64 bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors"
+            className="flex items-center justify-center gap-3 w-64 bg-gray-200 text-primary font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors"
           >
              <XCircleIcon className="w-6 h-6" />
             <span>Cancelar</span>

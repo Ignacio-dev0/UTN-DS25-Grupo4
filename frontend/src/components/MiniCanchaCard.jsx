@@ -49,7 +49,7 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
       {isEditing && (
         <button 
           onClick={() => onAction(cancha)}
-          className="absolute top-2 right-2 z-20 bg-black bg-opacity-50 text-white rounded-full p-1 hover:bg-canchaRed transition-colors"
+          className="absolute top-2 right-2 z-20 bg-primary bg-opacity-50 text-white rounded-full p-1 hover:bg-canchaRed transition-colors"
           title="Gestionar cancha"
         >
           <XMarkIcon className="w-5 h-5" />
