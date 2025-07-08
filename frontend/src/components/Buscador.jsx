@@ -22,6 +22,8 @@ function Buscador() {
     const queryParams = new URLSearchParams();
     if (ciudad) queryParams.append('ciudad', ciudad);
     if (deporte) queryParams.append('deporte', deporte);
+    if (fecha) queryParams.append('fecha', fecha.toISOString());
+    if (hora) queryParams.append('hora', hora);
     
     navigate(`/resultados?${queryParams.toString()}`);
   };

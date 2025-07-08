@@ -15,9 +15,13 @@ function Layout({ children }) {
           </Link>
 
           <nav>
-            <a href="/login" className="flex items-center space-x-2 hover:text-accent">
+            {/* Para que sea log in <a href="/login" className="flex items-center space-x-2 hover:text-accent">
               <UserCircleIcon className="h-8 w-8" />
-              <span className="font-semibold">Log in</span>
+               <span className="font-semibold">Log in</span>
+            </a> */}
+            <a href="/mis-reservas" className="flex items-center space-x-2 hover:text-accent">
+              <UserCircleIcon className="h-8 w-8" />
+              <span className="font-semibold">Mi Perfil</span>
             </a>
           </nav>
         </div>

@@ -38,14 +38,6 @@ const generarGrillaDeTurnosFija = (complejoId) => {
 
   const horariosPorDia = parseHorarios(complejo.horarios);
 
-  const shuffleArray = (array) => {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  };
-
   diasSemana.forEach(dia => {
     if (horariosPorDia[dia]) {
       const { start, end } = horariosPorDia[dia];
@@ -54,13 +46,11 @@ const generarGrillaDeTurnosFija = (complejoId) => {
         horasPosibles.push(`${i}:00`);
       }
 
-      const horasMezcladas = shuffleArray(horasPosibles);
-      const horariosDelDia = horasMezcladas.slice(0, Math.min(9, horasPosibles.length));
-
-      const estados = shuffleArray([
+      const horariosDelDia = horasPosibles.slice(0, Math.min(9, horasPosibles.length));
+      const estados = [
         ...Array(Math.ceil(horariosDelDia.length * 0.55)).fill('disponible'),
         ...Array(Math.floor(horariosDelDia.length * 0.45)).fill('reservado')
-      ]);
+      ];
 
       horariosDelDia.forEach((hora, index) => {
         if (estados[index]) {
