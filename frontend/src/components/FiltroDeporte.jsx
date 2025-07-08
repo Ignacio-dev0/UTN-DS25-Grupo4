@@ -54,7 +54,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
 
       <button 
         onClick={handleAnterior}
-        className="p-2 rounded-full hover:bg-gray-200 transition-colors flex-shrink-0"
+        className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
       >
         <ChevronLeftIcon className="w-6 h-6 text-secondary" />
       </button>
@@ -83,7 +83,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
       {/* Botón de Navegación "Siguiente" */}
       <button 
         onClick={handleSiguiente}
-        className="p-2 rounded-full hover:bg-gray-200 transition-colors flex-shrink-0"
+        className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
       >
         <ChevronRightIcon className="w-6 h-6 text-secondary" />
       </button>

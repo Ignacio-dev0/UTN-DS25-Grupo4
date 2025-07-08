@@ -9,9 +9,9 @@ function MisReservasPage() {
         id: 1,
         nombre: 'Pepe González',
         rol: 'Jugador Apasionado',
-        email: 'ignacio.dev@canchaya.com',
+        email: 'pepegonzalez@gmail.com',
         telefono: '+54 221 123-4567',
-        direccion: 'Calle Falsa 123, La Plata',
+        direccion: 'Calle 43 901, La Plata',
         profileImageUrl: 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
     });
     
