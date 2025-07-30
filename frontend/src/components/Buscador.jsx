@@ -14,7 +14,7 @@ function Buscador() {
   const fechaFormateada = fecha.toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' });
   const horarios = Array.from({ length: 28 }, (_, i) => {
     const hour = 8 + Math.floor(i / 2);
-    const minute = '30';
+    const minute = '00';
     return `${hour}:${minute}hs`;
   });
 
