@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 import Footer from './Footer.jsx';
 import { PiCourtBasketball } from "react-icons/pi";
+import { Outlet } from 'react-router-dom';
 
 function Layout({ children }) {
   return (
@@ -28,7 +29,7 @@ function Layout({ children }) {
       </header>
 
       <main className="flex-grow w-full">
-        {children}
+        <Outlet />
       </main>
 
       <Footer />
