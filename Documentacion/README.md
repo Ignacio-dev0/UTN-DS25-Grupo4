@@ -6,3 +6,6 @@
 
 # 3. 02 Modelado de Dominio
     Dentro de esta carpeta completamos la Fase 2: Diagramas de Clases Basicos y Reglas de Negocio
+
+# 4. 06 Relevamiento de API
+    El link del documento es el siguiente: https://docs.google.com/document/d/1y5J4jth5tO87Zypx5PhKmP9MzolIblxFHoj5UW7F7aM/edit?usp=sharing
