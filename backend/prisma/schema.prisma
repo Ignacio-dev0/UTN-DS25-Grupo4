@@ -6,10 +6,43 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  // output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+
+model Deporte {
+  id      Int      @id @default(autoincrement())
+  nombre  String   @unique
+  canchas Cancha[] // Un deporte puede estar en muchas canchas
+}
+
+model Cancha {
+  id      Int      @id @default(autoincrement())
+  // Agregar mas campos de Cancha
+  deporteId Int
+  deporte   Deporte @relation(fields: [deporteId], references: [id])
+  resenas  Resena[] // Relación inversa con Resena
+}
+
+model Usuario {
+  id      Int      @id @default(autoincrement())
+  resenas Resena[] // Relación inversa con Resena
+  nombre  String
+  apellido String
+}
+
+model Resena {
+  id          Int      @id @default(autoincrement())
+  puntaje     Int
+  comentario  String?
+  fecha       DateTime @default(now())
+  canchaId    Int
+  cancha      Cancha   @relation(fields: [canchaId], references: [id])
+  usuarioId   Int
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
 }
