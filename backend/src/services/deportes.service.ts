@@ -1,6 +1,6 @@
 // backend/src/services/deportes.service.ts
 import prisma from '../lib/prisma'; 
-import { Deporte } from '@prisma/client';
+import { Deporte } from '../generated/prisma/client';
 
 
 const getAll = async (): Promise<Deporte[]> => {
