@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  // output   = "../src/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,35 +14,180 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Usuario {
+	id									Int					@id @default(autoincrement())
+	apellido 						String
+	nombre							String
+	dni									Int					@unique
+	correo							String			@unique
+	contraseña					String
+	fechaNacimiento			DateTime		@db.Date
+	rol									Rol
 
-model Deporte {
-  id      Int      @id @default(autoincrement())
-  nombre  String   @unique
-  canchas Cancha[] // Un deporte puede estar en muchas canchas
+	solicitudesEnviadas	Solicitud[]
+	complejos						Complejo[]
+	resenias						Resenia[]
+	alquileres					Alquiler[]
+}
+
+model Administrador {
+	id										Int					@id @default(autoincrement())
+	dni										Int					@unique
+	legajo								Int					@unique
+	nombre								String
+	apellido 							String
+	correo								String			@unique
+	contrasenia						String
+	fechaNacimiento				DateTime		@db.Date
+
+	solicitudesEvaluadas	Solicitud[]
+}
+
+
+model Solicitud {
+	id								Int							@id @default(autoincrement())
+	cuit							Int							@unique
+	estado						EstadoSolicitud
+
+	evaluadorId				Int
+	emisorId					Int
+
+	documentos				Documentacion[]
+	complejoAprobado	Complejo?
+	evaluador					Administrador 	@relation(fields: [evaluadorId], references: [id])
+	emisor						Usuario 				@relation(fields: [emisorId], references: [id])
+}
+
+model Documentacion {
+	id					Int				@id @default(autoincrement())
+	imagen			String
+	solicitud 	Solicitud @relation(fields: [solicitudId], references: [id])
+	solicitudId Int
+}
+
+model Complejo {
+	id									Int				@id @default(autoincrement())
+	calle								String
+	altura							Int
+	nombre							String
+	descripcion					String
+	porcentajeReembolso	Float
+	puntaje							Float
+	solicitudId					Int				@unique
+	localidadId 				Int
+	duenios							Usuario[]
+	canchas							Cancha[]
+	solicitud						Solicitud @relation(fields: [solicitudId], references: [id])
+	localidad						Localidad @relation(fields: [localidadId], references: [id])
+}
+
+model Localidad {
+	id				Int					@id @default(autoincrement())
+	nombre		String
+	complejos	Complejo[]
 }
 
 model Cancha {
-  id      Int      @id @default(autoincrement())
-  // Agregar mas campos de Cancha
-  deporteId Int
-  deporte   Deporte @relation(fields: [deporteId], references: [id])
-  resenas  Resena[] // Relación inversa con Resena
+	id					Int									@id @default(autoincrement())
+	nroCancha		Int									@unique
+	descripcion	String
+	puntaje			Float
+	deporteId		Int
+	horarios		HorarioCronograma[]
+	turnos			Turno[]
+	resenias		Resenia[]
+	complejo		Complejo[]
+	deporte			Deporte							@relation(fields: [deporteId], references: [id])
 }
 
-model Usuario {
-  id      Int      @id @default(autoincrement())
-  resenas Resena[] // Relación inversa con Resena
-  nombre  String
-  apellido String
+model HorarioCronograma {
+	id				Int				@id @default(autoincrement())
+	hora			DateTime	@db.Date
+	precio		Float
+	diaSemana	DiaSemana
+	canchaId	Int
+	cancha 		Cancha 		@relation(fields: [canchaId], references: [id])
 }
 
-model Resena {
-  id          Int      @id @default(autoincrement())
-  puntaje     Int
-  comentario  String?
-  fecha       DateTime @default(now())
-  canchaId    Int
-  cancha      Cancha   @relation(fields: [canchaId], references: [id])
-  usuarioId   Int
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+model Turno {
+	id					Int				@id @default(autoincrement())
+	fecha 			DateTime	@db.Date
+	hora 				DateTime	@db.Time
+	precio 			Float
+	reservado		Boolean
+	alquilerId 	Int
+	canchaId 		Int
+	cancha 			Cancha		@relation(fields: [canchaId], references: [id])
+	alquiler  	Alquiler 	@relation(fields: [alquilerId], references: [id])
+}
+
+model Deporte {
+	id			Int				@id @default(autoincrement())
+	nombre 	String 		@unique
+	canchas	Cancha[]
+}
+
+model Resenia {
+	id					Int			@id @default(autoincrement())
+	descripcion	String
+	puntaje			Int
+	canchaId		Int
+	usuarioId 	Int
+	cancha 			Cancha	@relation(fields: [canchaId], references: [id])
+	usuario 		Usuario	@relation(fields: [usuarioId], references: [id])
+}
+
+model Alquiler {
+	id				Int							@id @default(autoincrement())
+	estado		EstadoAlquiler
+	fecha			DateTime 				@db.Date
+	clienteId	Int
+	turnos		Turno[]
+	pago			Pago?
+	cliente		Usuario 				@relation(fields: [clienteId], references: [id])
+}
+
+model Pago {
+	id 								Int 			@id @default(autoincrement())
+	alquilerId				Int				@unique
+	codigoTransaccion	String
+	metodoPago				MetodoPago
+	monto							Float
+	reembolso					Boolean
+	fechaHora					DateTime
+	alquiler 					Alquiler	@relation(fields: [alquilerId], references: [id])
+}
+
+enum MetodoPago {
+	DEBITO
+	CREDITO
+	TRANSFERENCIA
+}
+
+enum EstadoAlquiler {
+	PROGRAMADO
+	PAGADO
+	CANCELADO
+	FINALIZADO
+}
+
+enum DiaSemana {
+	LUNES
+	MARTES
+	MIERCOLES
+	JUEVES
+	VIERNES
+	SABADO
+	DOMINGO
+}
+
+enum EstadoSolicitud {
+	PENDIENTE
+	APROBADA
+	RECHAZADA
+}
+
+enum Rol {
+	CLIENTE
+	DUENIO
 }
