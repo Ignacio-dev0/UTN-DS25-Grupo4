@@ -191,16 +191,3 @@ enum Rol {
 	CLIENTE
 	DUENIO
 }
-
-model Usuario {
-  id          Int        @id @default(autoincrement())
-  nombre      String
-  apellido    String
-  apodo       String
-  email       String     @unique
-  fotoPerfil  String
-  telefono    String?
-  direccion   String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
