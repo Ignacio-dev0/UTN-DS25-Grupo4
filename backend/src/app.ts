@@ -6,6 +6,7 @@ import resenasRouter from './routes/resenas.routes';
 import usuarioRoutes from "./routes/usuario.routes";
 import complejoRoutes from './routes/complejo.routes';
 import canchaRoutes from './routes/cancha.routes';
+import solicitudRoutes from './routes/solicitud.routes'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ app.use('/api/resenas', resenasRouter);
 app.use("/usuarios", usuarioRoutes);
 app.use('/api/complejos', complejoRoutes); 
 app.use('/api/canchas', canchaRoutes);
+app.use('api/solicitudes', solicitudRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
