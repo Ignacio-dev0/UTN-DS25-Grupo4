@@ -68,12 +68,14 @@ model Documentacion {
 
 model Complejo {
 	id									Int				@id @default(autoincrement())
-	calle								String?
-	altura							Int?
-	nombre							String?
-	descripcion					String?
-	porcentajeReembolso	Float?
-	puntaje							Float?
+	calle								String
+	altura							Int
+	nombre							String
+	descripcion					String
+	porcentajeReembolso	Float
+	puntaje							Float
+	solicitudId					Int				@unique
+	localidadId 				Int
 	
 	duenios							Usuario[]
 	canchas							Cancha[]
@@ -96,7 +98,8 @@ model Cancha {
 	nroCancha		Int									@unique
 	descripcion	String
 	puntaje			Float
-	
+	deporteId		Int
+
 	horarios		HorarioCronograma[]
 	turnos			Turno[]
 	resenias		Resenia[]
@@ -204,3 +207,4 @@ enum Rol {
 	CLIENTE
 	DUENIO
 }
+

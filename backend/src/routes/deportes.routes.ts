@@ -1,10 +1,13 @@
 // backend/src/routes/deportes.routes.ts
 import { Router } from 'express';
-import deportesController from '../controllers/deportes.controller';
+import * as deporteController from '../controllers/deportes.controller';
 
 const router = Router();
 
-router.get('/', deportesController.getAllDeportes);
-router.post('/', deportesController.createDeporte);
+router.get('/', deporteController.getAllDeportes);
+router.post('/', deporteController.createDeporte);
+router.get('/:id', deporteController.getDeporteById);
+router.put('/:id', deporteController.updateDeporte);
+router.delete('/:id', deporteController.deleteDeporte);
 
-export default router;
+export const deporteRoutes = router;
