@@ -1,5 +1,5 @@
 // backend/src/services/deportes.service.ts
-import prisma from '../lib/prisma'; 
+import prisma from '../config/prisma'; 
 import { Deporte } from '../generated/prisma/client';
 
 
