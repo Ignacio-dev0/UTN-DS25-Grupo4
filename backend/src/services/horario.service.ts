@@ -1,8 +1,5 @@
 import prisma from "../config/prisma";
 import * as horarioInterface from "../types/horarioCronograma.types"
-import { HorarioCronograma } from "../generated/prisma";
-import { primitiveTypes } from "zod/v4/core/util.cjs";
-import { date, number } from "zod";
 
 export const createHorario = async(data: horarioInterface.CreateHoraio) => {
     const [hour, minute] = data.hora.split(':').map(Number);
@@ -11,30 +8,26 @@ export const createHorario = async(data: horarioInterface.CreateHoraio) => {
     return prisma.horarioCronograma.create({
         data: {
             hora: horaDate,
-            precio: 
+            precio: data.precio,
+            diaSemana: data.diaSemana,
+            cancha: {
+                connect: {
+                    id: data.canchaId
+                }
+            }
         }
     });
-}
+};
 
-export const getAllHorariosCancha = async (): Promise<HorarioCronograma[]> => {
-    return await prisma.horarioCronograma.findMany();
-}
-
-export const getHorariaCanchaId = async (id: number) => {
-    return await prisma.horarioCronograma.findMany(
-        {where: {
-        canchaId: id,
+export async function getHorariosByCanchaId(canchaId: number) {
+    return prisma.horarioCronograma.findMany({
+        where: {
+            canchaId: canchaId,
         },
         orderBy:{
-            diaSemana: 'asc',
+            hora: 'asc',
         }
-    })
-
-    if (getHorariaCanchaId.length <= 0){
-        console.log(`no se encontraron horarios para esta cancha con id ${id}`);
-    }
-
-    return getHorariaCanchaId;
-}
+    });
+};
 
 
