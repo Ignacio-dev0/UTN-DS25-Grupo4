@@ -20,7 +20,7 @@ model Usuario {
 	nombre							String
 	dni									Int					@unique
 	correo							String			@unique
-	contraseña					String
+	password					String
 	fechaNacimiento			DateTime		@db.Date
 	rol									Rol
 
