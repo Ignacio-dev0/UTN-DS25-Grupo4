@@ -1,15 +1,24 @@
-import prisma from '../lib/prisma';
-import { Deporte } from '../generated/prisma/client';
+// backend/src/services/resenas.service.ts
+//import prisma from '../lib/prisma';
+//import { Prisma } from '@prisma/client';
 
-const getAll = async (): Promise<Deporte[]> => {
-    return await prisma.deporte.findMany();
-};
 
-const create = async (data: { nombre: string }): Promise<Deporte> => {
-    return await prisma.deporte.create({ data });
-};
+// const getByCanchaId = async (canchaId: number) => {
+//     return await prisma.resena.findMany({
+//         where: { canchaId },
+//         include: {
+//             usuario: {
+//                 select: { nombre: true, apellido: true },
+//             },
+//         },
+//     });
+// };
 
-export default {
-    getAll,
-    create,
-};
+// const create = async (data: Prisma.ResenaUncheckedCreateInput) => {
+//     return await prisma.resena.create({ data });
+// };
+
+// export default {
+//     getByCanchaId,
+//     create,
+// };
