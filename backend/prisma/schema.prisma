@@ -68,19 +68,20 @@ model Documentacion {
 
 model Complejo {
 	id									Int				@id @default(autoincrement())
-	calle								String?
-	altura							Int?
-	nombre							String?
-	descripcion					String?
-	porcentajeReembolso	Float?
-	puntaje							Float?
+	calle								String
+	altura							Int
+	nombre							String
+	descripcion					String
+	porcentajeReembolso	Float
+	puntaje							Float
+	solicitudId					Int				@unique
+	localidadId 				Int
 	
 	duenios							Usuario[]
 	canchas							Cancha[]
 	
-	solicitudId					Int				@unique
 	solicitud						Solicitud @relation(fields: [solicitudId], references: [id])
-	localidadId 				Int?
+	
 	localidad						Localidad? @relation(fields: [localidadId], references: [id])
 }
 
@@ -92,18 +93,18 @@ model Localidad {
 }
 
 model Cancha {
-	id					Int									@id @default(autoincrement())
-	nroCancha		Int									@unique
+	id					Int		@id @default(autoincrement())
+	nroCancha		Int			@unique
 	descripcion	String
 	puntaje			Float
-	
+	deporteId		Int
+
 	horarios		HorarioCronograma[]
 	turnos			Turno[]
 	resenias		Resenia[]
 	
 	complejo		Complejo[]
-	deporteId		Int
-	deporte			Deporte							@relation(fields: [deporteId], references: [id])
+	deporte			Deporte		@relation(fields: [deporteId], references: [id])
 }
 
 model HorarioCronograma {
@@ -204,3 +205,4 @@ enum Rol {
 	CLIENTE
 	DUENIO
 }
+

@@ -1,5 +1,5 @@
 // backend/src/services/cancha.service.ts
-import prisma from '../lib/prisma';
+import prisma from '../config/prisma';
 import { Prisma } from '../generated/prisma/client';
 
 export const crearCancha = (data: Prisma.CanchaCreateInput) => {
