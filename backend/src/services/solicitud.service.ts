@@ -1,9 +1,7 @@
-// import prisma from '../lib/prisma';
-// import { Prisma } from '../generated/prisma/client';
-// import { EstadoSolicitud } from '../generated/prisma/client';
-// import { crearComplejo } from './complejo.service';
+// import prisma from '../config/prisma';
+// import * as solicitudTypes from "../types/solicitud.types"
 
-// export const crearSolicitud = (data: Prisma.SolicitudCreateInput) => {
+// export const createSolicitud = (data: solicitudTypes.createSolicitud) => {
 // 	return prisma.solicitud.create({
 // 		data
 // 	});

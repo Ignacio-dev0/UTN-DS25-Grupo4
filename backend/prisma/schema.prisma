@@ -28,6 +28,8 @@ model Usuario {
     complejos           Complejo[]
     resenias            Resenia[]
     alquileres          Alquiler[]
+	domicilioId Int @unique
+	domicilio Domicilio @relation(fields: [domicilioId], references: [id])
 }
 
 model Administrador {
@@ -67,29 +69,36 @@ model Documentacion {
 
 model Complejo {
     id                  Int    @id @default(autoincrement())
-    calle               String
-    altura              Int
     nombre              String
     descripcion         String
     porcentajeReembolso Float
     puntaje             Float
     solicitudId         Int    @unique
     localidadId         Int
+	domicilioId Int @unique
+	domicilio Domicilio @relation(fields: [domicilioId], references: [id])
 
     duenios Usuario[]
     canchas Cancha[]
 
-    solicitud Solicitud @relation(fields: [solicitudId], references: [id])
+    solicitud Solicitud? @relation(fields: [solicitudId], references: [id])
+}
 
-    localidad Localidad? @relation(fields: [localidadId], references: [id])
+model Domicilio {
+    id          Int       @id @default(autoincrement())
+    calle       String
+    altura      Int
+    localidadId Int
+    localidad   Localidad @relation(fields: [localidadId], references: [id])
+	usuario Usuario?
+	complejo Complejo?
 }
 
 model Localidad {
     id     Int    @id @default(autoincrement())
     nombre String
 
-    complejos Complejo[]
-
+    domicilios Domicilio[]
 }
 
 model Cancha {
