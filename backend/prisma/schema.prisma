@@ -37,7 +37,7 @@ model Administrador {
 	nombre								String
 	apellido 							String
 	correo								String			@unique
-	contrasenia						String
+	password						String
 	fechaNacimiento				DateTime		@db.Date
 
 	solicitudesEvaluadas	Solicitud[]
