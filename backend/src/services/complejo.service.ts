@@ -1,47 +1,19 @@
-import prisma from '../config/prisma';
-import { Prisma } from '../generated/prisma/client';
+// import { da } from "zod/v4/locales/index.cjs";
+// import prisma from "../config/prisma";
 
+// import * as complejoTypes from "../types/complejo.types"
+// import { connect } from "http2";
 
-export const crearComplejo = (data: Prisma.ComplejoCreateInput) => {
-  return prisma.complejo.create({
-    data,
-  });
-};
+// export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
+//     return prisma.$transaction(async (tx)=>{
+//         const nuevoDomicilio = await tx.domicilio.create({
+//             data: {
+//                 calle: data.domicilio.calle,
+//                 altura: data.domicilio.altura,
+//                 localidad: {connect: {id: data.domicilio.localidadId}}
+//             }
+//         });
 
-export const obtenerComplejos = () => {
-  return prisma.complejo.findMany({
-    
-    include: {
-      localidad: true,
-      duenios: true, // Para saber quiénes son los dueños
-    },
-  });
-};
-
-
-export const obtenerComplejoPorId = (id: number) => {
-  return prisma.complejo.findUnique({
-    where: { id },
-    include: {
-      localidad: true,
-      canchas: true, 
-      duenios: true,
-    },
-  });
-};
-
-export const actualizarComplejo = (id: number, data: Prisma.ComplejoUpdateInput) => {
-  return prisma.complejo.update({
-    where: { id },
-    data,
-  });
-};
-
-export const eliminarComplejo = (id: number) => {
-  // Ojo: Prisma no permitirá eliminar un complejo si tiene
-  // canchas u otros registros asociados que dependen de él.
-  // Se necesitaría una lógica para manejar esas relaciones (ej: eliminarlas en cascada).
-  return prisma.complejo.delete({
-    where: { id },
-  });
-};
+//         const nuevoComplejo 
+//     })
+// }
