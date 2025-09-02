@@ -24,13 +24,6 @@ model Usuario {
     fechaNacimiento DateTime @db.Date
     rol             Rol      @default(CLIENTE)
 
-<<<<<<< HEAD
-    solicitudesEnviadas Solicitud[]
-    complejos           Complejo[]
-    resenias            Resenia[]
-    alquileres          Alquiler[]
-	domicilio Domicilio?
-=======
     resenias   Resenia[] //usuario
     alquileres Alquiler[] //usuario
 
@@ -51,7 +44,6 @@ model Owner {
 
     solicitudesEnviadas Solicitud[] //duenio
     complejos           Complejo[]  @relation(name: "PropietarioDeComplejo") //duenio
->>>>>>> origin/refactoring
 }
 
 model Administrador {
@@ -92,28 +84,17 @@ model Complejo {
     nombre              String
     descripcion         String
     porcentajeReembolso Float
-<<<<<<< HEAD
-    puntaje             Float @default(0)
-    solicitudId         Int    @unique
-	solicitud Solicitud @relation(fields: [solicitudId], references: [id])
-	domicilioId Int @unique
-	domicilio Domicilio @relation(fields: [domicilioId], references: [id])
-=======
     puntaje             Float
->>>>>>> origin/refactoring
 
     domicilioId Int       @unique
     domicilio   Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
 
     canchas Cancha[]
-<<<<<<< HEAD
-=======
 
     propietarios Owner[] @relation(name: "PropietarioDeComplejo")
 
     solicitudId Int       @unique
     solicitud   Solicitud @relation(fields: [solicitudId], references: [id])
->>>>>>> origin/refactoring
 }
 
 model Domicilio {
@@ -122,15 +103,9 @@ model Domicilio {
     altura      Int
     localidadId Int
     localidad   Localidad @relation(fields: [localidadId], references: [id])
-<<<<<<< HEAD
-	usuarioId Int? @unique
-	usuario Usuario?  @relation(fields: [usuarioId], references: [id])
-	complejo Complejo?
-=======
 
     users    Usuario[]
     complejo Complejo? @relation(name: "ComplejoDomicilio")
->>>>>>> origin/refactoring
 }
 
 model Localidad {
