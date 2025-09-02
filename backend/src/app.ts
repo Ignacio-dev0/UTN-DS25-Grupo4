@@ -4,6 +4,10 @@ import cors from 'cors';
 import {deporteRoutes} from './routes/deportes.routes';
 import resenasRouter from './routes/resenas.routes';
 import usuarioRoutes from "./routes/usuario.routes";
+import complejoRoutes from './routes/complejo.routes';
+import canchaRoutes from './routes/cancha.routes';
+import solicitudRoutes from './routes/solicitud.routes'
+import {horarioRoutes} from './routes/horario.routes'
 
 
 const app = express();
@@ -15,7 +19,10 @@ app.use(express.json());
 app.use('/api/deportes', deporteRoutes);
 app.use('/api/resenas', resenasRouter);
 app.use("/usuarios", usuarioRoutes);
-
+app.use('/api/complejos', complejoRoutes); 
+app.use('/api/canchas', canchaRoutes);
+app.use('api/solicitudes', solicitudRoutes);
+app.use('/api/horario', horarioRoutes);
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
