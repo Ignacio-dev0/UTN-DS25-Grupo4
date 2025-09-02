@@ -89,8 +89,8 @@ model Localidad {
 }
 
 model Cancha {
-	id					Int									@id @default(autoincrement())
-	nroCancha		Int									@unique
+	id					Int		@id @default(autoincrement())
+	nroCancha		Int			@unique
 	descripcion	String
 	puntaje			Float
 	deporteId		Int
@@ -99,7 +99,7 @@ model Cancha {
 	turnos			Turno[]
 	resenias		Resenia[]
 	complejo		Complejo[]
-	deporte			Deporte							@relation(fields: [deporteId], references: [id])
+	deporte			Deporte		@relation(fields: [deporteId], references: [id])
 }
 
 model HorarioCronograma {
