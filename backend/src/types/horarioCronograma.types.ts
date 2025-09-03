@@ -1,17 +1,14 @@
-import { DiaSemana, HorarioCronograma } from "../generated/prisma";
+import { HorarioCronograma } from "../generated/prisma";
 
-export interface CreateHoraio {
-    hora: string;
-    precio: number;
-    diaSemana: DiaSemana;
+export interface CreateHorario {
+    horaInicio: string;
+    horaFin: string;
     canchaId: number;
 }
 
 export interface UpdateCronograma{
-    hora?: string;
-    precio?: number;
-    diaSemana?: DiaSemana;
-    canchaId: number;
+    horaInicio?: string;
+    horaFin?: string;
 }
 
 export interface HorarioListForCanchaId {

@@ -18,7 +18,6 @@ export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
             data: {
                 nombre: data.nombre,
                 descripcion: data.descripcion,
-                porcentajeReembolso: data.porcentajeReembolso,
                 puntaje: data.puntaje,
                 solicitud: {connect:{id:data.solicitudId}},
                 domicilio: {connect:{id:nuevoDomicilio.id}},
