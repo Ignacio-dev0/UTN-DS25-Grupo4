@@ -1,3 +1,12 @@
+import prisma from "../config/prisma";
+
+import { Prisma } from "../generated/prisma/client";
+
+export const createSolicitud = async (data: Prisma.SolicitudCreateInput) => {
+    return prisma.solicitud.create({data});
+}
+
+
 
 // import prisma from '../config/prisma';
 

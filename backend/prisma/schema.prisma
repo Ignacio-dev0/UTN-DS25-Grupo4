@@ -47,7 +47,6 @@ model Owner {
     rol             Rol      @default(DUENIO)
 
 
-    solicitudesEnviadas Solicitud[] //duenio
     complejos           Complejo[]  @relation(name: "PropietarioDeComplejo") //duenio
 }
 
@@ -67,22 +66,20 @@ model Solicitud {
     cuit   Int             @unique
     estado EstadoSolicitud @default(PENDIENTE)
 
-    documentos       Documentacion[]
+    // documentos       Documentacion[]
     complejoAprobado Complejo?
-
-    duenioId Int
-    duenio   Owner          @relation(fields: [duenioId], references: [id])
+    
     adminId  Int?
     admin    Administrador? @relation(fields: [adminId], references: [id])
 }
 
-model Documentacion {
-    id     Int    @id @default(autoincrement())
-    imagen String
+// model Documentacion {
+//     id     Int    @id @default(autoincrement())
+//     imagen String
 
-    solicitudId Int
-    solicitud   Solicitud @relation(fields: [solicitudId], references: [id])
-}
+//     solicitudId Int
+//     solicitud   Solicitud @relation(fields: [solicitudId], references: [id])
+// }
 
 model Complejo {
     id                   Int    @id @default(autoincrement())
