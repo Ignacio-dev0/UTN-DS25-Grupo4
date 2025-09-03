@@ -31,6 +31,7 @@ model Usuario {
     domicilio   Domicilio @relation(fields: [domicilioId], references: [id])
 }
 
+
 model Owner {
     id              Int      @id @default(autoincrement())
     apellido        String
