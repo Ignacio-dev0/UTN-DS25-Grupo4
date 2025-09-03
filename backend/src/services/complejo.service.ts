@@ -1,3 +1,4 @@
+import { connect } from "http2";
 import prisma from "../config/prisma";
 
 import * as complejoTypes from "../types/complejo.types"
@@ -14,12 +15,18 @@ export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
             }
         });
 
+        const nuevaSolicitud = await tx.solicitud.create({
+            data:{
+                cuit: data.solicitud.cuit,
+            }
+        });
+
         const nuevoComplejo = await tx.complejo.create({
             data: {
                 nombre: data.nombre,
                 descripcion: data.descripcion,
                 puntaje: data.puntaje,
-                solicitud: {connect:{id:data.solicitudId}},
+                solicitud: {connect:{id:nuevaSolicitud.id}},
                 domicilio: {connect:{id:nuevoDomicilio.id}},
                 propietarios: {connect: propietarios},
             }

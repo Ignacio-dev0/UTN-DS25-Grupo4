@@ -1,3 +1,15 @@
+import { Router } from "express";
+
+import { createRequest } from "../controllers/solicitud.controller";
+
+const router = Router();
+
+router.post('/', createRequest);
+
+export default router;
+
+
+
 // // backend/src/routes/solicitud.routes.ts
 
 // import { Router } from 'express';

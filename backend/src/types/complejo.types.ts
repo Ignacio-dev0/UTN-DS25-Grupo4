@@ -7,7 +7,9 @@ export interface createComplejoType {
     descripcion: string;
     puntaje: number;
     propietarios: number[];
-    solicitudId: number;
+    solicitud: {
+        cuit: number;
+    };
     domicilio:{
         calle: string;
         altura: number;
