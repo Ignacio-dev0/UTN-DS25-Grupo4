@@ -30,8 +30,8 @@ model Usuario {
     resenias   Resenia[] //usuario
     alquileres Alquiler[] //usuario
 
-    domicilioId Int
-    domicilio   Domicilio @relation(fields: [domicilioId], references: [id])
+    domicilioId Int?
+    domicilio   Domicilio? @relation(fields: [domicilioId], references: [id])
 }
 
 
@@ -63,30 +63,23 @@ model Administrador {
 
 model Solicitud {
     id     Int             @id @default(autoincrement())
-    cuit   Int             @unique
+    cuit Int @unique
     estado EstadoSolicitud @default(PENDIENTE)
+    
+    complejo Complejo?
 
-    // documentos       Documentacion[]
-    complejoAprobado Complejo?
     
     adminId  Int?
     admin    Administrador? @relation(fields: [adminId], references: [id])
 }
 
-// model Documentacion {
-//     id     Int    @id @default(autoincrement())
-//     imagen String
 
-//     solicitudId Int
-//     solicitud   Solicitud @relation(fields: [solicitudId], references: [id])
-// }
 
 model Complejo {
     id                   Int    @id @default(autoincrement())
     nombre              String
-    descripcion         String
-    porcentajeReembolso Float
-    puntaje             Float
+    descripcion         String?
+    puntaje             Float?
 
     domicilioId Int       @unique
     domicilio   Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
@@ -120,9 +113,11 @@ model Localidad {
 model Cancha {
     id          Int    @id @default(autoincrement())
     nroCancha   Int    @unique
-    descripcion String
-    puntaje     Float
+    descripcion String?
+    puntaje     Float?
     deporteId   Int
+    image String?
+
 
     horarios HorarioCronograma[]
     turnos   Turno[]
@@ -135,9 +130,8 @@ model Cancha {
 
 model HorarioCronograma {
     id        Int       @id @default(autoincrement())
-    hora      DateTime  @db.Time
-    precio    Float
-    diaSemana DiaSemana
+    horaInicio   DateTime  @db.Time
+    horaFin  DateTime  @db.Time
 
     canchaId Int
     cancha   Cancha @relation(fields: [canchaId], references: [id])
@@ -145,15 +139,15 @@ model HorarioCronograma {
 
 model Turno {
     id        Int      @id @default(autoincrement())
-    fecha     DateTime @db.Date
-    hora      DateTime @db.Time
+    fecha   DateTime @db.Date
+    hora    DateTime @db.Time
     precio    Float
 
     reservado Boolean @default(false)
 
 
-    alquilerId Int
-    alquiler   Alquiler @relation(fields: [alquilerId], references: [id])
+    alquilerId Int?
+    alquiler   Alquiler? @relation(fields: [alquilerId], references: [id])
 
     canchaId Int
     cancha   Cancha @relation(fields: [canchaId], references: [id])

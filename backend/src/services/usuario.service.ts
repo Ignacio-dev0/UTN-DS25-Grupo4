@@ -24,17 +24,15 @@ export async function getUsuarioById(id: number): Promise<Usuario>{
     return usuario;
 }
 
-export async function createUsuario(data: Prisma.UsuarioCreateInput): Promise<Usuario>{
+export async function createUsuario(data: CreateUsuarioRequest): Promise<Usuario>{
     const created = await prisma.usuario.create({
         data:{
-            apellido: data.apellido,
-            nombre: data.nombre,
+            apellido: data.lastname,
+            nombre: data.name,
             dni: data.dni,
             correo: data.correo,
-            password: data.password,
+            password: data.password, //hashear
             fechaNacimiento: data.fechaNacimiento,
-            rol: data.rol,
-            domicilioId: 0, // Temporalmente asignamos 0, se debe actualizar luego
         },
     });
     return created;
@@ -75,7 +73,7 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
     } catch (e : any) {
         if (e.code === 'P2025') {
             const error = new Error('Usuario not found');
-            (error as any).statusCode = 404;
+            (error as any).statusCode = 400;
             throw error;
         }
         throw e;

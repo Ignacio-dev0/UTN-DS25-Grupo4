@@ -5,7 +5,6 @@ import { Complejo } from "../generated/prisma";
 export interface createComplejoType {
     nombre: string;
     descripcion: string;
-    porcentajeReembolso: number;
     puntaje: number;
     propietarios: number[];
     solicitud: {

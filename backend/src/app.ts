@@ -9,7 +9,9 @@ import solicitudRoutes from './routes/solicitud.routes'
 import canchaRoutes from './routes/cancha.routes';
 import {horarioRoutes} from './routes/horario.routes'
 import localidadRoutes from "./routes/localidad.routes"
+import { turnoRoutes } from './routes/turno.routes';
 import ownerRoutes from "./routes/owner.routes"
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,9 +19,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/turnos',turnoRoutes)
 app.use('/api/deportes', deporteRoutes);
-// app.use('/api/resenas', resenasRouter);
-// app.use("/usuarios", usuarioRoutes);
+//app.use('/api/resenas', resenasRouter);
+app.use("/api/usuarios", usuarioRoutes);
 app.use('/api/complejos', complejoRoutes); 
 app.use('/api/canchas', canchaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
