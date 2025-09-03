@@ -1,40 +1,68 @@
-// import { Request, Response } from "express";
-// import * as usuarioService from "../services/usuario.service";
+import { Request, Response, NextFunction } from "express";
+import * as usuarioService from "../services/usuario.service";
+import { CreateUsuarioRequest,UsuarioListResponse,UpdateUsuarioRequest,UsuarioResponse } from "../types/usuario.type";
 
-// export const crearUsuario = async (req: Request, res: Response) => {
-//   try {
-//     const usuario = await usuarioService.crearUsuario(req.body);
-//     res.json(usuario);
-//   } catch (error: any) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
 
-// export const obtenerUsuarios = async (_req: Request, res: Response) => {
-//   const usuarios = await usuarioService.obtenerUsuarios();
-//   res.json(usuarios);
-// };
+export async function crearUsuario(req: Request, res: Response<UsuarioResponse>){
+  try {
+    const newUsuario = await usuarioService.createUsuario(req.body)
+    res.json({
+        usuario: newUsuario,
+        message: 'Usuario created succesfully'
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-// export const obtenerUsuarioPorId = async (req: Request, res: Response) => {
-//   const usuario = await usuarioService.obtenerUsuarioPorId(Number(req.params.id));
-//   if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
-//   res.json(usuario);
-// };
+export async function obtenerUsuarios(req: Request, res: Response<UsuarioListResponse>, next:NextFunction) {
+    try {
+        const usuarios = await usuarioService.getAllUsuarios();
+        res.json({
+            usuarios,
+            total: usuarios.length
+        })    
+    } catch (error) {
+        next
+    }
+    
+  
+};
 
-// export const actualizarUsuario = async (req: Request, res: Response) => {
-//   try {
-//     const usuario = await usuarioService.actualizarUsuario(Number(req.params.id), req.body);
-//     res.json(usuario);
-//   } catch (error: any) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
+export async function obtenerUsuarioPorId (req: Request, res: Response<UsuarioResponse>,next:NextFunction){
+  try {
+    const {id} = req.params;
+    const usuario = await usuarioService.getUsuarioById(parseInt(id));
+    res.json({
+        usuario,
+        message: ('Usuario retrieved succesfully')
+    })
+} catch (error) {
+    next(error);
+  }
+    
+  
+};
 
-// export const eliminarUsuario = async (req: Request, res: Response) => {
-//   try {
-//     await usuarioService.eliminarUsuario(Number(req.params.id));
-//     res.json({ message: "Usuario eliminado" });
-//   } catch (error: any) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
+export async function actualizarUsuario (req: Request<{id : string}, UsuarioResponse,UpdateUsuarioRequest>,res: Response<UsuarioResponse>) {
+  try {
+    const {id} = req.params;
+    const updateUsuario = await usuarioService.updateUsuario(parseInt(id),req.body);
+    res.json({
+        usuario: updateUsuario,
+        message: 'user Updated succesfully' 
+    });
+  } catch (error : any) {
+    console.log(error);
+  }
+};
+
+export async function eliminarUsuario (req: Request<{id:string}>, res: Response){
+  try {
+    const {id} = req.params;
+    await usuarioService.deleteUsuario(parseInt(id));
+    res.json({ message: "Usuario deleteado jajaja" });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};

@@ -1,5 +1,6 @@
 
 // import prisma from '../config/prisma';
+
 // import { EstadoSolicitud } from '../generated/prisma';
 // import { crearComplejo } from './complejo.service';
 // import { CreateSolicitudRequest, UpdateSolicitudRequest } from '../types/solicitud.types';

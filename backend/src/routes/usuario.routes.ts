@@ -1,14 +1,13 @@
-// import { Router } from "express";
-// import * as usuarioController from "../controllers/usuario.controller";
-// import { validate } from '../middlewares/validate'; 
-// import { crearUsuarioSchema } from '../validations/usuario.validation'; 
+import { Router } from "express";
+import * as usuarioController from "../controllers/usuario.controller";
 
-// const router = Router();
 
-// router.post('/', validate(crearUsuarioSchema), usuarioController.crearUsuario);
-// router.get("/", usuarioController.obtenerUsuarios);
-// router.get("/:id", usuarioController.obtenerUsuarioPorId);
-// router.put("/:id", usuarioController.actualizarUsuario);
-// router.delete("/:id", usuarioController.eliminarUsuario);
+const router = Router();
 
-// export default router;
+router.post('/', usuarioController.crearUsuario);
+router.get("/", usuarioController.obtenerUsuarios);
+router.get("/:id", usuarioController.obtenerUsuarioPorId);
+router.put("/:id", usuarioController.actualizarUsuario);
+router.delete("/:id", usuarioController.eliminarUsuario);
+
+export const usuarioRoutes = router;

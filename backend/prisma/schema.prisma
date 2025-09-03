@@ -4,6 +4,8 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// FALTA agregar foto en cancha,complejo,usuario,duenio --corte Dato String para que sea un url
+
 generator client {
     provider = "prisma-client-js"
     output   = "../src/generated/prisma"
@@ -24,6 +26,7 @@ model Usuario {
     fechaNacimiento DateTime @db.Date
     rol             Rol      @default(CLIENTE)
 
+
     resenias   Resenia[] //usuario
     alquileres Alquiler[] //usuario
 
@@ -42,6 +45,7 @@ model Owner {
     password        String
     fechaNacimiento DateTime @db.Date
     rol             Rol      @default(DUENIO)
+
 
     solicitudesEnviadas Solicitud[] //duenio
     complejos           Complejo[]  @relation(name: "PropietarioDeComplejo") //duenio
@@ -147,7 +151,9 @@ model Turno {
     fecha     DateTime @db.Date
     hora      DateTime @db.Time
     precio    Float
+
     reservado Boolean @default(false)
+
 
     alquilerId Int
     alquiler   Alquiler @relation(fields: [alquilerId], references: [id])
