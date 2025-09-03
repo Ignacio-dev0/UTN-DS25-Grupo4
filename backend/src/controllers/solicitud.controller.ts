@@ -1,3 +1,15 @@
+import { Request, Response, NextFunction } from "express";
+import  {createSolicitud}  from "../services/solicitud.service";
+
+export const createRequest =  async (req: Request, res:Response, next:NextFunction) =>{
+    try{
+        const nuevaSolicitud = await createSolicitud(req.body);
+        res.status(200).json(nuevaSolicitud);
+    }catch(error){
+        next(error);
+    }
+}
+
 
 // // backend/src/controllers/solicitud.controller.ts
 // import { Request, Response } from 'express';

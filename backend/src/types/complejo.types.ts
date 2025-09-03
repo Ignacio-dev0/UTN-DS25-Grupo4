@@ -8,7 +8,9 @@ export interface createComplejoType {
     porcentajeReembolso: number;
     puntaje: number;
     propietarios: number[];
-    solicitudId: number;
+    solicitud: {
+        cuit: number;
+    };
     domicilio:{
         calle: string;
         altura: number;
