@@ -29,5 +29,5 @@ export interface UsuarioResponse{
 
 export interface UsuarioListResponse{
     usuarios: Usuario[];
-    message: string;
+    total: number;
 }
