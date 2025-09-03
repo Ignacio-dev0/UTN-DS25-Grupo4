@@ -26,9 +26,9 @@ model Usuario {
     fechaNacimiento DateTime @db.Date
     rol             Rol      @default(CLIENTE)
 
+
     resenias   Resenia[] //usuario
     alquileres Alquiler[] //usuario
-
 
     domicilioId Int
     domicilio   Domicilio @relation(fields: [domicilioId], references: [id])
@@ -45,16 +45,7 @@ model Owner {
     password        String
     fechaNacimiento DateTime @db.Date
     rol             Rol      @default(DUENIO)
-}
-model Administrador {
-	id										Int					@id @default(autoincrement())
-	dni										Int					@unique
-	legajo								Int					@unique
-	nombre								String
-	apellido 							String
-	correo								String			@unique
-	password						String
-	fechaNacimiento				DateTime		@db.Date
+
 
     solicitudesEnviadas Solicitud[] //duenio
     complejos           Complejo[]  @relation(name: "PropietarioDeComplejo") //duenio
@@ -94,7 +85,7 @@ model Documentacion {
 }
 
 model Complejo {
-    id                  Int    @id @default(autoincrement())
+    id                   Int    @id @default(autoincrement())
     nombre              String
     descripcion         String
     porcentajeReembolso Float
@@ -160,7 +151,9 @@ model Turno {
     fecha     DateTime @db.Date
     hora      DateTime @db.Time
     precio    Float
-    reservado Boolean
+
+    reservado Boolean @default(false)
+
 
     alquilerId Int
     alquiler   Alquiler @relation(fields: [alquilerId], references: [id])

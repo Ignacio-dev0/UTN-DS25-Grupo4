@@ -84,3 +84,4 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
 
 //hacer funciones para traer con resenias y traer con alquileres
 //agregar foto a todo lo que necesite foto
+

@@ -1,4 +1,5 @@
-// backend/src/routes/solicitud.routes.ts
+// // backend/src/routes/solicitud.routes.ts
+
 // import { Router } from 'express';
 // import * as solicitudController from '../controllers/solicitud.controller';
 
