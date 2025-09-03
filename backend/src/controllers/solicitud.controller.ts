@@ -1,60 +1,53 @@
-// backend/src/controllers/solicitud.controller.ts
-import { Request, Response, NextFunction } from 'express';
-import * as solicitudService from '../services/solicitud.service';
-import { SolicitudResponse, SolicitudListResponse } from '../types/solicitud.types';
 
-export async function crearSolicitud(req: Request, res: Response<SolicitudResponse>, next: NextFunction) {
-	try {
-		const solicitud = await solicitudService.crearSolicitud(req.body);
-		res.status(201).json({
-			solicitud,
-			message: 'Solicitud creada'
-		});
-	} catch (error: any) {
-		console.log(error);
-		next(error);
-	}
-};
+// // backend/src/controllers/solicitud.controller.ts
+// import { Request, Response } from 'express';
+// import * as solicitudService from '../services/solicitud.service';
 
-export async function obtenerSolicitudes(req: Request, res: Response<SolicitudListResponse>, next: NextFunction) {
-	try {
-		const solicitudes = ( req.query.estado == "PENDIENTE" )?
-			( await solicitudService.obtenerSolicitudesPendientes() ):
-			( await solicitudService.obtenerSolicitudes() );
-		res.status(200).json({
-			solicitudes,
-			total: solicitudes.length
-		});
+// export const crearSolicitud = async (req: Request, res: Response) => {
+// 	try {
+// 		const nuevaSolicitud = await solicitudService.crearSolicitud(req.body);
+// 		res.status(201).json(nuevaSolicitud);
+// 	} catch (error: any) {
+// 		res.status(400).json({ error: error.message });
+// 	}
+// };
 
-	} catch (error: any) {
-		next(error);
-	}
-};
+// export const obtenerSolicitudes = async (req: Request, res: Response) => {
+// 	try {
+// 		const solicitudes = ( req.query.estado == "PENDIENTE" )?
+// 			( await solicitudService.obtenerSolicitudesPendientes() ):
+// 			( await solicitudService.obtenerSolicitudes() );
+// 		res.status(200).json(solicitudes);
 
-export async function obtenerSolicitudPorId(req: Request, res: Response<SolicitudResponse>, next: NextFunction) {
-	try {
-		const id = Number(req.params.id);
-		const solicitud = await solicitudService.obtenerSolicitudPorId(id);
-		res.status(200).json({
-			solicitud,
-			message: 'Deporte encontrado' });
-	} catch (error: any) {
-		res.status(500).json({ error: 'Error al obtener la solicitud.' });
-		next(error);
-	}
-};
+// 	} catch (error: any) {
+// 		res.status(500).json({ error: 'Error al obtener las solicitudes.' });
+// 	}
+// };
 
-export async function evaluarSolicitud(req: Request, res: Response, next: NextFunction) {
-	try {
-		const id = Number(req.params.id);
-		const data = req.body;
+// export const obtenerSolicitudPorId = async (req: Request, res: Response) => {
+// 	try {
+// 		const id = Number(req.params.id);
+// 		const solicitud = await solicitudService.obtenerSolicitudPorId(id);
+// 		if (!solicitud) {
+// 			return res.status(404).json({ error: 'Solicitud no encontrada.' });
+// 		}
+// 		res.status(200).json(solicitud);
+// 	} catch (error: any) {
+// 		res.status(500).json({ error: 'Error al obtener la solicitud.' });
+// 	}
+// };
 
-		const solicitud = await solicitudService.evaluarSolicitud(id, data.solicitud, data.emisorId);
-		if (!solicitud) {
-			return res.status(404).json({ error: 'Solicitud no encontrada.' });
-		}
-		res.status(200).json(solicitud);
-	} catch (error: any) {
-		next(error);
-	}
-}
+// export const evaluarSolicitud = async (req: Request, res: Response) => {
+// 	try {
+// 		const id = Number(req.params.id);
+// 		const data = req.body;
+
+// 		const solicitud = await solicitudService.evaluarSolicitud(id, data.solicitud, data.emisorId);
+// 		if (!solicitud) {
+// 			return res.status(404).json({ error: 'Solicitud no encontrada.' });
+// 		}
+// 		res.status(200).json(solicitud);
+// 	} catch (error: any) {
+// 		res.status(500).json({ error: 'Error al obtener la solicitud.' });
+// 	}
+// }

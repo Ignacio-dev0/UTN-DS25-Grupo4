@@ -19,11 +19,7 @@ export const obtenerCanchas = () => {
 export const obtenerCanchasPorComplejoId = (complejoId: number) => {
   return prisma.cancha.findMany({
     where: {
-      complejo: {
-        some: {
-          id: complejoId,
-        }
-      }
+      id: complejoId,
     },
     include: {
       deporte: true,

@@ -1,47 +1,88 @@
-// import prisma from '../lib/prisma';
-// import { Prisma } from '../generated/prisma/client';
+import prisma from "../config/prisma";
+
+import * as complejoTypes from "../types/complejo.types"
 
 
-// export const crearComplejo = (data: Prisma.ComplejoCreateInput) => {
-//   return prisma.complejo.create({
-//     data,
-//   });
-// };
+export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
+    const propietarios = data.propietarios.map(id=>({id:id}));
+    return prisma.$transaction(async (tx)=>{
+        const nuevoDomicilio = await tx.domicilio.create({
+            data: {
+                calle: data.domicilio.calle,
+                altura: data.domicilio.altura,
+                localidad: {connect: {id: data.domicilio.localidadId}}
+            }
+        });
 
-// export const obtenerComplejos = () => {
-//   return prisma.complejo.findMany({
-    
-//     include: {
-//       localidad: true,
-//       duenios: true, // Para saber quiénes son los dueños
-//     },
-//   });
-// };
+        const nuevoComplejo = await tx.complejo.create({
+            data: {
+                nombre: data.nombre,
+                descripcion: data.descripcion,
+                porcentajeReembolso: data.porcentajeReembolso,
+                puntaje: data.puntaje,
+                solicitud: {connect:{id:data.solicitudId}},
+                domicilio: {connect:{id:nuevoDomicilio.id}},
+                propietarios: {connect: propietarios},
+            }
+        });
+        return nuevoComplejo;
+    });
+};
+
+export const updateComplejo = async (id: number, data: complejoTypes.updateComplejo) =>{
+    const dataAux: any={
+        nombreAux: data.nombre,
+        descripcionAux: data.descripcion,
+        porcentajeReembolsoAux: data.porcentajeReembolse
+    };
+
+    if(data.propietarios){
+        const nuevosPropietarios = data.propietarios.map(duenioId => ({id:duenioId}));
+        dataAux.propietarios={
+            set: nuevosPropietarios,
+        }
+    };
+
+    return prisma.complejo.update({
+        where: {id},
+        data: dataAux,
+    });
+
+};
+
+export const getAllComplejo = async () =>{
+    return prisma.complejo.findMany({
+        select:{
+            nombre:true,
+            descripcion:true,
+            domicilio:{
+                select:{
+                    calle:true,
+                    altura:true,
+                    localidad:{
+                        select:{nombre:true},
+                    }
+                }
+            },
+            propietarios:{
+                select:{
+                    nombre:true,
+                    apellido:true,
+                }
+            }
+        }
+    });
+};
 
 
-// export const obtenerComplejoPorId = (id: number) => {
-//   return prisma.complejo.findUnique({
-//     where: { id },
-//     include: {
-//       localidad: true,
-//       canchas: true, 
-//       duenios: true,
-//     },
-//   });
-// };
+export const getComplejoById = async (id:number) => {
+    return prisma.complejo.findUnique({
+        where:{id}, select:{
+            nombre:true, descripcion:true, domicilio:{select:{calle:true,altura:true}}, propietarios:{select:{nombre:true, apellido:true}}
+        }
+    });
+};
 
-// export const actualizarComplejo = (id: number, data: Prisma.ComplejoUpdateInput) => {
-//   return prisma.complejo.update({
-//     where: { id },
-//     data,
-//   });
-// };
-
-// export const eliminarComplejo = (id: number) => {
-//   // Ojo: Prisma no permitirá eliminar un complejo si tiene
-//   // canchas u otros registros asociados que dependen de él.
-//   // Se necesitaría una lógica para manejar esas relaciones (ej: eliminarlas en cascada).
-//   return prisma.complejo.delete({
-//     where: { id },
-//   });
-// };
+export const deleteComplejo = async (id:number) => {
+    return prisma.complejo.delete({where:{id}})
+}

@@ -1,3 +1,4 @@
+
 import { Solicitud, EstadoSolicitud, Documentacion, Usuario } from '../generated/prisma';
 
 export interface CreateSolicitudRequest{
@@ -20,4 +21,5 @@ export interface SolicitudResponse{
 export interface SolicitudListResponse{
     solicitudes: Solicitud[];
     total: number;
+
 }
