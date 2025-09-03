@@ -29,9 +29,11 @@ model Usuario {
     resenias   Resenia[] //usuario
     alquileres Alquiler[] //usuario
 
+
     domicilioId Int
     domicilio   Domicilio @relation(fields: [domicilioId], references: [id])
 }
+
 
 model Owner {
     id              Int      @id @default(autoincrement())
@@ -43,6 +45,16 @@ model Owner {
     password        String
     fechaNacimiento DateTime @db.Date
     rol             Rol      @default(DUENIO)
+}
+model Administrador {
+	id										Int					@id @default(autoincrement())
+	dni										Int					@unique
+	legajo								Int					@unique
+	nombre								String
+	apellido 							String
+	correo								String			@unique
+	password						String
+	fechaNacimiento				DateTime		@db.Date
 
     solicitudesEnviadas Solicitud[] //duenio
     complejos           Complejo[]  @relation(name: "PropietarioDeComplejo") //duenio
