@@ -6,7 +6,7 @@ export interface createComplejoType {
     descripcion: string;
     porcentajeReembolso: number;
     puntaje: number;
-    duenioId: number;
+    propietarios: number[];
     solicitudId: number;
     domicilio:{
         calle: string;
@@ -19,6 +19,7 @@ export interface updateComplejo {
     nombre?: string;
     descripcion?: string;
     porcentajeReembolse?: number;
+    propietarios: number[];
 }
 
 export interface complejoResponse{
