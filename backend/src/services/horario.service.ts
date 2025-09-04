@@ -1,13 +1,13 @@
 import prisma from "../config/prisma";
 import * as horarioInterface from "../types/horarioCronograma.types"
 
-export const createHorario = async(data: horarioInterface.CreateHoraio) => {
+export async function createHorario(data: horarioInterface.CreateHoraio) {
     const [hour, minute] = data.hora.split(':').map(Number);
-    const horaDate = new Date();
-    horaDate.setHours(hour, minute, 0, 0);
+    const horaFecha = new Date();
+    horaFecha.setHours(hour, minute, 0, 0);
     return prisma.horarioCronograma.create({
         data: {
-            hora: horaDate,
+            hora: horaFecha,
             precio: data.precio,
             diaSemana: data.diaSemana,
             cancha: {
@@ -29,5 +29,3 @@ export async function getHorariosByCanchaId(canchaId: number) {
         }
     });
 };
-
-

@@ -1,14 +1,11 @@
-import { connect } from "http2";
 import prisma from "../config/prisma";
+import { CreateComplejoRequest, UpdateComplejoRequest } from "../types/complejo.types"
 
-import * as complejoTypes from "../types/complejo.types"
-
-
-export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
+export async function createComplejo(data: CreateComplejoRequest) {
     const propietarios = data.propietarios.map(id=>({id:id}));
-    return prisma.$transaction(async (tx)=>{
+    return prisma.$transaction(async (tx) => {
         const nuevoDomicilio = await tx.domicilio.create({
-            data: {
+            data: {	
                 calle: data.domicilio.calle,
                 altura: data.domicilio.altura,
                 localidad: {connect: {id: data.domicilio.localidadId}}
@@ -36,7 +33,7 @@ export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
     });
 };
 
-export const updateComplejo = async (id: number, data: complejoTypes.updateComplejo) =>{
+export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>{
     const dataAux: any={
         nombreAux: data.nombre,
         descripcionAux: data.descripcion,

@@ -1,37 +1,40 @@
 
-import { Numeric } from "zod/v4/core/util.cjs";
 import { Complejo } from "../generated/prisma";
 
-export interface createComplejoType {
-    nombre: string;
-    descripcion: string;
-    porcentajeReembolso: number;
-    puntaje: number;
-    propietarios: number[];
-    solicitud: {
-        cuit: number;
-    };
-    domicilio:{
-        calle: string;
-        altura: number;
-        localidadId: number;
-    }
+export interface CreateComplejoRequest {
+/*
+	// El complejo se instancia cuando un administrador acepta una solicitud,
+	// en ese momento no se tiene la informacion de estos atributos
+	nombre: string;
+	descripcion: string;
+	porcentajeReembolso: number;
+	puntaje: number;
+	propietarios: number[];
+	solicitud: {
+		cuit: number;
+	};
+	domicilio:{
+		calle: string;
+		altura: number;
+		localidadId: number;
+	}
+	*/
+	propietario: Propietario
 }
 
-export interface updateComplejo {
-    nombre?: string;
-    descripcion?: string;
-    porcentajeReembolse?: number;
-    propietarios: number[];
+export interface UpdateComplejoRequest {
+	nombre?: string;
+	descripcion?: string;
+	porcentajeReembolse?: number;
+	propietarios: number[];
 }
 
-export interface complejoResponse{
-    complejo: Complejo
-    mensaje: String
+export interface ComplejoResponse{
+	complejo: Complejo
+	mensaje: String
 }
 
-export interface complejoResponseList {
-    complejos: Complejo[]
-    mensaje: string
+export interface ComplejoListResponse {
+	complejos: Complejo[]
+	mensaje: string
 }
-
