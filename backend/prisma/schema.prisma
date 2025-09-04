@@ -23,40 +23,22 @@ model Usuario {
     dni             Int      @unique
     correo          String   @unique
     password        String
-    fechaNacimiento DateTime @db.Date
+    telefono        String?
     rol             Rol      @default(CLIENTE)
+    image String?
 
-
-    resenias   Resenia[] //usuario
-    alquileres Alquiler[] //usuario
-
-    domicilioId Int?
-    domicilio   Domicilio? @relation(fields: [domicilioId], references: [id])
+    // Relaciones
+    complejo  Complejo? 
+    reservas  Alquiler[]
+    solicitud Solicitud?
 }
 
-
-model Owner {
-    id              Int      @id @default(autoincrement())
-    apellido        String
-    nombre          String
-    dni             Int      @unique
-    cuit            Int      @unique
-    correo          String   @unique
-    password        String
-    fechaNacimiento DateTime @db.Date
-    rol             Rol      @default(DUENIO)
-
-
-    complejos           Complejo[]  @relation(name: "PropietarioDeComplejo") //duenio
-}
 
 model Administrador {
     id       Int    @id @default(autoincrement())
-    legajo   Int    @unique
-    nombre   String
-    apellido String
     correo   String @unique
-    password String
+    password String 
+    rol Rol @default(Administrador)
 
     solicitudesEvaluadas Solicitud[]
 }
@@ -68,25 +50,27 @@ model Solicitud {
     
     complejo Complejo?
 
-    
+    usuarioId Int @unique
+    usuario Usuario @relation(fields: [usuarioId],references: [id])    
     adminId  Int?
     admin    Administrador? @relation(fields: [adminId], references: [id])
 }
-
-
 
 model Complejo {
     id                   Int    @id @default(autoincrement())
     nombre              String
     descripcion         String?
     puntaje             Float?
+    cuit Int @unique
+    image String?
 
     domicilioId Int       @unique
     domicilio   Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
 
     canchas Cancha[]
 
-    propietarios Owner[] @relation(name: "PropietarioDeComplejo")
+    usuarioId Int @unique
+    usuario Usuario @relation(fields: [usuarioId],references: [id])
 
     solicitudId Int       @unique
     solicitud   Solicitud @relation(fields: [solicitudId], references: [id])
@@ -99,7 +83,7 @@ model Domicilio {
     localidadId Int
     localidad   Localidad @relation(fields: [localidadId], references: [id])
 
-    users    Usuario[]
+    
     complejo Complejo? @relation(name: "ComplejoDomicilio")
 }
 
@@ -115,23 +99,22 @@ model Cancha {
     nroCancha   Int    @unique
     descripcion String?
     puntaje     Float?
-    deporteId   Int
-    image String?
+    image String[]
 
-
-    horarios HorarioCronograma[]
+    cronograma HorarioCronograma[] // COMPOSICION DE HORARIOS CHIQUITITOS CONFORMAN UN CRONOGRAMA
     turnos   Turno[]
-    resenias Resenia[]
 
     complejoId Int
     complejo   Complejo @relation(fields: [complejoId], references: [id])
+    deporteId   Int
     deporte    Deporte  @relation(fields: [deporteId], references: [id])
 }
 
-model HorarioCronograma {
+model HorarioCronograma { //horarios CHIQUITITOS
     id        Int       @id @default(autoincrement())
     horaInicio   DateTime  @db.Time
-    horaFin  DateTime  @db.Time
+    horaFin DateTime  @db.Time
+    diaSemana DiaSemana
 
     canchaId Int
     cancha   Cancha @relation(fields: [canchaId], references: [id])
@@ -140,11 +123,9 @@ model HorarioCronograma {
 model Turno {
     id        Int      @id @default(autoincrement())
     fecha   DateTime @db.Date
-    hora    DateTime @db.Time
+    horaInicio DateTime  @db.Time 
     precio    Float
-
     reservado Boolean @default(false)
-
 
     alquilerId Int?
     alquiler   Alquiler? @relation(fields: [alquilerId], references: [id])
@@ -163,21 +144,21 @@ model Deporte {
 model Resenia {
     id          Int    @id @default(autoincrement())
     descripcion String
-    puntaje     Int
+    puntaje     Int //entre 1 y 5 corte estrellitas
 
-    canchaId  Int
-    cancha    Cancha  @relation(fields: [canchaId], references: [id])
-    usuarioId Int
-    usuario   Usuario @relation(fields: [usuarioId], references: [id])
+    alquilerId Int @unique
+    alquiler  Alquiler @relation(fields: [alquilerId], references: [id])
 }
 
 model Alquiler {
     id        Int            @id @default(autoincrement())
     createdAt DateTime       @default(now())
     estado    EstadoAlquiler @default(PROGRAMADO)
-
+    horaInicio DateTime @db.Time
+    horaFin DateTime @db.Time
     pago   Pago?
     turnos Turno[]
+    resenia Resenia?
 
     clienteId Int
     cliente   Usuario @relation(fields: [clienteId], references: [id])
@@ -185,10 +166,9 @@ model Alquiler {
 
 model Pago {
     id                Int        @id @default(autoincrement())
-    codigoTransaccion String
+    codigoTransaccion String?
     metodoPago        MetodoPago
     monto             Float
-    reembolso         Boolean
     fechaHora         DateTime   @default(now())
 
     alquilerId Int      @unique
@@ -227,4 +207,5 @@ enum EstadoSolicitud {
 enum Rol {
     CLIENTE
     DUENIO
+    Administrador
 }

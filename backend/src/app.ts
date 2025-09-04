@@ -2,7 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import {deporteRoutes} from './routes/deportes.routes';
-// import {usuarioRoutes} from "./routes/usuario.routes";
+import {usuarioRoutes} from "./routes/usuario.routes";
 import complejoRoutes from './routes/complejo.routes';
 import solicitudRoutes from './routes/solicitud.routes'
 // import resenasRouter from './routes/resenas.routes';
