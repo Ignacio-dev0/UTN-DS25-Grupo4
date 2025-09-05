@@ -12,11 +12,11 @@ export const createHorario = async (req: Request, res: Response, next: NextFunct
 
 export const getHorariosCancha = async (req: Request<{canchaId: string}>, res:Response, next:NextFunction) => {
     try{
-        const canchaId = parseInt(req.params.canchaId);
-        if (isNaN(canchaId)) {
+        const {canchaId} =req.params;
+        if (isNaN(parseInt(canchaId))) {
             return res.status(400).json({ message: 'El ID de la cancha debe ser un número válido.' });
         }
-        const canchaHorarios = await horarioservice.getHorariosByCanchaId(canchaId);
+        const canchaHorarios = await horarioservice.getHorariosByCanchaId(parseInt(canchaId));
         res.status(200).json(canchaHorarios);
     }catch(error){
         next(error);

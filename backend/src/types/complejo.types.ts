@@ -1,25 +1,19 @@
 
 import { Complejo } from "../generated/prisma";
 
-export interface CreateComplejoRequest {
-/*
-	// El complejo se instancia cuando un administrador acepta una solicitud,
-	// en ese momento no se tiene la informacion de estos atributos
-	nombre: string;
-	descripcion: string;
-	porcentajeReembolso: number;
-	puntaje: number;
-	propietarios: number[];
-	solicitud: {
-		cuit: number;
-	};
-	domicilio:{
-		calle: string;
-		altura: number;
-		localidadId: number;
-	}
-	*/
-	propietario: Propietario
+export interface createComplejoType {
+    nombre: string;
+    descripcion: string;
+    puntaje: number;
+    propietarios: number[];
+    solicitud: {
+        cuit: number;
+    };
+    domicilio:{
+        calle: string;
+        altura: number;
+        localidadId: number;
+    }
 }
 
 export interface UpdateComplejoRequest {

@@ -22,7 +22,6 @@ export async function createComplejo(data: CreateComplejoRequest) {
             data: {
                 nombre: data.nombre,
                 descripcion: data.descripcion,
-                porcentajeReembolso: data.porcentajeReembolso,
                 puntaje: data.puntaje,
                 solicitud: {connect:{id:nuevaSolicitud.id}},
                 domicilio: {connect:{id:nuevoDomicilio.id}},

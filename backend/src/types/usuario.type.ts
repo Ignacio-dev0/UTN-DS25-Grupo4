@@ -7,8 +7,6 @@ export interface CreateUsuarioRequest{
     correo: string;
     password: string;
     fechaNacimiento: Date;
-    rol: Rol;
-    
 }
 
 export interface UpdateUsuarioRequest{

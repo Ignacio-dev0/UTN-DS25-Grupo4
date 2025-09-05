@@ -6,12 +6,15 @@ import { CreateUsuarioRequest,UsuarioListResponse,UpdateUsuarioRequest,UsuarioRe
 export async function crearUsuario(req: Request, res: Response<UsuarioResponse>){
   try {
     const newUsuario = await usuarioService.createUsuario(req.body)
-    res.json({
+    res.status(201).json({
         usuario: newUsuario,
         message: 'Usuario created succesfully'
     });
-  } catch (error) {
-    console.log(error);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'El DNI o correo ya están registrados.' });
+    }
+    return res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };
 
@@ -60,8 +63,8 @@ export async function actualizarUsuario (req: Request<{id : string}, UsuarioResp
 export async function eliminarUsuario (req: Request<{id:string}>, res: Response){
   try {
     const {id} = req.params;
-    await usuarioService.deleteUsuario(parseInt(id));
-    res.json({ message: "Usuario deleteado jajaja" });
+    const deleted = await usuarioService.deleteUsuario(parseInt(id));
+    res.json({ usuario:deleted, message: "Usuario deleteado jajaja" });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
