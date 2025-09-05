@@ -8,26 +8,32 @@ import ResultadosPage from './pages/ResultadosPage.jsx';
 import MisReservasPage from './pages/MisReservasPage.jsx';
 import LogInPage from './pages/LogInPage.jsx';
 import SignUpPage from './pages/SignUpPage.jsx';
+import EditarCanchaPage from "./pages/EditarCanchaPage";
+import RutaProtegida from './components/RutaProtegida.jsx';
+import ComplejoDetallePage from './pages/ComplejoDetallePage.jsx';
 
 function App() {
   return (
     <BrowserRouter>
-      
-        <Routes>
+      <Routes>
+        <Route element={<Layout />}>
+          {/* --- Rutas Públicas --- */}
           <Route path="/login" element={<LogInPage />} />
           <Route path="/registro" element={<SignUpPage />} />
-          <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/reserva/:canchaId" element={<ReservaPage />} />
-            <Route path="/admin" element={<AdminPage />} /> {/* Habria que Verificar esta Ruta */}
-            <Route path="/micomplejo/:complejoId" element={<MiComplejoPage />} /> {/* Habria que Verificar esta Ruta */}
-            <Route path="/resultados" element={<ResultadosPage />} />
-            <Route path="/mis-reservas" element={<MisReservasPage />} /> {/* Habria que Verificar esta Ruta */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/reserva/:canchaId" element={<ReservaPage />} />
+          <Route path="/resultados" element={<ResultadosPage />} />
+          <Route path="/complejo/:complejoId" element={<ComplejoDetallePage />} /> 
+          
+          {/* --- Rutas Protegidas --- */}
+          <Route element={<RutaProtegida rolRequerido="admin" />}>
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
-        </Routes>
-      
-   
-
+          <Route path="/micomplejo/:complejoId" element={<MiComplejoPage />} />
+          <Route path="/micomplejo/cancha/:canchaId/editar" element={<EditarCanchaPage />} />
+          <Route path="/mis-reservas" element={<MisReservasPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

@@ -12,7 +12,7 @@ const getStatusClass = (estado) => {
   }
 };
 
-function ListaReservas({ reservas, onCancelReserva, onDejarReseña }) {
+function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReserva }) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [reservaToCancel, setReservaToCancel] = useState(null);
 
@@ -66,7 +66,7 @@ function ListaReservas({ reservas, onCancelReserva, onDejarReseña }) {
                 )}
 
                 {reserva.estado === 'Pendiente' && (
-                  <button title="Pagar reserva" className="text-secondary hover:text-primary p-2 rounded-full hover:bg-green-100 transition-colors">
+                   <button onClick={() => onPagarReserva(reserva)} title="Pagar reserva" className="text-secondary hover:text-primary p-2 rounded-full hover:bg-green-100 transition-colors">
                     <WalletIcon className="w-6 h-6" />
                   </button>
                 )}

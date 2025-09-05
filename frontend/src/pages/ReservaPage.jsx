@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom'; // 👈 Importamos Link
 import { datosDeportes } from '../data/canchas.js';
 import { datosComplejos } from '../data/complejos.js';
 import { crearReserva } from '../data/reservas.js';
 import { datosReseñas } from '../data/reseñas.js';
-import { calcularInfoReseñas } from '../utils/calculos.js'; // Importamos la función de cálculo
+import { calcularInfoReseñas } from '../utils/calculos.js';
 import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
@@ -75,7 +75,10 @@ function ReservaPage() {
     <div className="max-w-5xl mx-auto p-8 rounded-lg relative z-10">
       <div className="space-y-12">
         <h1 className="text-3xl font-bold font-lora text-gray-800 border-b pb-4">
-          Reserva en: {complejo.nombre}
+          Reserva en: 
+          <Link to={`/complejo/${complejo.id}`} className="text-secondary hover:underline ml-2">
+            {complejo.nombre}
+          </Link>
         </h1>
         <GaleriaFotos imageUrl={canchaMostrada.imageUrl} />
         <InfoCancha cancha={canchaMostrada} complejo={complejo} deporte={deporte} />
