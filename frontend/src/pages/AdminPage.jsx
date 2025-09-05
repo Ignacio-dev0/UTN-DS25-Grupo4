@@ -3,6 +3,7 @@ import { mockSolicitudes, mockComplejosAprobados } from '../data/solicitudes.js'
 import SolicitudDetalle from '../components/SolicitudDetalle.jsx';
 import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
 import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
+import GestionDeportes from '../components/GestionDeportes.jsx';
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState('solicitudes');
@@ -15,11 +16,11 @@ function AdminPage() {
     if (!solicitudAprobada) return;
 
     const nuevoComplejo = {
-      id: complejosAprobados.length + 100, // Un ID único
+      id: complejosAprobados.length + 100, 
       nombreComplejo: solicitudAprobada.nombreComplejo,
-      ubicacion: 'Ubicación a definir', // Se podría tomar de la solicitud
+      ubicacion: 'Ubicación a definir',
       adminEmail: `admin@${solicitudAprobada.nombreComplejo.toLowerCase().replace(/\s/g, '')}.com`,
-      fechaAprobacion: new Date().toISOString().slice(0, 10), // Fecha de hoy
+      fechaAprobacion: new Date().toISOString().slice(0, 10),
     };
 
     setComplejosAprobados(prev => [nuevoComplejo, ...prev]);
@@ -40,31 +41,32 @@ function AdminPage() {
           setComplejosAprobados(prev => prev.filter(c => c.id !== complejoId));
       }
   };
+  const getTabClass = (tabName) => {
+    return `px-3 py-2 font-medium text-sm rounded-md transition-colors flex items-center ${
+      activeTab === tabName
+        ? 'bg-secondary text-light'
+        : 'text-gray-600 hover:bg-accent hover:text-gray-800' 
+    }`;
+  };
 
   return (
     <div className=" max-w-7xl mx-auto rounded-lg relative z-10">
       <div className="border-b border-gray-200 p-4">
         <nav className="flex space-x-4" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab('solicitudes')}
-            className={`px-3 py-2 font-medium text-sm rounded-md ${
-              activeTab === 'solicitudes'
-                ? 'bg-secondary text-light'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Solicitudes {solicitudes.length > 0 && `(${solicitudes.length})`}
+          <button onClick={() => setActiveTab('solicitudes')} className={getTabClass('solicitudes')}>
+              Solicitudes 
+              {solicitudes.length > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {solicitudes.length}
+                </span>
+              )}
           </button>
-          <button
-            onClick={() => setActiveTab('aprobados')}
-            className={`px-3 py-2 font-medium text-sm rounded-md ${
-              activeTab === 'aprobados'
-                ? 'bg-secondary text-light'
-                : 'text-secondary hover:text-gray-700'
-            }`}
-          >
-            Complejos Aprobados
-          </button>
+          <button onClick={() => setActiveTab('aprobados')} className={getTabClass('aprobados')}>
+              Complejos Aprobados
+            </button>
+            <button onClick={() => setActiveTab('deportes')} className={getTabClass('deportes')}>
+              Deportes
+            </button>
         </nav>
       </div>
       <div>
@@ -89,6 +91,11 @@ function AdminPage() {
             onRemove={handleRemoveApproved}
           />
         )}
+
+        {activeTab === 'deportes' && (
+          <GestionDeportes />
+        )}
+        
       </div>
     </div>
   );

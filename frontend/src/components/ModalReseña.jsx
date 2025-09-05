@@ -3,7 +3,7 @@ import { StarIcon } from '@heroicons/react/24/solid';
 
 function ModalReseña({ reserva, onGuardar, onCerrar }) {
   const [puntaje, setPuntaje] = useState(0);
-  const [hover, setHover] = useState(0); // Estado para previsualizar el puntaje con el mouse
+  const [hover, setHover] = useState(0); 
   const [comentario, setComentario] = useState('');
 
   const handleSubmit = (e) => {

@@ -3,6 +3,7 @@ import { misReservas as initialReservas } from '../data/reservas';
 import PerfilInfo from '../components/PerfilInfo';
 import ListaReservas from '../components/ListaReservas';
 import ModalReseña from '../components/ModalReseña';
+import ModalPago from '../components/ModalPago';
 
 function MisReservasPage() {
     const [usuario, setUsuario] = useState({
@@ -18,6 +19,8 @@ function MisReservasPage() {
     const [reservas, setReservas] = useState(initialReservas.filter(r => r.userId === usuario.id));
     const [modalReseñaVisible, setModalReseñaVisible] = useState(false);
     const [reservaParaReseñar, setReservaParaReseñar] = useState(null);
+    const [modalPagoVisible, setModalPagoVisible] = useState(false);
+    const [reservaParaPagar, setReservaParaPagar] = useState(null);
 
     const handleOpenReseñaModal = (reserva) => {
         setReservaParaReseñar(reserva);
@@ -43,6 +46,20 @@ function MisReservasPage() {
         setUsuario(datosActualizados);
     };
 
+    const handleOpenPagoModal = (reserva) => {
+        setReservaParaPagar(reserva);
+        setModalPagoVisible(true);
+    };
+
+    const handleConfirmarPago = (datosPago) => {
+        console.log('Pago confirmado:', datosPago);
+        setReservas(reservas.map(r => 
+            r.id === reservaParaPagar.id ? { ...r, estado: 'Confirmada' } : r
+        ));
+        setModalPagoVisible(false);
+        setReservaParaPagar(null);
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-6 md:p-8 rounded-lg relative z-10">
             <div className="flex flex-col md:flex-row -mx-4">
@@ -51,6 +68,7 @@ function MisReservasPage() {
                     reservas={reservas} 
                     onCancelReserva={handleCancelReserva}
                     onDejarReseña={handleOpenReseñaModal}
+                    onPagarReserva={handleOpenPagoModal}
                 />
             </div>
 
@@ -59,6 +77,20 @@ function MisReservasPage() {
                     reserva={reservaParaReseñar}
                     onGuardar={handleGuardarReseña}
                     onCerrar={() => setModalReseñaVisible(false)}
+                />
+            )}
+
+
+            {modalPagoVisible && reservaParaPagar && (
+                <ModalPago
+                    isOpen={modalPagoVisible}
+                    onClose={() => setModalPagoVisible(false)}
+                    onConfirmarPago={handleConfirmarPago}
+                    turno={{
+                        dia: new Date(reservaParaPagar.fecha).toLocaleDateString('es-ES', { weekday: 'long' }),
+                        hora: reservaParaPagar.hora,
+                        precio: reservaParaPagar.total
+                    }}
                 />
             )}
         </div>

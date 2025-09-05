@@ -1,11 +1,57 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 import Footer from './Footer.jsx';
 import { PiCourtBasketball } from "react-icons/pi";
-import { Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx'; 
 
-function Layout({ children }) {
+function Layout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/registro';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const renderProfileLink = () => {
+    if (!isAuthenticated) {
+      return (
+        <Link to="/login" className="flex items-center space-x-2 hover:text-accent">
+          <UserCircleIcon className="h-8 w-8" />
+          <span className="font-semibold">Iniciar Sesión</span>
+        </Link>
+      );
+    }
+    
+    switch (user.role) {
+      case 'admin':
+        return (
+          <Link to="/admin" className="flex items-center space-x-2 hover:text-accent">
+            <UserCircleIcon className="h-8 w-8" />
+            <span className="font-semibold">Panel Administrador</span>
+          </Link>
+        );
+      case 'owner':
+        return (
+          <Link to={`/micomplejo/${user.id}`} className="flex items-center space-x-2 hover:text-accent">
+            <UserCircleIcon className="h-8 w-8" />
+            <span className="font-semibold">Mi Complejo</span>
+          </Link>
+        );
+      default: 
+        return (
+          <Link to="/mis-reservas" className="flex items-center space-x-2 hover:text-accent">
+            <UserCircleIcon className="h-8 w-8" />
+            <span className="font-semibold">Mi Perfil</span>
+          </Link>
+        );
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-light">
       <header className="bg-primary text-light shadow-lg sticky top-0 z-50">
@@ -15,24 +61,22 @@ function Layout({ children }) {
             <span>CanchaYa</span>
           </Link>
 
-          <nav>
-            {/* Para que sea log in <a href="/login" className="flex items-center space-x-2 hover:text-accent">
-              <UserCircleIcon className="h-8 w-8" />
-               <span className="font-semibold">Log in</span>
-            </a> */}
-            <a href="/mis-reservas" className="flex items-center space-x-2 hover:text-accent">
-              <UserCircleIcon className="h-8 w-8" />
-              <span className="font-semibold">Mi Perfil</span>
-            </a>
-          </nav>
+          <div className="flex items-center space-x-6">
+            {renderProfileLink()}
+            {isAuthenticated && (
+              <button onClick={handleLogout} className="font-semibold text-light hover:text-accent">
+                (Salir)
+              </button>
+            )}
+          </div>
         </div>
       </header>
-
-      <main className="flex-grow w-full">
+      
+      <main className={`flex-grow w-full ${isAuthPage ? 'flex items-center justify-center p-4' : ''}`}>
         <Outlet />
       </main>
 
-      <Footer />
+      {!isAuthPage && <Footer />}
     </div>
   );
 }
