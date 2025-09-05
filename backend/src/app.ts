@@ -10,7 +10,8 @@ import canchaRoutes from './routes/cancha.routes';
 import {horarioRoutes} from './routes/horario.routes'
 import localidadRoutes from "./routes/localidad.routes"
 import { turnoRoutes } from './routes/turno.routes';
-import ownerRoutes from "./routes/owner.routes"
+import ownerRoutes from "./routes/owner.routes";
+import alquilerRoutes from "./routes/alquiler.routes";
 
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/horario', horarioRoutes);
 app.use('/api/loc', localidadRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/alquiler', alquilerRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
