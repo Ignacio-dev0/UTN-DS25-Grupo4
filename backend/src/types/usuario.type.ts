@@ -1,12 +1,11 @@
 import { Domicilio, Rol, Usuario } from "../generated/prisma";
 
 export interface CreateUsuarioRequest{
-    name: string;
-    lastname: string;
+    nombre: string;
+    apellido: string;
     dni: number;
     correo: string;
     password: string;
-    fechaNacimiento: Date;
 }
 
 export interface UpdateUsuarioRequest{
