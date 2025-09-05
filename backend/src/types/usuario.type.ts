@@ -1,31 +1,33 @@
-import { Domicilio, Rol, Usuario } from "../generated/prisma";
+import { Rol, Usuario } from "../generated/prisma";
 
-export interface CreateUsuarioRequest{
+export interface CreateUsuarioRequest {
     name: string;
     lastname: string;
     dni: number;
     correo: string;
     password: string;
-    fechaNacimiento: Date;
+    telefono?: string;
+    rol?: Rol;
+    image?: string;
 }
 
-export interface UpdateUsuarioRequest{
+export interface UpdateUsuarioRequest {
     name?: string;
     apellido?: string;
     dni?: number;
     correo?: string;
     password?: string;
-    fechaNacimiento?: Date;
+    telefono?: string;
     rol?: Rol;
-    domicilioId?: number;
+    image?: string;
 }
 
-export interface UsuarioResponse{
+export interface UsuarioResponse {
     usuario: Usuario;
     message: string;
 }
 
-export interface UsuarioListResponse{
+export interface UsuarioListResponse {
     usuarios: Usuario[];
     total: number;
 }

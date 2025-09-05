@@ -28,9 +28,9 @@ model Usuario {
     image String?
 
     // Relaciones
-    complejo  Complejo? 
+    complejo Complejo? 
     reservas  Alquiler[]
-    solicitud Solicitud?
+    solicitudes Solicitud[]
 }
 
 
@@ -38,19 +38,19 @@ model Administrador {
     id       Int    @id @default(autoincrement())
     correo   String @unique
     password String 
-    rol Rol @default(Administrador)
+    rol Rol @default(ADMINISTRADOR)
 
     solicitudesEvaluadas Solicitud[]
 }
 
 model Solicitud {
     id     Int             @id @default(autoincrement())
-    cuit Int @unique
+    cuit BigInt @unique
     estado EstadoSolicitud @default(PENDIENTE)
     
     complejo Complejo?
 
-    usuarioId Int @unique
+    usuarioId Int
     usuario Usuario @relation(fields: [usuarioId],references: [id])    
     adminId  Int?
     admin    Administrador? @relation(fields: [adminId], references: [id])
@@ -61,7 +61,6 @@ model Complejo {
     nombre              String
     descripcion         String?
     puntaje             Float?
-    cuit Int @unique
     image String?
 
     domicilioId Int       @unique
@@ -207,5 +206,5 @@ enum EstadoSolicitud {
 enum Rol {
     CLIENTE
     DUENIO
-    Administrador
+    ADMINISTRADOR
 }
