@@ -2,60 +2,96 @@
 import prisma from '../config/prisma';
 import { Prisma, Usuario} from '../generated/prisma';
 import { CreateUsuarioRequest, UpdateUsuarioRequest } from '../types/usuario.type';
+import bcrypt from 'bcrypt';
 
 export async function getAllUsuarios(): Promise<Usuario[]> {
-  const usuarios= await prisma.usuario.findMany({orderBy: {nombre: 'asc'}});
+  const usuarios = await prisma.usuario.findMany({
+    orderBy: { nombre: 'asc' },
+    include: {
+      complejo: true,
+      solicitudes: true,
+      reservas: true
+    }
+  });
   return usuarios;
 }
 
-export async function getUsuarioById(id: number): Promise<Usuario>{
+export async function getUsuarioById(id: number): Promise<Usuario | null>{
     const usuario = await prisma.usuario.findUnique({ 
-        where: {id },
-        include:{
-            domicilio:true
+        where: { id },
+        include: {
+          complejo: true,
+          solicitudes: true,
+          reservas: {
+            include: {
+              turnos: {
+                include: {
+                  cancha: {
+                    include: {
+                      complejo: true,
+                      deporte: true
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
     });
-    if (!usuario) {
-        const error = new Error('Usuario not Found');
-        (error as any).statusCode = 404;
-        throw error;
-    }
+    
+    return usuario;
+}
+
+export async function getUsuarioByEmail(email: string): Promise<Usuario | null>{
+    const usuario = await prisma.usuario.findUnique({ 
+        where: { correo: email }
+    });
     
     return usuario;
 }
 
 export async function createUsuario(data: CreateUsuarioRequest): Promise<Usuario>{
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    
     const created = await prisma.usuario.create({
-        data:{
+        data: {
             apellido: data.lastname,
             nombre: data.name,
             dni: data.dni,
             correo: data.correo,
-            password: data.password, //hashear
-            fechaNacimiento: data.fechaNacimiento,
+            password: hashedPassword,
+            telefono: data.telefono,
+            rol: data.rol || 'CLIENTE',
+            image: data.image
         },
     });
     return created;
 }
 
-export async function updateUsuario(id: number, updateData: UpdateUsuarioRequest) : Promise<Usuario>{
+export async function updateUsuario(id: number, updateData: UpdateUsuarioRequest): Promise<Usuario>{
     try {
-        const updated= await prisma.usuario.update({
-            where: {id},
-            data: {
-                ...(updateData.apellido !== undefined ? {apellido:updateData.apellido} : {}),
-                ...(updateData.name !== undefined ? {nombre:updateData.name} : {}),
-                ...(updateData.dni !== undefined ? {dni:updateData.dni} : {}),
-                ...(updateData.correo !== undefined ? {correo:updateData.correo} : {}),
-                ...(updateData.password !== undefined ? {password:updateData.password} : {}),
-                ...(updateData.fechaNacimiento !== undefined ? {fechaNacimiento:updateData.fechaNacimiento} : {}),
-                ...(updateData.rol !== undefined ? {rol:updateData.rol} : {}),
-                ...(updateData.domicilioId !== undefined ? {domicilioId:updateData.domicilioId} : {}),
+        // Si se actualiza la contraseña, hashearla
+        const dataToUpdate: any = { ...updateData };
+        if (updateData.password) {
+            dataToUpdate.password = await bcrypt.hash(updateData.password, 10);
+        }
 
+        const updated = await prisma.usuario.update({
+            where: { id },
+            data: {
+                ...(dataToUpdate.apellido !== undefined ? { apellido: dataToUpdate.apellido } : {}),
+                ...(dataToUpdate.name !== undefined ? { nombre: dataToUpdate.name } : {}),
+                ...(dataToUpdate.dni !== undefined ? { dni: dataToUpdate.dni } : {}),
+                ...(dataToUpdate.correo !== undefined ? { correo: dataToUpdate.correo } : {}),
+                ...(dataToUpdate.password !== undefined ? { password: dataToUpdate.password } : {}),
+                ...(dataToUpdate.telefono !== undefined ? { telefono: dataToUpdate.telefono } : {}),
+                ...(dataToUpdate.rol !== undefined ? { rol: dataToUpdate.rol } : {}),
+                ...(dataToUpdate.image !== undefined ? { image: dataToUpdate.image } : {}),
             }
         });
         return updated;
-    } catch (e : any){
+    } catch (e: any) {
         if (e.code === 'P2025') {
             const error = new Error('Usuario not found');
             (error as any).statusCode = 404;
@@ -63,23 +99,19 @@ export async function updateUsuario(id: number, updateData: UpdateUsuarioRequest
         }
         throw e;
     }
-    
 }
 
 export async function deleteUsuario(id: number): Promise<Usuario>{
     try {
-        const deleted = await prisma.usuario.delete({where :{id}});
+        const deleted = await prisma.usuario.delete({ where: { id } });
         return deleted;
-    } catch (e : any) {
+    } catch (e: any) {
         if (e.code === 'P2025') {
             const error = new Error('Usuario not found');
-            (error as any).statusCode = 400;
+            (error as any).statusCode = 404;
             throw error;
         }
         throw e;
     }
 }
-
-//hacer funciones para traer con resenias y traer con alquileres
-//agregar foto a todo lo que necesite foto
 
