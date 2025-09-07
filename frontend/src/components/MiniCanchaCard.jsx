@@ -37,7 +37,7 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
         <div className="relative">
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
-            src={cancha.imageUrl || `https://via.placeholder.com/400x300?text=Cancha ${cancha.noCancha}`} 
+            src={cancha.imageUrl || `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">Cancha ${cancha.noCancha}</text></svg>`)}`} 
             alt={`Cancha ${cancha.noCancha}`}
           />
           {cancha.estado === 'deshabilitada' && (

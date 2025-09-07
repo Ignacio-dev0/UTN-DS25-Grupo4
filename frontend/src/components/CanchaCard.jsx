@@ -42,7 +42,15 @@ function CanchaCard({ cancha }) {
         </span>
       </div>
       <div className="relative">
-        <img className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" src={cancha.image?.[0] || `https://via.placeholder.com/400x300?text=${cancha.deporte?.nombre}`}/>
+        <img 
+          className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
+          src={cancha.image?.[0] || `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${cancha.deporte?.nombre || 'Cancha'}</text></svg>`)}`}
+          onError={(e) => {
+            // Crear un SVG placeholder inline
+            e.target.src = `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${cancha.deporte?.nombre || 'Cancha'}</text></svg>`)}`;
+          }}
+          alt={`Cancha de ${cancha.deporte?.nombre}`}
+        />
         {precioDesde && (
           <div className="absolute top-0 right-0 bg-secondary bg-opacity-60 text-light text-sm font-bold p-2 m-2 rounded-md">
             desde ${precioDesde.toLocaleString('es-AR')}

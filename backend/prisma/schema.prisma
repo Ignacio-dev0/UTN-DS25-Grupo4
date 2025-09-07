@@ -24,6 +24,7 @@ model Usuario {
     correo          String   @unique
     password        String
     telefono        String?
+    direccion       String?
     rol             Rol      @default(CLIENTE)
     image String?
 

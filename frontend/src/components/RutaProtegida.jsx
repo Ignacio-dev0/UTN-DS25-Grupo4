@@ -10,16 +10,26 @@ function RutaProtegida({ rolRequerido }) {
   }
 
   if (!isAuthenticated) {
-    alert("Debes iniciar sesión para acceder a esta página.");
+    const mensaje = rolRequerido === "normal" 
+      ? "Debes iniciar sesión como cliente para ver tus reservas."
+      : "Debes iniciar sesión para acceder a esta página.";
+    alert(mensaje);
     return <Navigate to="/login" />;
   }
   
   if (user.role !== rolRequerido) {
+    const mensaje = rolRequerido === "normal"
+      ? "Solo los clientes pueden ver sus reservas. Por favor, inicia sesión con una cuenta de cliente."
+      : "No tenés los permisos necesarios para ver esta página.";
+      
     return (
       <div className="text-center p-10">
         <h1 className="text-2xl font-bold text-red-600">Acceso Denegado</h1>
-        <p className="mt-2 text-gray-700">No tenés los permisos necesarios para ver esta página.</p>
-        <Link to="/" className="mt-4 inline-block bg-primary text-light px-4 py-2 rounded-md">Volver al inicio</Link>
+        <p className="mt-2 text-gray-700">{mensaje}</p>
+        <div className="mt-4 space-x-4">
+          <Link to="/" className="inline-block bg-primary text-light px-4 py-2 rounded-md">Volver al inicio</Link>
+          <Link to="/login" className="inline-block bg-secondary text-light px-4 py-2 rounded-md">Iniciar sesión</Link>
+        </div>
       </div>
     );
   }

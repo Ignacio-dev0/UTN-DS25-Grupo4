@@ -22,8 +22,13 @@ export const actualizarUsuarioSchema = z.object({
     correo: z.string().email("Debe ser un email válido").optional(),
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional(),
     telefono: z.string().optional(),
+    direccion: z.string().optional(),
     rol: z.enum(["CLIENTE", "DUENIO", "ADMINISTRADOR"]).optional(),
-    image: z.string().url().optional().or(z.literal(""))
+    image: z.string().optional().or(z.literal("")).refine((val) => {
+      if (!val || val === "") return true;
+      // Acepta URLs normales o data URLs (base64)
+      return val.startsWith('http') || val.startsWith('https') || val.startsWith('data:image/');
+    }, "La imagen debe ser una URL válida o una imagen en formato base64")
   })
 });
 

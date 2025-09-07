@@ -166,6 +166,80 @@ export const getUserProfile = async () => {
 };
 
 /**
+ * Función para actualizar el perfil del usuario logueado
+ */
+export const updateUserProfile = async (userData) => {
+  try {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+      return {
+        ok: false,
+        error: 'No hay usuario logueado'
+      };
+    }
+
+    // Preparar datos para el backend
+    const updateData = {
+      name: userData.nombre?.split(' ')[0] || currentUser.nombre, // Solo el primer nombre
+      apellido: userData.nombre?.split(' ').slice(1).join(' ') || currentUser.apellido, // Resto como apellido
+      telefono: userData.telefono,
+      direccion: userData.direccion, // Campo de dirección
+    };
+
+    // Manejar imagen: usar imagen real si existe, sino la URL
+    if (userData.profileImageData) {
+      updateData.image = userData.profileImageData; // Imagen base64 real
+    } else if (userData.profileImageUrl) {
+      updateData.image = userData.profileImageUrl; // URL de imagen
+    }
+
+    console.log('Enviando datos de actualización:', updateData);
+
+    const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    const data = await response.json();
+    console.log('Respuesta del servidor:', data);
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.error || 'Error al actualizar el perfil'
+      };
+    }
+
+    // Actualizar usuario en el storage
+    const updatedUser = {
+      ...currentUser,
+      ...data.usuario,
+      role: mapBackendRoleToFrontend(data.usuario.rol)
+    };
+
+    if (localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } else {
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+
+    return {
+      ok: true,
+      user: data.usuario
+    };
+  } catch (error) {
+    console.error('Error en updateUserProfile:', error);
+    return {
+      ok: false,
+      error: 'Error de conexión'
+    };
+  }
+};
+
+/**
  * Función de logout
  */
 export const logout = () => {

@@ -18,6 +18,7 @@ export interface UpdateUsuarioRequest {
     correo?: string;
     password?: string;
     telefono?: string;
+    direccion?: string;
     rol?: Rol;
     image?: string;
 }

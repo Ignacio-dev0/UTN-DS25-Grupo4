@@ -51,9 +51,20 @@ function PerfilInfo({ usuario, onSave }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Verificar tamaño del archivo (máximo 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('La imagen es muy grande. Por favor selecciona una imagen menor a 2MB.');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditedData(prev => ({ ...prev, profileImageUrl: reader.result }));
+        // Guardar la imagen real como base64
+        setEditedData(prev => ({ 
+          ...prev, 
+          profileImageUrl: reader.result, // Mostrar la imagen seleccionada
+          profileImageData: reader.result, // Usar la misma imagen para enviar al backend
+        }));
       };
       reader.readAsDataURL(file);
     }

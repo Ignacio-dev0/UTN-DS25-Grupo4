@@ -31,9 +31,11 @@ function App() {
             <Route element={<RutaProtegida rolRequerido="admin" />}>
               <Route path="/admin" element={<AdminPage />} />
             </Route>
+            <Route element={<RutaProtegida rolRequerido="normal" />}>
+              <Route path="/mis-reservas" element={<MisReservasPage />} />
+            </Route>
             <Route path="/micomplejo/:complejoId" element={<MiComplejoPage />} />
             <Route path="/micomplejo/cancha/:canchaId/editar" element={<EditarCanchaPage />} />
-            <Route path="/mis-reservas" element={<MisReservasPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

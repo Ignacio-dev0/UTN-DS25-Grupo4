@@ -94,6 +94,7 @@ export async function updateUsuario(id: number, updateData: UpdateUsuarioRequest
                 ...(dataToUpdate.correo !== undefined ? { correo: dataToUpdate.correo } : {}),
                 ...(dataToUpdate.password !== undefined ? { password: dataToUpdate.password } : {}),
                 ...(dataToUpdate.telefono !== undefined ? { telefono: dataToUpdate.telefono } : {}),
+                ...(dataToUpdate.direccion !== undefined ? { direccion: dataToUpdate.direccion } : {}),
                 ...(dataToUpdate.rol !== undefined ? { rol: dataToUpdate.rol } : {}),
                 ...(dataToUpdate.image !== undefined ? { image: dataToUpdate.image } : {}),
             }

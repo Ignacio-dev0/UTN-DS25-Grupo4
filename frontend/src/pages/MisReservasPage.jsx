@@ -4,7 +4,7 @@ import PerfilInfo from '../components/PerfilInfo';
 import ListaReservas from '../components/ListaReservas';
 import ModalReseña from '../components/ModalReseña';
 import ModalPago from '../components/ModalPago';
-import { getUserProfile } from '../services/auth';
+import { getUserProfile, updateUserProfile } from '../services/auth';
 
 function MisReservasPage() {
     const [usuario, setUsuario] = useState({
@@ -38,7 +38,7 @@ function MisReservasPage() {
                         rol: 'Jugador Apasionado', // Esto se puede personalizar según el rol
                         email: response.user.correo,
                         telefono: response.user.telefono || '',
-                        direccion: '', // Agregar dirección cuando esté disponible en el schema
+                        direccion: response.user.direccion || '', // Campo de dirección libre
                         dni: response.user.dni,
                         profileImageUrl: response.user.image || 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
                     };
@@ -80,8 +80,35 @@ function MisReservasPage() {
         ));
     };
     
-    const handleSaveProfile = (datosActualizados) => {
-        setUsuario(datosActualizados);
+    const handleSaveProfile = async (datosActualizados) => {
+        try {
+            setLoading(true);
+            const response = await updateUserProfile(datosActualizados);
+            
+            if (response.ok) {
+                // Actualizar el estado local con los datos actualizados
+                const updatedUserData = {
+                    ...usuario,
+                    nombre: datosActualizados.nombre,
+                    telefono: datosActualizados.telefono,
+                    direccion: datosActualizados.direccion,
+                    profileImageUrl: datosActualizados.profileImageUrl
+                };
+                setUsuario(updatedUserData);
+                
+                // Mostrar mensaje de éxito (opcional)
+                console.log('Perfil actualizado exitosamente');
+            } else {
+                console.error('Error al actualizar perfil:', response.error);
+                // Aquí podrías mostrar un mensaje de error al usuario
+                alert('Error al actualizar el perfil: ' + response.error);
+            }
+        } catch (error) {
+            console.error('Error al guardar perfil:', error);
+            alert('Error de conexión al actualizar el perfil');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleOpenPagoModal = (reserva) => {
