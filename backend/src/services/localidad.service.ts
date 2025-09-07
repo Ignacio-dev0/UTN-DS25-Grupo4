@@ -9,8 +9,8 @@ export async function obtenerTodasLasLocalidades() {
     return await prisma.localidad.findMany();
 };
 
-export async function obtenerLocalidad(id: string) {
-    return await prisma.localidad.findUnique({where: {id: parseInt(id)}});
+export async function obtenerLocalidad(id: number) {
+    return await prisma.localidad.findUnique({where: {id}});
 };
 
 export async function eliminarLocalidad(id: number) {

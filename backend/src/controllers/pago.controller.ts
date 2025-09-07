@@ -2,7 +2,7 @@ import { Request, Response, NextFunction} from "express";
 import * as pagoService from "../services/pago.service";
 import { CrearPagoRequest, actualizarPagoRequest, PagoResponse, PagoListResponse } from "../types/pago.types";
 
-export async function crearPago(req : Request, res: Response<PagoResponse>) {
+export async function crearPago(req : Request, res: Response) {
  try {
     const newPago = await pagoService.crearPago(req.body)
     res.status(201).json({
@@ -11,8 +11,7 @@ export async function crearPago(req : Request, res: Response<PagoResponse>) {
     });
  } catch (error: any) {
     return res.status(500).json({
-        pago: null as any,
-        message: 'Error interno del servidor'
+        error: 'Error interno del servidor'
     });
  }  
 };
@@ -21,7 +20,7 @@ export async function obtenerAllPagos(req: Request, res: Response<PagoListRespon
     try {
         const pagos = await pagoService.getAllpagos();
         res.json({
-            pago: pagos,
+            pagos: pagos,
             total: pagos.length
         })
     } catch (error) {

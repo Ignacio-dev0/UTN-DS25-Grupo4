@@ -1,11 +1,98 @@
+import { connect } from "http2";
 import prisma from "../config/prisma";
 
-import { Prisma } from "../generated/prisma/client";
+import * as soliTypes from "../types/solicitud.types"
+import { da } from "zod/v4/locales/index.cjs";
+import { Solicitud } from "../generated/prisma";
+import { primitiveTypes } from "zod/v4/core/util.cjs";
 
-export const createSolicitud = async (data: Prisma.SolicitudCreateInput) => {
-    return prisma.solicitud.create({data});
+export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) => {
+    return prisma.solicitud.create({data:{
+        cuit: data.cuit,
+        estado: data.estado,
+        usuario : {connect:{id:data.usuarioId}}
+    }});
 }
 
+export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitudRequest) =>{
+    const soliUpdate:any={
+        estado: data.estado,
+        evaluador: data.evaluadorId,
+    }
+    return prisma.solicitud.update({
+        where:{id},
+        data:soliUpdate,
+    });
+};
+
+// export async function getAllRequest(): Promise<Solicitud[]> {
+//   // Log para confirmar que esta función se está ejecutando
+//   console.log('DEBUG: Entrando a getAllRequest en solicitud.service.ts');
+
+//   // Obtenemos todos los campos de las solicitudes, eliminando el 'select'.
+//   const solicitudes = await prisma.solicitud.findMany();
+
+//   // Log para ver EXACTAMENTE lo que Prisma devuelve ANTES de enviarlo al controlador.
+//   console.log('DEBUG: Datos devueltos por Prisma:', solicitudes);
+
+//   // Transformamos los datos para que coincidan con el tipo de retorno.
+//   // Prisma devuelve 'cuit' como BigInt, pero nuestro tipo espera un string.
+//   const solicitudesTransformadas = solicitudes.map(s => ({
+//     ...s,
+//     cuit: s.cuit.toString(),
+//   }));
+
+//   return solicitudesTransformadas;
+// }
+
+
+
+// export async function getAllRequest(): Promise<Solicitud[]> {
+//   // Log para confirmar que esta función se está ejecutando
+//   console.log('DEBUG: Entrando a getAllRequest en solicitud.service.ts');
+
+//   const solicitudes = await prisma.solicitud.findMany({
+//     select: {
+//       cuit: true,
+//       estado: true,
+//       // No incluimos ningún otro campo, por lo que Prisma NO debería devolverlos.
+//     }
+//   });
+
+//   // Log para ver EXACTAMENTE lo que Prisma devuelve ANTES de enviarlo al controlador.
+//   console.log('DEBUG: Datos devueltos por Prisma:', solicitudes);
+
+//   // SOLUCIÓN: Transformamos los datos para que coincidan con el tipo de retorno.
+//   // Prisma devuelve 'cuit' como BigInt, pero nuestro tipo 'SolicitudSeleccionada' espera un string.
+//   const solicitudesTransformadas = solicitudes.map(s => ({
+//     ...s,
+//     cuit: s.cuit.toString(),
+//   }));
+
+//   return solicitudesTransformadas;
+// }
+
+export async function getRequestById (id:number): Promise<Solicitud>{
+    const soli = await prisma.solicitud.findUnique({
+        where:{id}//no se si tenemos que traer toda la info de la soli o solo cuit-usuario-estado
+    });
+
+    if(!soli){
+        const error = new Error('solicitud no encontrada');
+        (error as any).statusCode = 404;
+        throw error;
+    };
+
+    return soli;
+} 
+
+export async function getAllRequest (): Promise<Solicitud[]>{
+    return prisma.solicitud.findMany();
+}
+
+export async function deleteSoli(id: number) {
+    return prisma.solicitud.delete({where:{id}})
+}
 
 
 // import prisma from '../config/prisma';

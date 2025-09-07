@@ -26,7 +26,7 @@ export async function obtenerTodasLasLocalidades(req: Request, res: Response, ne
 export async function obtenerLocalidadById(req: Request, res: Response, next : NextFunction) {
     try {
         const {id} = req.params;
-        const localidad = await localidadService.obtenerLocalidad(id);
+        const localidad = await localidadService.obtenerLocalidad(parseInt(id));
         if (!localidad) {
             return res.status(404).json({error:'Localidad no encontrada'});
         }
@@ -57,6 +57,9 @@ export async function eliminarLocalidad(req : Request, res: Response, next: Next
     }catch (error: any ) {
         if  (error.code === 'P2025') {
             return res.status(404).json({ error: 'Localidad no encontrada'});
+        }
+        if (error.code === 'P2003') {
+            throw new Error('No se puede eliminar la localidad porque está siendo utilizada por uno o más domicilios.');
         }
         res.status(400).json({error: error.message});
     }
