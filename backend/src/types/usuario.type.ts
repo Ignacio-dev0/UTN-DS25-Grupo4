@@ -3,7 +3,7 @@ import { Rol, Usuario } from "../generated/prisma";
 export interface CreateUsuarioRequest {
     name: string;
     lastname: string;
-    dni: number;
+    dni: string;
     correo: string;
     password: string;
     telefono?: string;
@@ -14,7 +14,7 @@ export interface CreateUsuarioRequest {
 export interface UpdateUsuarioRequest {
     name?: string;
     apellido?: string;
-    dni?: number;
+    dni?: string;
     correo?: string;
     password?: string;
     telefono?: string;

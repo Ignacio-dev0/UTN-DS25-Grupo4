@@ -11,4 +11,4 @@ router.post('/', validate(crearLocalidad), localidadController.crearLoc);
 router.put('/:id', validate(actualizarLocalidad), localidadController.actualizarLocalidad);
 router.delete('/:id', localidadController.eliminarLocalidad);
 
-export const localidadRoutes = router;
+export default router;

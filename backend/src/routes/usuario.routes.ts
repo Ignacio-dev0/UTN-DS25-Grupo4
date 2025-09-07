@@ -17,4 +17,4 @@ router.get("/email/:email", validate(usuarioEmailSchema), usuarioController.obte
 router.put("/:id", validate(usuarioIdSchema), validate(actualizarUsuarioSchema), usuarioController.actualizarUsuario);
 router.delete("/:id", validate(usuarioIdSchema), usuarioController.eliminarUsuario);
 
-export const usuarioRoutes = router;
+export default router;

@@ -26,5 +26,3 @@ export async function getHorariosByCanchaId(canchaId: number) {
         
     });
 };
-
-

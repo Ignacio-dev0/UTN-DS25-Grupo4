@@ -6,4 +6,4 @@ const router = Router()
 router.get('/',turnoController.getAllTurnos)
 router.post('/',turnoController.createTurno)
 
-export const turnoRoutes = router
+export default router;
