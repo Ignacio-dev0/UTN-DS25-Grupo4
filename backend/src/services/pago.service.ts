@@ -1,3 +1,4 @@
+import { connect } from 'http2';
 import prisma from '../config/prisma';
 import {Prisma, Pago} from '../generated/prisma';
 import { CrearPagoRequest, actualizarPagoRequest } from '../types/pago.types';
@@ -14,7 +15,7 @@ export async function obtenerPagoById(id: number): Promise<Pago> {
         alquiler: true
         }
     });
-    if (!Pago) {
+    if (!pago) {
         const error = new Error('Pago No Encontrado');
         (error as any).statusCode = 404;
         throw error;
@@ -25,10 +26,10 @@ export async function obtenerPagoById(id: number): Promise<Pago> {
 export async function crearPago(data: CrearPagoRequest): Promise<Pago>{
     const created = await prisma.pago.create({
         data:{
-            codigotransaccion: data.codigotransaccion,
+            codigoTransaccion: data.codigotransaccion,
             monto: data.monto,
-            metodopago: data.metodoPago,
-            alquiler: data.alquiler,
+            metodoPago: data.metodoPago,
+            alquiler: {connect:{id:data.alquilerId}}
         },
     });
     return created;
@@ -39,10 +40,11 @@ export async function actualizarPago(id: number, updateData: actualizarPagoReque
         const actualizacion = await prisma.pago.update({
             where: {id},
             data: {
-                ...(updateData.codigotransaccion !== undefined ? {codigotransaccion: updateData.codigotransaccion} : {}),
+                ...(updateData.codigoTransaccion !== undefined ? {codigoTransaccion: updateData.codigoTransaccion} : {}),
                 ...(updateData.monto !== undefined ? {monto: updateData.monto} : {}),
                 ...(updateData.metodoPago !== undefined ? {metodoPago: updateData.metodoPago} : {}),
-                ...(updateData.alquiler !== undefined ? {alquiler: updateData.alquiler} : {}),
+                // ...(updateData.alquiler !== undefined ? {alquiler: updateData.alquiler} : {}),
+                ...(updateData.alquilerId !== undefined ? { alquiler: {connect:{id:updateData.alquilerId}}} : {})
             }
         });
         return actualizacion;
@@ -58,7 +60,7 @@ export async function actualizarPago(id: number, updateData: actualizarPagoReque
 
 export async function EliminarPago(id : number): Promise<Pago> {
   try {
-    const eliminado = await prisma.pago.delate({where: {id}});
+    const eliminado = await prisma.pago.delete({where: {id}});//decia delate
     return eliminado;
   }  catch (e : any){
     if (e.code === 'PS2025') {

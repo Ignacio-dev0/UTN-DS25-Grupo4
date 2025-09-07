@@ -1,10 +1,20 @@
 import { Router } from "express";
 
-import { createRequest } from "../controllers/solicitud.controller";
+import * as solicitudController from "../controllers/solicitud.controller";
 
 const router = Router();
 
-router.post('/', createRequest);
+router.post('/', solicitudController.createRequest);
+
+router.get('/', solicitudController.getAllSol);
+
+router.get('/:id', solicitudController.getSolById);
+
+router.put('/:id', solicitudController.updateReq)
+
+router.delete('/:id', solicitudController.eliminarSoli);
+
+router.post('/', solicitudController.createRequest);
 
 export default router;
 

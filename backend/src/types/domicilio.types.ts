@@ -3,15 +3,15 @@ import { Domicilio, Localidad, Complejo } from '../generated/prisma';
 export interface crearDomicilioRequest {
     calle : string;
     altura : number;
-    complejo?: Complejo;
-    localidad: Localidad;
+    complejoId?: Complejo;//lo mismo de abajo
+    localidadId: number; //se conecta por el id 
 }
 
 export interface UpdateDomicilioRequest {
     calle? : string;
     altura? : number;
-    complejo?: Complejo;
-    localidad?: Localidad;
+    complejoId?: number;
+    localidadId?: number; // se conecta por el id
 }
 
 export interface DomicilioResponse {

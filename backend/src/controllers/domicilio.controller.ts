@@ -3,7 +3,7 @@ import * as domicilioService from '../services/domicilio.service';
 import { crearDomicilioRequest, DomicilioResponse, UpdateDomicilioRequest } from '../types/domicilio.types';
 
 
-export async function CrearDomicilio(req: Request, res: Response<DomicilioResponse>) {
+export async function CrearDomicilio(req: Request, res: Response) {
     try {
         const newdomcilio = await domicilioService.crearDomicilio(req.body)
         res.status(201).json({
@@ -49,3 +49,18 @@ export async function obtenerDomicilioById(req: Request, res: Response<Domicilio
         next(error);
     }
 };
+
+export async function getAllDomicilioo(req: Request, res:Response) {
+    try{
+        const domicilios = await domicilioService.getAllDomicilio();
+        res.json({
+            domicilios,
+            total: domicilios.length,
+        });
+        if(domicilios.length = 0){
+            res.json('no hay domicilios cargados en la base de datos')
+        }
+    }catch(error:any){
+        res.json('error interno del servidor ')
+    }
+}

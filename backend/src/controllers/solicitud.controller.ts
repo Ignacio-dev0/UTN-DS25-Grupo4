@@ -1,14 +1,63 @@
 import { Request, Response, NextFunction } from "express";
-import  {createSolicitud}  from "../services/solicitud.service";
+import  * as soliServ  from "../services/solicitud.service";
 
 export const createRequest =  async (req: Request, res:Response, next:NextFunction) =>{
     try{
-        const nuevaSolicitud = await createSolicitud(req.body);
+        const nuevaSolicitud = await soliServ.createSolicitud(req.body);
         res.status(200).json(nuevaSolicitud);
     }catch(error){
         next(error);
     }
 }
+
+export const updateReq = async(req:Request, res:Response, next:NextFunction)=>{
+    try{
+        const {id}=req.params;
+        const soliup = await soliServ.updateSolicitud(parseInt(id),req.body);
+        res.json({
+            solicitud: soliup,
+            message: ('solicitud actualizada correctamente'),
+        })
+    }catch(error:any){
+        console.log(error);
+    }
+}
+
+export async function getSolById(req:Request, res:Response) {
+    try{
+        const {id}=req.params;
+        const solicitud = await soliServ.getRequestById(parseInt(id));
+        res.json({
+            solicitud,
+            message:('request retrieved succesfully')
+        });
+    }catch(error:any){
+        console.log(error);
+    }
+}
+
+export async function getAllSol(req:Request, res:Response){
+    try{
+        const solicitudes = await soliServ.getAllRequest();
+        res.json({
+            solicitudes,
+            total: solicitudes.length
+        })
+    }catch(error:any){
+        console.log(error);
+    }
+}
+
+export async function eliminarSoli (req: Request, res: Response){
+  try {
+    const {id} = req.params;
+    const deleted = await soliServ.deleteSoli(parseInt(id));
+    res.json({ usuario:deleted, message: "solicitud deleteada " });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 
 
 // // backend/src/controllers/solicitud.controller.ts

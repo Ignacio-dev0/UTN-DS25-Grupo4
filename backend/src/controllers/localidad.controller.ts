@@ -14,7 +14,7 @@ export const crearLoc = async (req: Request, res: Response, next: NextFunction) 
 export async function obtenerLocalidadById(req: Request, res: Response, next : NextFunction) {
     try {
         const {id} = req.params;
-        const localidad = await localidadService.obtenerLocalidad(id);
+        const localidad = await localidadService.obtenerLocalidad(parseInt(id));//faltaba el parseint por que el req el id ingresa como string
         if (!localidad) {
             return res.status(404).json({error:'Localidad no encontrada'});
         }
@@ -37,6 +37,19 @@ export async function actulizarLocalidad(req : Request, res : Response, next : N
     }
 };
 
+export async function getAllLocalidades (req:Request,res:Response){
+    try{
+        const localidades = await localidadService.obetenerAllLoc();
+        res.json({
+            localidades,
+            total: localidades.length,
+        })
+    }catch(error: any){
+        console.log(error);
+    }
+}
+
+
 export async function eliminarLocalidad(req : Request, res: Response, next: NextFunction) {
     try {
         const id = parseInt(req.params.id);
@@ -45,6 +58,9 @@ export async function eliminarLocalidad(req : Request, res: Response, next: Next
     }catch (error: any ) {
         if  (error.code === 'P2025') {
             return res.status(404).json({ error: 'Localidad no encontrada'});
+        }
+        if (error.code === 'P2003') {
+            throw new Error('No se puede eliminar la localidad porque está siendo utilizada por uno o más domicilios.');
         }
         res.status(400).json({error: error.message});
     }

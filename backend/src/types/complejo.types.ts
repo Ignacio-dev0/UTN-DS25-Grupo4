@@ -5,22 +5,23 @@ export interface createComplejoType {
     nombre: string;
     descripcion: string;
     puntaje: number;
-    propietarios: number[];
-    solicitud: {
-        cuit: number;
-    };
+    image: string;
     domicilio:{
         calle: string;
         altura: number;
         localidadId: number;
     }
+    usuarioId: number;
+    solicitud: {
+        cuit: number;
+    };
 }
 
-export interface UpdateComplejoRequest {
-	nombre?: string;
-	descripcion?: string;
-	porcentajeReembolse?: number;
-	propietarios: number[];
+export interface updateComplejo {
+    nombre?: string;
+    descripcion?: string;
+    puntaje?: number;
+    image?: string;
 }
 
 export interface ComplejoResponse{
@@ -28,7 +29,7 @@ export interface ComplejoResponse{
 	mensaje: String
 }
 
-export interface ComplejoListResponse {
-	complejos: Complejo[]
-	mensaje: string
+export interface complejoResponseList {
+    complejos: Complejo[]
+    total: number;
 }

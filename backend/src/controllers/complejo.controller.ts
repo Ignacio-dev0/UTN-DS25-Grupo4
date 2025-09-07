@@ -15,9 +15,13 @@ try {
 export const obtenerComplejos = async (req: Request, res: Response, next:NextFunction) => {
   try {
     const complejos = await complejoService.getAllComplejo();
-    res.status(200).json(complejos);
+    res.status(200).json({
+      complejos,
+      total: complejos.length,
+    });
   } catch (error) {
     next(error);
+    console.log(error);
   }
 };
 
@@ -28,9 +32,12 @@ export const obtenerComplejoPorId = async (req: Request, res: Response, next:Nex
     if (!complejo) {
       return res.status(404).json({ error: 'Complejo no encontrado.' });
     }
-    res.status(200).json(complejo);
+    res.status(200).json({
+      complejo,
+      message:('complejo encontrado')
+    });
   } catch (error) {
-    next(error);
+    console.log(error)
   }
 };
 
@@ -38,7 +45,10 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
   try {
     const id = parseInt(req.params.id);
     const complejoActualizado = await complejoService.updateComplejo(id, req.body);
-    res.status(200).json(complejoActualizado);
+    res.status(200).json({
+      complejoActualizado,
+      message:('complejo actualizado')
+    });
   } catch (error: any) {
     // Prisma tira un error específico si el registro a actualizar no existe
     if (error.code === 'P2025') {
@@ -51,7 +61,7 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
 export const eliminarComplejo = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    await complejoService.deleteComplejo(id);
+    await complejoService.deleteComplejo_sol_dom(id);
     res.status(200).json({ message: 'Complejo eliminado correctamente.' });
   } catch (error: any) {
     if (error.code === 'P2025') {

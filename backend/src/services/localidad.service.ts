@@ -9,10 +9,18 @@ export async function obtenerLocalidad(id : number) {
     return await prisma.localidad.findUnique({where: {id}});
 };
 
+export async function obetenerAllLoc(){
+    return await prisma.localidad.findMany();
+}
+
 export async function eliminarLocalidad( id : number) {
-    return await prisma.localidad.eliminarLocalidad({where : {id}});
+    return await prisma.localidad.delete({where : {id}});
 };
 
-export async function actulizarLocalida(id : number, data : Prisma.LocaliadadUpdateInput) {
-  return await prisma.localidad.update({where: {id}});  
+// export async function eliminarLocalidad( id : number) {
+//     return await prisma.localidad.eliminarLocalidad({where : {id}});
+// };
+
+export async function actulizarLocalida(id : number, data : Prisma.LocalidadUpdateInput) {
+  return await prisma.localidad.update({where: {id},data});  
 };
