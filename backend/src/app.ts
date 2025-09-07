@@ -8,11 +8,12 @@ import solicitudRoutes from './routes/solicitud.routes'
 import {resenasRoutes} from './routes/resenas.routes';
 import canchaRoutes from './routes/cancha.routes';
 import {horarioRoutes} from './routes/horario.routes'
-import localidadRoutes from "./routes/localidad.routes"
+import {localidadRoutes} from "./routes/localidad.routes"
 import { turnoRoutes } from './routes/turno.routes';
 import ownerRoutes from "./routes/owner.routes";
-import alquilerRoutes from "./routes/alquiler.routes";
-
+import alquilerRoutes from "./routes/alquiler.routes";;
+import {domicilioRoutes} from './routes/domicilio.routes';
+import { pagoRoutes } from './routes/pago.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +31,8 @@ app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/horario', horarioRoutes);
 app.use('/api/loc', localidadRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/domicilio', domicilioRoutes);
+app.use('/api/pago', pagoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
 
 app.listen(PORT, () => {
