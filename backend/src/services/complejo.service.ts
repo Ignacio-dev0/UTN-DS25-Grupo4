@@ -1,93 +1,63 @@
-import { connect } from "http2";
 import prisma from "../config/prisma";
+import { CreateComplejoRequest, UpdateComplejoRequest } from "../types/complejo.types";
 
-import * as complejoTypes from "../types/complejo.types"
 
-
-export const createComplejo = async (data:complejoTypes.createComplejoType) =>{
-    return prisma.$transaction(async (tx)=>{
-        const nuevoDomicilio = await tx.domicilio.create({
-            data: {
-                calle: data.domicilio.calle,
-                altura: data.domicilio.altura,
-                localidad: {connect: {id: data.domicilio.localidadId}}
-            }
-        });
-
-        const nuevaSolicitud = await tx.solicitud.create({
-            data:{
-                cuit: data.solicitud.cuit,
-                usuario: {connect:{id:data.usuarioId}},
-            }
-        });
-
-        const nuevoComplejo = await tx.complejo.create({
-            data: {
-                nombre: data.nombre,
-                descripcion: data.descripcion,
-                puntaje: data.puntaje,
-                image: data.image,
-                solicitud: {connect:{id:nuevaSolicitud.id}},
-                usuario: {connect:{id:data.usuarioId}},
-                domicilio: {connect:{id:nuevoDomicilio.id}},
-            }
-        });
-        return nuevoComplejo;
+export const createComplejo = async (data: CreateComplejoRequest) => {
+  const { domicilio, solicitud, usuarioId, ...complejo } = data;
+    
+  return await prisma.$transaction(async (tx) => {
+        
+    const nuevoDomicilio = await tx.domicilio.create({
+      data: {
+        calle: domicilio.calle,
+        altura: domicilio.altura,
+        localidad: { connect: { id: domicilio.localidadId } },
+      }
     });
+    
+    const nuevaSolicitud = await tx.solicitud.create({
+      data:{
+        cuit: solicitud.cuit,
+        usuario: { connect: { id: data.usuarioId } },
+      }
+    });
+
+    const nuevoComplejo = await tx.complejo.create({
+      data: {
+        ...complejo,
+        cuit: solicitud.cuit,
+        solicitud: { connect: { id: nuevaSolicitud.id } },
+        usuario: { connect: { id: usuarioId } },
+        domicilio: { connect: { id: nuevoDomicilio.id } },
+      }
+    });
+
+    return nuevoComplejo;
+  });
 };
 
-export const updateComplejo = async (id: number, data: complejoTypes.updateComplejo) =>{
-    const dataAux: any={
-        nombre: data.nombre,
-        descripcion: data.descripcion,
-        puntaje: data.puntaje,
-        image: data.image,
-    };
-    return prisma.complejo.update({
-        where: {id},
-        data: dataAux,
-    });
+export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>{
+  const complejo = await prisma.complejo.update({
+    where: { id },
+    data,
+  });
 
+  if (!complejo) throw ('Complejo no encontrado');
+  return complejo;
 };
 
-export const getAllComplejo = async () =>{
-    return prisma.complejo.findMany({
-        select:{
-            id:true,
-            nombre:true,
-            descripcion:true,
-            puntaje:true,
-            image:true,
-            domicilio:{
-                select:{
-                    calle:true,
-                    altura:true,
-                    localidad:{
-                        select:{nombre:true},
-                    }
-                }
-            },
-        }
-    });
+export const getAllComplejos = async () => {
+  return await prisma.complejo.findMany({
+    include: { domicilio: true },
+  });
 };
 
 
 export const getComplejoById = async (id:number) => {
-    return prisma.complejo.findUnique({
-        where:{id}, 
-        select:{
-            nombre:true, 
-            descripcion:true,
-            puntaje:true, 
-            domicilio:{
-                select:{
-                    calle:true,
-                    altura:true
-                }
-                
-            }
-        }
-    })
+  return prisma.complejo.findUnique({
+    where:{ id }, 
+    include: { domicilio: true },
+  });
 }
 
 //esta era la primera forma de eliminar pero no funionaba bien por que
@@ -98,18 +68,15 @@ export const getComplejoById = async (id:number) => {
 
 export const deleteComplejo_sol_dom = async (id: number) => {
     const complejo = await prisma.complejo.findUnique({
-        where:{id},
-        select:{
-            solicitud:true,
-            domicilioId:true
-        }
+        where: { id }
     });
-    if (!complejo){
-        throw new Error('complejo not found / no existe tu complejo hermano')
+
+    if (!complejo) {
+        throw new Error('complejo not found');
     }
     return prisma.$transaction([
         prisma.complejo.delete({where:{id}}),
-        prisma.solicitud.delete({where:{id:complejo.solicitud.id}}),
+        prisma.solicitud.delete({where:{id:complejo.solicitudId}}),
         prisma.domicilio.delete({where:{id:complejo.domicilioId}}),
-    ])
+    ]);
 }

@@ -15,4 +15,4 @@ router.put('/:id',validate(actualizarDomicilioShema), domicilioController.Actual
 router.delete('/:id',domicilioController.eliminarDomicilio);
 router.get('/:id',domicilioController.obtenerDomicilioById);
 router.get('/', domicilioController.getAllDomicilioo);
-export const domicilioRoutes = router;  
+export default router;  

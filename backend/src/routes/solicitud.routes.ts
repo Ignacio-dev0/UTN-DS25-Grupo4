@@ -14,8 +14,6 @@ router.put('/:id', solicitudController.updateReq)
 
 router.delete('/:id', solicitudController.eliminarSoli);
 
-router.post('/', solicitudController.createRequest);
-
 export default router;
 
 

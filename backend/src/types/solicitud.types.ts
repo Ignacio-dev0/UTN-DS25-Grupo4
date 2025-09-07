@@ -2,19 +2,19 @@
 import { Solicitud, EstadoSolicitud, Usuario } from '../generated/prisma';
 
 export interface CreateSolicitudRequest{
-  cuit: bigint,
+  cuit: string,
 	estado: EstadoSolicitud,
 	usuarioId: number;
 }
 
-export interface UpdateSolicitudRequest{
+export interface UpdateSolicitudRequest {
   estado: EstadoSolicitud,
 	evaluadorId: number;
 }
 
-export interface SolicitudResponse{
-    solicitud: Solicitud;
-    message: string;
+export interface SolicitudResponse {
+  solicitud: Solicitud;
+  message: string;
 }
 
 export interface SolicitudListResponse{

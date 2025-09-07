@@ -14,7 +14,7 @@ try {
 
 export const obtenerComplejos = async (req: Request, res: Response, next:NextFunction) => {
   try {
-    const complejos = await complejoService.getAllComplejo();
+    const complejos = await complejoService.getAllComplejos();
     res.status(200).json({
       complejos,
       total: complejos.length,

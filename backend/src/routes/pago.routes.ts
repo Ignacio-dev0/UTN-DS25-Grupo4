@@ -11,4 +11,4 @@ router.get('/', pagoController.obtenerAllPagos);
 router.get('/:id', pagoController.obtenerPagoById);
 router.delete('/:id',pagoController.eliminarPago);
 
-export const pagoRoutes = router;
+export default router;

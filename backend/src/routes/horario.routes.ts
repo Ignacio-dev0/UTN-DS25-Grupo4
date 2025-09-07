@@ -7,4 +7,4 @@ router.post('/', horarioController.createHorario);
 
 router.get('/:canchaId', horarioController.getHorariosCancha);
 
-export const horarioRoutes=router;
+export default router;
