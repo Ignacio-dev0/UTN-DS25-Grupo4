@@ -1,26 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { misReservas as initialReservas } from '../data/reservas';
 import PerfilInfo from '../components/PerfilInfo';
 import ListaReservas from '../components/ListaReservas';
 import ModalReseña from '../components/ModalReseña';
 import ModalPago from '../components/ModalPago';
+import { getUserProfile } from '../services/auth';
 
 function MisReservasPage() {
     const [usuario, setUsuario] = useState({
         id: 1,
-        nombre: 'Pepe González',
+        nombre: '',
+        apellido: '',
         rol: 'Jugador Apasionado',
-        email: 'pepegonzalez@gmail.com',
-        telefono: '+54 221 123-4567',
-        direccion: 'Calle 43 901, La Plata',
+        email: '',
+        telefono: '',
+        direccion: '',
+        dni: '',
         profileImageUrl: 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
     });
     
-    const [reservas, setReservas] = useState(initialReservas.filter(r => r.userId === usuario.id));
+    const [loading, setLoading] = useState(true);
+    const [reservas, setReservas] = useState([]);
     const [modalReseñaVisible, setModalReseñaVisible] = useState(false);
     const [reservaParaReseñar, setReservaParaReseñar] = useState(null);
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
     const [reservaParaPagar, setReservaParaPagar] = useState(null);
+
+    // Cargar datos del usuario al montar el componente
+    useEffect(() => {
+        const cargarPerfilUsuario = async () => {
+            try {
+                const response = await getUserProfile();
+                if (response.ok) {
+                    const userData = {
+                        id: response.user.id,
+                        nombre: `${response.user.nombre} ${response.user.apellido}`,
+                        rol: 'Jugador Apasionado', // Esto se puede personalizar según el rol
+                        email: response.user.correo,
+                        telefono: response.user.telefono || '',
+                        direccion: '', // Agregar dirección cuando esté disponible en el schema
+                        dni: response.user.dni,
+                        profileImageUrl: response.user.image || 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
+                    };
+                    setUsuario(userData);
+                    
+                    // Filtrar reservas del usuario actual
+                    const reservasUsuario = initialReservas.filter(r => r.userId === response.user.id);
+                    setReservas(reservasUsuario);
+                } else {
+                    console.error('Error al cargar perfil:', response.error);
+                }
+            } catch (error) {
+                console.error('Error al cargar perfil:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        cargarPerfilUsuario();
+    }, []);
 
     const handleOpenReseñaModal = (reserva) => {
         setReservaParaReseñar(reserva);
@@ -62,15 +100,24 @@ function MisReservasPage() {
 
     return (
         <div className="max-w-7xl mx-auto p-6 md:p-8 rounded-lg relative z-10">
-            <div className="flex flex-col md:flex-row -mx-4">
-                <PerfilInfo usuario={usuario} onSave={handleSaveProfile} />
-                <ListaReservas 
-                    reservas={reservas} 
-                    onCancelReserva={handleCancelReserva}
-                    onDejarReseña={handleOpenReseñaModal}
-                    onPagarReserva={handleOpenPagoModal}
-                />
-            </div>
+            {loading ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-gray-600">Cargando perfil...</p>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex flex-col md:flex-row -mx-4">
+                    <PerfilInfo usuario={usuario} onSave={handleSaveProfile} />
+                    <ListaReservas 
+                        reservas={reservas} 
+                        onCancelReserva={handleCancelReserva}
+                        onDejarReseña={handleOpenReseñaModal}
+                        onPagarReserva={handleOpenPagoModal}
+                    />
+                </div>
+            )}
 
             {modalReseñaVisible && (
                 <ModalReseña
@@ -79,7 +126,6 @@ function MisReservasPage() {
                     onCerrar={() => setModalReseñaVisible(false)}
                 />
             )}
-
 
             {modalPagoVisible && reservaParaPagar && (
                 <ModalPago

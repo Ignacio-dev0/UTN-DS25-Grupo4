@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as usuarioService from "../services/usuario.service";
 import { CreateUsuarioRequest, UsuarioListResponse, UpdateUsuarioRequest, UsuarioResponse } from "../types/usuario.type";
+import bcrypt from 'bcrypt';
 
 export async function crearUsuario(req: Request<{}, UsuarioResponse, CreateUsuarioRequest>, res: Response<UsuarioResponse>) {
   try {
@@ -119,6 +120,123 @@ export async function eliminarUsuario(req: Request<{id: string}>, res: Response)
     res.status(500).json({ 
       error: 'Error interno del servidor',
       message: 'No se pudo eliminar el usuario'
+    });
+  }
+}
+
+// Nuevas funciones de autenticación
+export async function login(req: Request, res: Response) {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Email y contraseña son requeridos'
+      });
+    }
+
+    const usuario = await usuarioService.getUsuarioByEmail(email);
+    
+    if (!usuario) {
+      return res.status(401).json({
+        ok: false,
+        error: 'Credenciales inválidas'
+      });
+    }
+
+    // Verificar contraseña con bcrypt
+    const isPasswordValid = await bcrypt.compare(password, usuario.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        ok: false,
+        error: 'Credenciales inválidas'
+      });
+    }
+
+    // Login exitoso
+    res.json({
+      ok: true,
+      user: {
+        id: usuario.id,
+        email: usuario.correo,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        rol: usuario.rol
+      },
+      message: 'Login exitoso'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: 'Error interno del servidor'
+    });
+  }
+}
+
+export async function register(req: Request, res: Response) {
+  try {
+    const { email, password, nombre, apellido, dni, telefono } = req.body;
+    
+    if (!email || !password || !nombre || !apellido || !dni) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Todos los campos son requeridos'
+      });
+    }
+
+    // Verificar si el email ya existe
+    const existingUserByEmail = await usuarioService.getUsuarioByEmail(email);
+    if (existingUserByEmail) {
+      return res.status(409).json({
+        ok: false,
+        error: 'El email ya está registrado'
+      });
+    }
+
+    // Verificar si el DNI ya existe
+    const existingUserByDni = await usuarioService.getUsuarioByDni(parseInt(dni));
+    if (existingUserByDni) {
+      return res.status(409).json({
+        ok: false,
+        error: 'El DNI ya está registrado'
+      });
+    }
+
+    // Crear nuevo usuario
+    const newUsuario = await usuarioService.createUsuario({
+      correo: email,
+      password, // En producción, hashear con bcrypt
+      name: nombre,
+      lastname: apellido,
+      dni: parseInt(dni),
+      telefono,
+      rol: 'CLIENTE' // Rol por defecto
+    });
+
+    res.status(201).json({
+      ok: true,
+      user: {
+        id: newUsuario.id,
+        email: newUsuario.correo,
+        nombre: newUsuario.nombre,
+        apellido: newUsuario.apellido,
+        rol: newUsuario.rol
+      },
+      message: 'Usuario registrado exitosamente'
+    });
+
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        ok: false,
+        error: 'El DNI o email ya están registrados'
+      });
+    }
+    res.status(500).json({
+      ok: false,
+      error: 'Error interno del servidor'
     });
   }
 }

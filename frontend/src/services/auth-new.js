@@ -17,7 +17,6 @@ const mapBackendRoleToFrontend = (backendRole) => {
  */
 export const login = async (email, password, rememberMe = false) => {
   try {
-    console.log('Intentando login con:', { email, password });
     const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
       method: 'POST',
       headers: {
@@ -26,9 +25,7 @@ export const login = async (email, password, rememberMe = false) => {
       body: JSON.stringify({ email, password }),
     });
 
-    console.log('Response status:', response.status);
     const data = await response.json();
-    console.log('Response data:', data);
 
     if (!response.ok) {
       return {
@@ -119,48 +116,6 @@ export const register = async (userData) => {
     return {
       ok: false,
       error: 'Error de conexión con el servidor'
-    };
-  }
-};
-
-/**
- * Función para obtener el perfil completo del usuario logueado
- */
-export const getUserProfile = async () => {
-  try {
-    const currentUser = getCurrentUser();
-    if (!currentUser || !currentUser.id) {
-      return {
-        ok: false,
-        error: 'No hay usuario logueado'
-      };
-    }
-
-    const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: data.error || 'Error al obtener el perfil'
-      };
-    }
-
-    return {
-      ok: true,
-      user: data.usuario
-    };
-  } catch (error) {
-    console.error('Error en getUserProfile:', error);
-    return {
-      ok: false,
-      error: 'Error de conexión'
     };
   }
 };

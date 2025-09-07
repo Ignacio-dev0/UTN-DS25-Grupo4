@@ -12,6 +12,26 @@ export const obtenerCanchas = () => {
   return prisma.cancha.findMany({
     include: {
       deporte: true, // Para saber qué deporte se juega en la cancha
+      complejo: {
+        include: {
+          domicilio: {
+            include: {
+              localidad: true
+            }
+          }
+        }
+      }, // Para obtener datos del complejo con localidad
+      turnos: {
+        where: {
+          fecha: {
+            gte: new Date(), // Solo turnos futuros
+          }
+        },
+        take: 5, // Solo los próximos 5 turnos
+        orderBy: {
+          fecha: 'asc'
+        }
+      }
     },
   });
 };
@@ -19,10 +39,30 @@ export const obtenerCanchas = () => {
 export const obtenerCanchasPorComplejoId = (complejoId: number) => {
   return prisma.cancha.findMany({
     where: {
-      id: complejoId,
+      complejoId: complejoId, // Corregir: debe filtrar por complejoId, no por id
     },
     include: {
       deporte: true,
+      complejo: {
+        include: {
+          domicilio: {
+            include: {
+              localidad: true
+            }
+          }
+        }
+      },
+      turnos: {
+        where: {
+          fecha: {
+            gte: new Date(),
+          }
+        },
+        take: 5,
+        orderBy: {
+          fecha: 'asc'
+        }
+      }
     },
   });
 };
@@ -32,7 +72,25 @@ export const obtenerCanchaPorId = (id: number) => {
     where: { id },
     include: {
       deporte: true,
-      complejo: true, // Para saber a qué complejo pertenece
+      complejo: {
+        include: {
+          domicilio: {
+            include: {
+              localidad: true
+            }
+          }
+        }
+      },
+      turnos: {
+        where: {
+          fecha: {
+            gte: new Date(),
+          }
+        },
+        orderBy: {
+          fecha: 'asc'
+        }
+      }
     },
   });
 };

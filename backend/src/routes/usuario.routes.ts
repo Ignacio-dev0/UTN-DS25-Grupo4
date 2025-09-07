@@ -5,6 +5,10 @@ import { crearUsuarioSchema, actualizarUsuarioSchema, usuarioIdSchema, usuarioEm
 
 const router = Router();
 
+// Rutas de autenticación
+router.post('/login', usuarioController.login);
+router.post('/register', usuarioController.register);
+
 // Rutas CRUD para usuarios
 router.post('/', validate(crearUsuarioSchema), usuarioController.crearUsuario);
 router.get("/", usuarioController.obtenerUsuarios);

@@ -1,6 +1,6 @@
-// backend/src/index.ts
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import {deporteRoutes} from './routes/deportes.routes';
 import {usuarioRoutes} from "./routes/usuario.routes";
 import complejoRoutes from './routes/complejo.routes';
@@ -19,6 +19,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Servir archivos estáticos (imágenes) desde la carpeta del frontend
+app.use('/images', express.static(path.join(__dirname, '../../frontend/public/images')));
 
 app.use('/api/turnos',turnoRoutes)
 app.use('/api/deportes', deporteRoutes);

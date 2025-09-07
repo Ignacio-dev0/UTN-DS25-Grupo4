@@ -2,11 +2,23 @@ import { Request, Response, NextFunction } from "express";
 
 import * as localidadService from "../services/localidad.service";
 
-export const crearLoc = async (req: Request, res: Response, next: NextFunction) =>{
-    try{
+export const crearLoc = async (req: Request, res: Response, next: NextFunction) => {
+    try {
         const nuevaLoc = await localidadService.crearLocalidad(req.body);
         res.status(201).json(nuevaLoc);
-    }catch(error){
+    } catch (error) {
+        next(error);
+    }
+};
+
+export async function obtenerTodasLasLocalidades(req: Request, res: Response, next: NextFunction) {
+    try {
+        const localidades = await localidadService.obtenerTodasLasLocalidades();
+        res.status(200).json({
+            localidades,
+            total: localidades.length
+        });
+    } catch (error) {
         next(error);
     }
 };
@@ -24,12 +36,12 @@ export async function obtenerLocalidadById(req: Request, res: Response, next : N
     }
 };
 
-export async function actulizarLocalidad(req : Request, res : Response, next : NextFunction) {
+export async function actualizarLocalidad(req: Request, res: Response, next: NextFunction) {
     try {
         const id = parseInt(req.params.id);
-        const localidad = await localidadService.actulizarLocalida(id, req.body);
+        const localidad = await localidadService.actualizarLocalidad(id, req.body);
         res.status(200).json(localidad);
-    }catch (error: any) {
+    } catch (error: any) {
         if (error.code === 'P2025') {
             return res.status(404).json({error: 'Localidad no Encontrada'});
         }

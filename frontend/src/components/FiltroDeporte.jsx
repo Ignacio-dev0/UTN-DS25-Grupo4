@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
-import { datosDeportes } from '../data/canchas.js';
 import { FaStar, FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
 import { IoIosBasketball } from "react-icons/io";
 import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis } from "react-icons/md";
@@ -20,12 +19,22 @@ const iconMap = {
 
 const DEPORTES_VISIBLES = 6;
 
-function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
+function FiltroDeporte({ deporteSeleccionado, onSelectDeporte, deportes = [] }) {
   const [indiceActual, setIndiceActual] = useState(0);
-  const listaCompletaDeportes = useMemo(() => [
-    { id: 'populares', deporte: 'Populares' },
-    ...datosDeportes,
-  ], []);
+  
+  const listaCompletaDeportes = useMemo(() => {
+    // Validar que deportes sea un array antes de mapear
+    const deportesArray = Array.isArray(deportes) ? deportes : [];
+    const deportesFormateados = deportesArray.map(deporte => ({
+      id: deporte.id,
+      deporte: deporte.nombre
+    }));
+    
+    return [
+      { id: 'populares', deporte: 'Populares' },
+      ...deportesFormateados,
+    ];
+  }, [deportes]);
 
   const totalItems = listaCompletaDeportes.length;
 
@@ -54,7 +63,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
 
       <button 
         onClick={handleAnterior}
-        className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+        className="p-2 rounded-full transition-colors flex-shrink-0"
       >
         <ChevronLeftIcon className="w-6 h-6 text-secondary" />
       </button>
@@ -83,7 +92,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
       {/* Botón de Navegación "Siguiente" */}
       <button 
         onClick={handleSiguiente}
-        className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+        className="p-2 rounded-full transition-colors flex-shrink-0"
       >
         <ChevronRightIcon className="w-6 h-6 text-secondary" />
       </button>

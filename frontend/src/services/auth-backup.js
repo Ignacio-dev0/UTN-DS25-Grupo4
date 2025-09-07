@@ -17,7 +17,6 @@ const mapBackendRoleToFrontend = (backendRole) => {
  */
 export const login = async (email, password, rememberMe = false) => {
   try {
-    console.log('Intentando login con:', { email, password });
     const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
       method: 'POST',
       headers: {
@@ -26,9 +25,7 @@ export const login = async (email, password, rememberMe = false) => {
       body: JSON.stringify({ email, password }),
     });
 
-    console.log('Response status:', response.status);
     const data = await response.json();
-    console.log('Response data:', data);
 
     if (!response.ok) {
       return {
@@ -124,48 +121,6 @@ export const register = async (userData) => {
 };
 
 /**
- * Función para obtener el perfil completo del usuario logueado
- */
-export const getUserProfile = async () => {
-  try {
-    const currentUser = getCurrentUser();
-    if (!currentUser || !currentUser.id) {
-      return {
-        ok: false,
-        error: 'No hay usuario logueado'
-      };
-    }
-
-    const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: data.error || 'Error al obtener el perfil'
-      };
-    }
-
-    return {
-      ok: true,
-      user: data.usuario
-    };
-  } catch (error) {
-    console.error('Error en getUserProfile:', error);
-    return {
-      ok: false,
-      error: 'Error de conexión'
-    };
-  }
-};
-
-/**
  * Función de logout
  */
 export const logout = () => {
@@ -194,4 +149,86 @@ export const isAuthenticated = () => {
 export const hasRole = (requiredRole) => {
   const user = getCurrentUser();
   return user && user.role === requiredRole;
+};
+    
+    if (user) {
+      // TODO: Aquí deberías implementar verificación de password con bcrypt
+      // Por ahora, simulamos que el login es exitoso si encuentra el usuario
+      return {
+        id: user.id,
+        email: user.correo,
+        role: mapBackendRoleToFrontend(user.rol),
+        nombre: user.nombre,
+        apellido: user.apellido
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.log('Error al hacer login con backend:', error);
+    return null;
+  }
+};
+
+/**
+ * Simula el inicio de sesión de un usuario.
+ * @param {string} email 
+ * @param {string} password 
+ * @param {boolean} rememberMe 
+ * @returns {Promise<{ok: boolean, user?: object, error?: string}>}
+ */
+export const login = async (email, password, rememberMe = false) => {
+  console.log("Intentando iniciar sesión con:", email);
+
+  // Primero intentar con el backend real
+  const backendUser = await loginWithBackend(email, password);
+  if (backendUser) {
+    console.log("Login exitoso con backend:", backendUser);
+    
+    if (rememberMe) {
+      localStorage.setItem('currentUser', JSON.stringify(backendUser));
+    } else {
+      sessionStorage.setItem('currentUser', JSON.stringify(backendUser));
+    }
+
+    return { ok: true, user: backendUser };
+  }
+
+  // Si falla el backend, usar usuarios mock como fallback
+  const foundUser = mockUsers.find(user => user.email === email && user.password === password);
+
+  if (foundUser) {
+    const userToStore = { ...foundUser };
+    delete userToStore.password; 
+
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('currentUser', JSON.stringify(userToStore));
+    
+    console.log("Usuario encontrado y sesión guardada:", userToStore);
+    return { ok: true, user: userToStore };
+  }
+
+  return { ok: false, error: 'Credenciales incorrectas' };
+};
+
+/**
+ * Obtiene el usuario actual desde el storage.
+ * @returns {object|null}
+ */
+export const getCurrentUser = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(sessionStorage.getItem('currentUser'));
+    return user;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Cierra la sesión del usuario actual.
+ */
+export const logout = () => {
+  localStorage.removeItem('currentUser');
+  sessionStorage.removeItem('currentUser');
+  console.log("Sesión cerrada.");
 };

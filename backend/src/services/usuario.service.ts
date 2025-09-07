@@ -50,6 +50,14 @@ export async function getUsuarioByEmail(email: string): Promise<Usuario | null>{
     return usuario;
 }
 
+export async function getUsuarioByDni(dni: number): Promise<Usuario | null>{
+    const usuario = await prisma.usuario.findUnique({ 
+        where: { dni: dni }
+    });
+    
+    return usuario;
+}
+
 export async function createUsuario(data: CreateUsuarioRequest): Promise<Usuario>{
     // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(data.password, 10);

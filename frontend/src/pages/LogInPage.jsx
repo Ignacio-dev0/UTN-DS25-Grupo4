@@ -52,7 +52,7 @@ function LogInPage() {
           <input type="checkbox" id="remember-me" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="mr-2"/>
           <label htmlFor="remember-me" className="text-sm text-gray-600">Recordar sesión</label>
         </div>
-        <button type="submit" className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition">
+        <button type="submit" className="w-full bg-secondary text-white py-2 px-4 rounded-md hover:bg-primary transition">
           Iniciar sesión
         </button>
       </form>

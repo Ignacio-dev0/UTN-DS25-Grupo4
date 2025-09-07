@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext.jsx';
 import Layout from './components/Layout.jsx';
 import HomePage from './pages/HomePage.jsx'; 
 import ReservaPage from './pages/ReservaPage.jsx';
@@ -14,27 +15,29 @@ import ComplejoDetallePage from './pages/ComplejoDetallePage.jsx';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          {/* --- Rutas Públicas --- */}
-          <Route path="/login" element={<LogInPage />} />
-          <Route path="/registro" element={<SignUpPage />} />
-          <Route path="/" element={<HomePage />} />
-          <Route path="/reserva/:canchaId" element={<ReservaPage />} />
-          <Route path="/resultados" element={<ResultadosPage />} />
-          <Route path="/complejo/:complejoId" element={<ComplejoDetallePage />} /> 
-          
-          {/* --- Rutas Protegidas --- */}
-          <Route element={<RutaProtegida rolRequerido="admin" />}>
-            <Route path="/admin" element={<AdminPage />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            {/* --- Rutas Públicas --- */}
+            <Route path="/login" element={<LogInPage />} />
+            <Route path="/registro" element={<SignUpPage />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/reserva/:canchaId" element={<ReservaPage />} />
+            <Route path="/resultados" element={<ResultadosPage />} />
+            <Route path="/complejo/:complejoId" element={<ComplejoDetallePage />} /> 
+            
+            {/* --- Rutas Protegidas --- */}
+            <Route element={<RutaProtegida rolRequerido="admin" />}>
+              <Route path="/admin" element={<AdminPage />} />
+            </Route>
+            <Route path="/micomplejo/:complejoId" element={<MiComplejoPage />} />
+            <Route path="/micomplejo/cancha/:canchaId/editar" element={<EditarCanchaPage />} />
+            <Route path="/mis-reservas" element={<MisReservasPage />} />
           </Route>
-          <Route path="/micomplejo/:complejoId" element={<MiComplejoPage />} />
-          <Route path="/micomplejo/cancha/:canchaId/editar" element={<EditarCanchaPage />} />
-          <Route path="/mis-reservas" element={<MisReservasPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

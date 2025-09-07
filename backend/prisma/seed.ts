@@ -609,6 +609,21 @@ async function main() {
           return null;
         }
 
+        // Mapear nombres de deportes a nombres de archivos
+        const deporteFileMap: { [key: string]: string } = {
+          'Fútbol 5': 'futbol5',
+          'Fútbol 11': 'futbol11',
+          'Básquet': 'basquet',
+          'Vóley': 'voley',
+          'Pádel': 'padel',
+          'Tenis': 'tenis',
+          'Handball': 'handball',
+          'Hockey': 'hockey'
+        };
+
+        const deporteFileName = deporteFileMap[data.deporteNombre] || data.deporteNombre.toLowerCase().replace(' ', '');
+        const imageNumber = (index % 8) + 1; // Ciclar entre 1-8 para cada deporte
+
         return prisma.cancha.create({
           data: {
             nroCancha: 1000 + index, // Número único para evitar conflictos
@@ -616,7 +631,7 @@ async function main() {
             puntaje: data.puntaje,
             complejoId: complejoId,
             deporteId: deporteId,
-            image: [`/images/canchas/${data.deporteNombre.toLowerCase().replace(' ', '')}-${index + 1}.jpg`],
+            image: [`/images/canchas/${deporteFileName}-${imageNumber}.jpg`],
           }
         });
       })
