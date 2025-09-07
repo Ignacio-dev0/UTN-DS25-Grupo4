@@ -4,14 +4,14 @@ export interface CrearPagoRequest{
     codigotransaccion?: string;
     metodoPago: MetodoPago;
     monto: number;
-    alquiler: Alquiler;
+    alquilerId: number;
 };
 
 export interface actualizarPagoRequest {
-    codigotransaccion?: string;
+    codigoTransaccion?: string;
     metodoPago?: MetodoPago;
     monto?: number;
-    alquiler?: Alquiler;
+    alquilerId?: number;
 };
 
 export interface PagoResponse {
@@ -20,6 +20,6 @@ export interface PagoResponse {
 };
 
 export interface PagoListResponse {
-    pago: Pago[];
+    pagos: Pago[];
     total: number;
 };

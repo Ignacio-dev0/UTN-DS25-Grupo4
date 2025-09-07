@@ -3,6 +3,7 @@ node_modules/
 # Compilados de TypeScript
 dist/
 prisma/migrations/
+prisma/seed.ts
 # Logs
 logs/
 *.log

@@ -2,15 +2,15 @@ import { Request, Response, NextFunction} from "express";
 import * as pagoService from "../services/pago.service";
 import { CrearPagoRequest, actualizarPagoRequest, PagoResponse, PagoListResponse } from "../types/pago.types";
 
-export async function crearPago(req : Request, res: Response<PagoResponse>) {
+export async function crearPago(req : Request, res: Response) {
  try {
     const newPago = await pagoService.crearPago(req.body)
     res.status(201).json({
         pago: newPago,
-        message: 'Pago Creado Exitosamente';
+        message: 'Pago Creado Exitosamente',// luego de un ({}) , o nada si es el ultimo arg no ;
     });
  } catch (error: any) {
-    return res.status(500).json({error: 'Error interno del servidor'});
+    return res.status(500).json({error:'Error interno del servidor'})as any;
  }  
 };
 

@@ -7,7 +7,7 @@ export async function crearDomicilio(data: crearDomicilioRequest): Promise<Domic
         data: {
             calle: data.calle,
             altura: data.altura,
-            localidad: data.localidad,
+            localidad: {connect:{id:data.localidadId}},
             //no puse localidad el complejo necesita domicilio para existir
         },
     });
@@ -19,10 +19,10 @@ export async function actualizarDomicilio(id: number, data:UpdateDomicilioReques
         const update = await prisma.domicilio.update({
             where: {id},
             data: {
-                ...(data.complejo !== undefined ? {complejo:data.complejo} : {}),
+                ...(data.complejoId !== undefined ? {complejo:{connect:{id:data.complejoId}}} : {}),
                 ...(data.calle !== undefined ? {calle:data.calle} : {}),
                 ...(data.altura !== undefined ? {altura:data.altura} : {}),
-                ...(data.localidad !== undefined ? {localidad:data.localidad} : {}),
+                ...(data.localidadId !== undefined ? {localidad:{connect:{id:data.localidadId}}} : {}),
             }
         })
         return update;
@@ -38,7 +38,7 @@ export async function actualizarDomicilio(id: number, data:UpdateDomicilioReques
 
 export async function eliminarDomicilio(id: number): Promise<Domicilio> {
 try {
-    const delated = await prisma.domicilio.delate({where : {id}});
+    const delated = await prisma.domicilio.delete({where : {id}});
     return delated;
 }   catch (e : any) {
     if (e.code === 'P2025') {
@@ -63,4 +63,8 @@ export async function getDomicilioById( id : number ): Promise<Domicilio> {
         throw error;
     }
     return domicilio;  
+}
+
+export async function getAllDomicilio() {
+    return prisma.domicilio.findMany();
 }
