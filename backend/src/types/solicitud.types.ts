@@ -2,7 +2,7 @@
 import { Solicitud, EstadoSolicitud, Usuario } from '../generated/prisma';
 
 export interface CreateSolicitudRequest{
-  cuit: bigint,
+  cuit: string,
 	estado: EstadoSolicitud,
 	usuarioId: number;
 }

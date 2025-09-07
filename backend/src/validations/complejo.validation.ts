@@ -1,5 +1,4 @@
-import {nonoptional, z} from "zod"
-
+import { z } from "zod";
 
 export const crearComplejoSchema = z.object({
     body: z.object({
@@ -14,7 +13,7 @@ export const crearComplejoSchema = z.object({
         }),
         usuarioId: z.number().int().nonnegative('El id del Dueño debe ser mayor a 0').nonoptional(),
         solicitud: z.object({
-            cuit: z.coerce.bigint().nonoptional(),
+            cuit: z.coerce.string(),
         })
     })
 })

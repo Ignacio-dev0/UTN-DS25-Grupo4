@@ -10,4 +10,4 @@ router.get('/:id', deporteController.getDeporteById);
 router.put('/:id', deporteController.updateDeporte);
 router.delete('/:id', deporteController.deleteDeporte);
 
-export const deporteRoutes = router;
+export default router;

@@ -11,4 +11,4 @@ router.delete('/:id',localidadController.eliminarLocalidad);
 router.get('/:id',localidadController. obtenerLocalidadById);
 router.get('/', localidadController.getAllLocalidades);
 
-export const localidadRoutes = router;
+export default router;

@@ -20,7 +20,7 @@ model Usuario {
   id              Int      @id @default(autoincrement())
   apellido        String
   nombre          String
-  dni             Int      @unique
+  dni             String   @unique
   correo          String   @unique
   password        String
   telefono        String?
@@ -36,7 +36,7 @@ model Usuario {
 
 model Administrador {
 	id       	Int			@id @default(autoincrement())
-	correo   	String 	@unique
+	email   	String 	@unique
 	password 	String 
 	rol 			Rol 		@default(ADMINISTRADOR)
 
@@ -44,15 +44,15 @@ model Administrador {
 }
 
 model Solicitud {
-	id     Int             @id @default(autoincrement())
-	cuit BigInt @unique
-	estado EstadoSolicitud @default(PENDIENTE)
+	id          Int             @id @default(autoincrement())
+	cuit        String          @unique
+	estado      EstadoSolicitud @default(PENDIENTE)
 	
-	complejo Complejo?
-	usuarioId Int 						@unique
-	usuario 	Usuario 				@relation(fields: [usuarioId],references: [id])    
-	adminId  	Int?
-	admin    	Administrador? 	@relation(fields: [adminId], references: [id])
+	complejo    Complejo?
+	usuarioId   Int 						@unique
+	usuario   	Usuario 				@relation(fields: [usuarioId],references: [id])    
+	adminId  	  Int?
+	admin    	  Administrador? 	@relation(fields: [adminId], references: [id])
 }
 
 model Complejo {
@@ -63,7 +63,7 @@ model Complejo {
 	cuit 								BigInt		@unique
 	image 							String?
 
-	domicilioId Int       				@unique
+	domicilioId         Int				@unique
 	domicilio   				Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
 	canchas 						Cancha[]
 	usuarioId 					Int		 		@unique

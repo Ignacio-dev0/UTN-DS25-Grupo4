@@ -13,7 +13,7 @@ export interface createComplejoType {
     }
     usuarioId: number;
     solicitud: {
-        cuit: number;
+        cuit: string;
     };
 }
 

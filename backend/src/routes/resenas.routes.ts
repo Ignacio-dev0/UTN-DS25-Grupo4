@@ -25,4 +25,4 @@ router.get('/complejo/:complejoId', validate(complejoIdSchema), resenasControlle
 router.get('/cancha/:canchaId', validate(canchaIdSchema), resenasController.obtenerResenasPorCancha);
 router.get('/usuario/:usuarioId', validate(usuarioIdSchema), resenasController.obtenerResenasPorUsuario);
 
-export const resenasRoutes = router;
+export default router;
