@@ -59,8 +59,8 @@ model Complejo {
 	id                  Int    		@id @default(autoincrement())
 	nombre              String
 	descripcion         String?
-	puntaje             Float?
-	cuit 								BigInt		@unique
+	puntaje             Float     @default(0.0)
+	cuit 								String		@unique
 	image 							String?
 
 	domicilioId         Int				@unique
@@ -93,7 +93,7 @@ model Cancha {
 	id          Int    							@id @default(autoincrement())
 	nroCancha   Int    							@unique
 	descripcion String?
-	puntaje     Float?
+	puntaje     Float               @default(0.0)
 	image 			String[]
 
 	cronograma 	HorarioCronograma[] // COMPOSICION DE HORARIOS CHIQUITITOS CONFORMAN UN CRONOGRAMA
