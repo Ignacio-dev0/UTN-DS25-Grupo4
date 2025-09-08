@@ -1,21 +1,30 @@
-import { Turno } from '../generated/prisma';
+import { Turno, Alquiler, Cancha } from '../generated/prisma';
 
 export interface CreateTurnoRequest {
-    fechaHora: Date;
+    fecha: Date;
+    horaInicio: Date;
     precio: number;
     canchaId: number;
+    reservado?: boolean;
 }
-
 export interface UpdateTurnoRequest {
-  precio: number,
+    fecha?: Date;
+    horaInicio?: Date;
+    precio?: number;
+    reservado?: boolean;
+    alquilerId?: number;
 }
-
 export interface TurnoResponse {
-  turno: Turno,
-  message: string,
+    turno: Turno | null;
+    message: string;
 }
-
 export interface TurnoListResponse {
-  turnos: Turno[],
-  total: number,
+    turnos: Turno[];
+    total: number;
+    message: string;
 }
+// export interface TurnoWithRelations extends Turno {
+//     cancha?: Cancha;
+//     alquiler?: Alquiler;
+// }
+

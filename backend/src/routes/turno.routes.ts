@@ -5,7 +5,12 @@ import { createTurnoSchema, updateTurnoSchema } from "../validations/turno.valid
 
 const router = Router();
 
-router.get('/', turnoController.getAllTurnos)
-router.post('/', validate(createTurnoSchema), turnoController.createTurno)
+router.get('/',turnoController.getAllTurnos)
+router.get('/:id',turnoController.getTurnoById)
+router.get('/cancha/:canchaId',turnoController.getTurnosByCanchaAndDate) //GET /turnos/cancha/1?fecha=2025-09-08
+router.post('/',turnoController.createTurno)
+router.put('/:id',turnoController.updateTurno)
+router.delete('/:id',turnoController.deleteTurno)
+
 
 export default router;
