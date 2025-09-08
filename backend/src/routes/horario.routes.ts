@@ -5,7 +5,7 @@ const router = Router();
 
 router.get('/',horarioController.getAllHorariosCronograma)
 router.get('/:id',horarioController.getHorarioCronogramaById)
-router.get('/cancha/:canchaId',horarioController.getHorariosCronogramaByCanchaId)
+router.get('/cancha/:canchaId',horarioController.getHorariosCronogramaByCanchaId) // GET /horarios/cancha/1?diaSemana=SABADO
 router.post('/',horarioController.createHorarioCronograma)
 router.put('/:id',horarioController.updateHorarioCronograma)
 router.delete('/:id',horarioController.deleteHorarioCronograma)
