@@ -47,7 +47,25 @@ export async function obtenerCanchaPorId(id: number) {
 		where: { id },
 		include: {
 			deporte: true,
-			complejo: true, // Para saber a qué complejo pertenece
+			complejo: {
+				include: {
+					domicilio: {
+						include: {
+							localidad: true
+						}
+					}
+				}
+			},
+			turnos: {
+				where: {
+					fecha: {
+						gte: new Date(), // Solo turnos futuros
+					}
+				},
+				orderBy: {
+					fecha: 'asc'
+				}
+			}
 		},
 	});
 
@@ -62,7 +80,6 @@ export async function obtenerCanchaPorId(id: number) {
 
 export async function obtenerCanchasPorComplejoId(complejoId: number) {
   return prisma.cancha.findMany({
-<<<<<<< HEAD
     where: {
       complejoId: complejoId, // Corregir: debe filtrar por complejoId, no por id
     },
@@ -84,34 +101,6 @@ export async function obtenerCanchasPorComplejoId(complejoId: number) {
           }
         },
         take: 5,
-        orderBy: {
-          fecha: 'asc'
-        }
-      }
-    },
-  });
-};
-
-export const obtenerCanchaPorId = (id: number) => {
-  return prisma.cancha.findUnique({
-    where: { id },
-    include: {
-      deporte: true,
-      complejo: {
-        include: {
-          domicilio: {
-            include: {
-              localidad: true
-            }
-          }
-        }
-      },
-      turnos: {
-        where: {
-          fecha: {
-            gte: new Date(),
-          }
-        },
         orderBy: {
           fecha: 'asc'
         }

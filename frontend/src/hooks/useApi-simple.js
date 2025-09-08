@@ -16,7 +16,15 @@ export const useCanchas = () => {
       if (!response.ok) {
         throw new Error('Error al obtener canchas');
       }
-      const data = await response.json();
+      const result = await response.json();
+      
+      // El backend puede devolver { data: [...] } o { canchas: [...] }
+      const data = result.data || result.canchas || result;
+      
+      // Verificar que data sea un array
+      if (!Array.isArray(data)) {
+        throw new Error('La respuesta del servidor no es un array válido');
+      }
       
       // Transformar datos manteniendo estructura compatible con CanchaCard
       const transformedData = data.map(cancha => {
@@ -116,7 +124,10 @@ export const useCancha = (canchaId) => {
       if (!response.ok) {
         throw new Error('Error al obtener la cancha');
       }
-      const data = await response.json();
+      const result = await response.json();
+      
+      // El backend devuelve { cancha: {...} } para endpoints individuales
+      const data = result.cancha || result;
       
       // Transformar datos manteniendo estructura compatible con CanchaCard
       const precios = data.turnos?.map(turno => turno.precio).filter(precio => precio > 0) || [];

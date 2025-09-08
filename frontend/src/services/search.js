@@ -137,7 +137,7 @@ export const getDeportes = async () => {
  */
 export const getLocalidades = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/loc`, {
+    const response = await fetch(`${API_BASE_URL}/localidades`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -41,7 +41,7 @@ export const login = async (email, password, rememberMe = false) => {
       // Mapear el rol del backend al frontend
       const user = {
         ...data.user,
-        role: mapBackendRoleToFrontend(data.user.rol)
+        role: mapBackendRoleToFrontend(data.user.role || data.user.rol)
       };
 
       // Guardar en localStorage si rememberMe está activado

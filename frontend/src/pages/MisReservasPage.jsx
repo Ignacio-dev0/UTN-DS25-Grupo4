@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { misReservas as initialReservas } from '../data/reservas';
 import PerfilInfo from '../components/PerfilInfo';
 import ListaReservas from '../components/ListaReservas';
@@ -7,6 +9,9 @@ import ModalPago from '../components/ModalPago';
 import { getUserProfile, updateUserProfile } from '../services/auth';
 
 function MisReservasPage() {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    
     const [usuario, setUsuario] = useState({
         id: 1,
         nombre: '',
@@ -26,8 +31,19 @@ function MisReservasPage() {
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
     const [reservaParaPagar, setReservaParaPagar] = useState(null);
 
+    // Verificar autenticación al montar el componente
+    useEffect(() => {
+        if (!isAuthenticated) {
+            // Redirigir silenciosamente sin mostrar error
+            navigate('/', { replace: true });
+            return;
+        }
+    }, [isAuthenticated, navigate]);
+
     // Cargar datos del usuario al montar el componente
     useEffect(() => {
+        if (!isAuthenticated) return; // No cargar datos si no está autenticado
+        
         const cargarPerfilUsuario = async () => {
             try {
                 const response = await getUserProfile();
@@ -49,16 +65,19 @@ function MisReservasPage() {
                     setReservas(reservasUsuario);
                 } else {
                     console.error('Error al cargar perfil:', response.error);
+                    // Si hay error al cargar el perfil, redirigir al login
+                    navigate('/login', { replace: true });
                 }
             } catch (error) {
                 console.error('Error al cargar perfil:', error);
+                navigate('/login', { replace: true });
             } finally {
                 setLoading(false);
             }
         };
 
         cargarPerfilUsuario();
-    }, []);
+    }, [isAuthenticated, navigate]);
 
     const handleOpenReseñaModal = (reserva) => {
         setReservaParaReseñar(reserva);

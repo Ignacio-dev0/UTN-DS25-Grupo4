@@ -159,10 +159,10 @@ export async function login(req: Request, res: Response) {
       ok: true,
       user: {
         id: usuario.id,
-        email: usuario.correo,
+        email: usuario.email || usuario.correo, // Compatibilidad con ambos campos
         nombre: usuario.nombre,
         apellido: usuario.apellido,
-        rol: usuario.rol
+        role: usuario.role || usuario.rol // Compatibilidad con ambos campos
       },
       message: 'Login exitoso'
     });
@@ -196,7 +196,7 @@ export async function register(req: Request, res: Response) {
     }
 
     // Verificar si el DNI ya existe
-    const existingUserByDni = await usuarioService.getUsuarioByDni(parseInt(dni));
+    const existingUserByDni = await usuarioService.getUsuarioByDni(dni);
     if (existingUserByDni) {
       return res.status(409).json({
         ok: false,
@@ -210,7 +210,7 @@ export async function register(req: Request, res: Response) {
       password, // En producción, hashear con bcrypt
       name: nombre,
       lastname: apellido,
-      dni: parseInt(dni),
+      dni: dni, // Mantener como string según el tipo
       telefono,
       rol: 'CLIENTE' // Rol por defecto
     });

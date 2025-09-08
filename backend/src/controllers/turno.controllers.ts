@@ -10,7 +10,7 @@ export async function createTurno(req: Request, res: Response){
         }) 
     } catch (error :any) {
         if (error.code === 'P2002') {
-            return res.status(409).json({ error: 'error cliente' });
+            return res.status(409).json({ error: 'Error de conflicto en la base de datos' });
         }
         return res.status(500).json({ error: 'Error interno del servidor.' });
     }
@@ -25,6 +25,85 @@ export async function getAllTurnos(req : Request ,res: Response) {
         })
     } catch (error : any) {
         return res.status(500).json({error : 'Error interno del servidor.'});
+    }
+}
+
+export async function getTurnoById(req: Request, res: Response) {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'ID debe ser un número válido' });
+        }
+
+        const turno = await turnoService.getTurnoById(id);
+        if (!turno) {
+            return res.status(404).json({ error: 'Turno no encontrado' });
+        }
+
+        res.json({
+            turno,
+            message: 'Turno encontrado'
+        });
+    } catch (error: any) {
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+}
+
+export async function getTurnosByCancha(req: Request, res: Response) {
+    try {
+        const canchaId = parseInt(req.params.canchaId);
+        if (isNaN(canchaId)) {
+            return res.status(400).json({ error: 'ID de cancha debe ser un número válido' });
+        }
+
+        const turnos = await turnoService.getTurnosByCancha(canchaId);
+        res.json({
+            turnos,
+            total: turnos.length,
+            message: 'Turnos de la cancha obtenidos'
+        });
+    } catch (error: any) {
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+}
+
+export async function updateTurno(req: Request, res: Response) {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'ID debe ser un número válido' });
+        }
+
+        const updatedTurno = await turnoService.updateTurno(id, req.body);
+        res.json({
+            turno: updatedTurno,
+            message: 'Turno actualizado correctamente'
+        });
+    } catch (error: any) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'Turno no encontrado' });
+        }
+        return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+}
+
+export async function deleteTurno(req: Request, res: Response) {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'ID debe ser un número válido' });
+        }
+
+        const deletedTurno = await turnoService.deleteTurno(id);
+        res.json({
+            turno: deletedTurno,
+            message: 'Turno eliminado correctamente'
+        });
+    } catch (error: any) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'Turno no encontrado' });
+        }
+        return res.status(500).json({ error: 'Error interno del servidor.' });
     }
 }
 

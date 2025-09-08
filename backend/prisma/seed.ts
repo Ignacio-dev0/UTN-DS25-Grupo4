@@ -1738,55 +1738,64 @@ async function main() {
     const hashedAdminPassword = await bcrypt.hash('admin123', 10);
     const admin = await prisma.administrador.create({
       data: {
-        correo: 'admin@sistema.com',
+        email: 'admin@sistema.com',
         password: hashedAdminPassword,
       }
     });
 
-    // 4. Crear Usuarios (Clientes y Dueños)
+    // 4. Crear Usuarios (Admin, Clientes y Dueños)
     console.log('👥 Creando usuarios...');
     const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedAdminPassword = await bcrypt.hash('admin', 10);
+    
+    // Usuario administrador
+    const admin = await prisma.usuario.create({
+      data: {
+        nombre: 'Admin', apellido: 'Sistema', dni: '11111111', correo: 'admin@admin.com',
+        password: hashedAdminPassword, telefono: '221-0000000', rol: Rol.ADMINISTRADOR,
+      }
+    });
     
     // Usuario cliente de prueba
     const cliente = await prisma.usuario.create({
       data: {
-        nombre: 'Nacho', apellido: 'Benitez', dni: 40123456, correo: 'nacho.benitez@email.com',
+        nombre: 'Nacho', apellido: 'Benitez', dni: '40123456', correo: 'nacho.benitez@email.com',
         password: hashedPassword, telefono: '221-5555555', rol: Rol.CLIENTE,
       }
     });
 
     // Datos de los dueños
     const dueniosData = [
-        { nombre: 'Juan', apellido: 'Pérez', dni: 30123456, correo: 'juan.perez@email.com', telefono: '221-6666666' },
-        { nombre: 'María', apellido: 'González', dni: 31123456, correo: 'maria.gonzalez@email.com', telefono: '221-7777777' },
-        { nombre: 'Carlos', apellido: 'Rodríguez', dni: 32123456, correo: 'carlos.rodriguez@email.com', telefono: '221-8888888' },
-        { nombre: 'Ana', apellido: 'Martínez', dni: 33123456, correo: 'ana.martinez@email.com', telefono: '221-9999999' },
-        { nombre: 'Luis', apellido: 'Fernández', dni: 34123456, correo: 'luis.fernandez@email.com', telefono: '221-1111111' },
-        { nombre: 'Carmen', apellido: 'López', dni: 35123456, correo: 'carmen.lopez@email.com', telefono: '221-2222222' },
-        { nombre: 'Roberto', apellido: 'Silva', dni: 36123456, correo: 'roberto.silva@email.com', telefono: '221-3333333' },
-        { nombre: 'Elena', apellido: 'Torres', dni: 37123456, correo: 'elena.torres@email.com', telefono: '221-4444444' },
-        { nombre: 'Diego', apellido: 'Morales', dni: 38123456, correo: 'diego.morales@email.com', telefono: '221-5555555' },
-        { nombre: 'Patricia', apellido: 'Herrera', dni: 39123456, correo: 'patricia.herrera@email.com', telefono: '221-6666666' },
-        { nombre: 'Miguel', apellido: 'Ramírez', dni: 40123457, correo: 'miguel.ramirez@email.com', telefono: '221-7777777' },
-        { nombre: 'Sofía', apellido: 'Vargas', dni: 41123457, correo: 'sofia.vargas@email.com', telefono: '221-8888888' },
-        { nombre: 'Alejandro', apellido: 'Mendoza', dni: 42123457, correo: 'alejandro.mendoza@email.com', telefono: '221-9999999' },
-        { nombre: 'Valeria', apellido: 'Castro', dni: 43123457, correo: 'valeria.castro@email.com', telefono: '221-1010101' },
-        { nombre: 'Ricardo', apellido: 'Flores', dni: 44123457, correo: 'ricardo.flores@email.com', telefono: '221-1111112' },
-        { nombre: 'Claudia', apellido: 'Jiménez', dni: 45123457, correo: 'claudia.jimenez@email.com', telefono: '221-1212121' },
-        { nombre: 'Fernando', apellido: 'Gutiérrez', dni: 46123457, correo: 'fernando.gutierrez@email.com', telefono: '221-1313131' },
-        { nombre: 'Lucía', apellido: 'Romero', dni: 47123457, correo: 'lucia.romero@email.com', telefono: '221-1414141' },
-        { nombre: 'Andrés', apellido: 'Moreno', dni: 48123457, correo: 'andres.moreno@email.com', telefono: '221-1515151' },
-        { nombre: 'Natalia', apellido: 'Ramos', dni: 49123457, correo: 'natalia.ramos@email.com', telefono: '221-1616161' },
-        { nombre: 'Sebastián', apellido: 'Ortega', dni: 50123457, correo: 'sebastian.ortega@email.com', telefono: '221-1717171' },
-        { nombre: 'Gabriela', apellido: 'Delgado', dni: 51123457, correo: 'gabriela.delgado@email.com', telefono: '221-1818181' },
-        { nombre: 'Martín', apellido: 'Aguilar', dni: 52123457, correo: 'martin.aguilar@email.com', telefono: '221-1919191' },
-        { nombre: 'Camila', apellido: 'Vega', dni: 53123457, correo: 'camila.vega@email.com', telefono: '221-2020202' },
-        { nombre: 'Joaquín', apellido: 'Cruz', dni: 54123457, correo: 'joaquin.cruz@email.com', telefono: '221-2121212' },
-        { nombre: 'Isabella', apellido: 'Paredes', dni: 55123457, correo: 'isabella.paredes@email.com', telefono: '221-2222223' },
-        { nombre: 'Emilio', apellido: 'Santana', dni: 56123457, correo: 'emilio.santana@email.com', telefono: '221-2323232' },
-        { nombre: 'Valentina', apellido: 'Navarro', dni: 57123457, correo: 'valentina.navarro@email.com', telefono: '221-2424242' },
-        { nombre: 'Tomás', apellido: 'Hernández', dni: 58123457, correo: 'tomas.hernandez@email.com', telefono: '221-2525252' },
-        { nombre: 'Agustina', apellido: 'Reyes', dni: 59123457, correo: 'agustina.reyes@email.com', telefono: '221-2626262' },
+        { nombre: 'Juan', apellido: 'Pérez', dni: '30123456', correo: 'juan.perez@email.com', telefono: '221-6666666' },
+        { nombre: 'María', apellido: 'González', dni: '31123456', correo: 'maria.gonzalez@email.com', telefono: '221-7777777' },
+        { nombre: 'Carlos', apellido: 'Rodríguez', dni: '32123456', correo: 'carlos.rodriguez@email.com', telefono: '221-8888888' },
+        { nombre: 'Ana', apellido: 'Martínez', dni: '33123456', correo: 'ana.martinez@email.com', telefono: '221-9999999' },
+        { nombre: 'Luis', apellido: 'Fernández', dni: '34123456', correo: 'luis.fernandez@email.com', telefono: '221-1111111' },
+        { nombre: 'Carmen', apellido: 'López', dni: '35123456', correo: 'carmen.lopez@email.com', telefono: '221-2222222' },
+        { nombre: 'Roberto', apellido: 'Silva', dni: '36123456', correo: 'roberto.silva@email.com', telefono: '221-3333333' },
+        { nombre: 'Elena', apellido: 'Torres', dni: '37123456', correo: 'elena.torres@email.com', telefono: '221-4444444' },
+        { nombre: 'Diego', apellido: 'Morales', dni: '38123456', correo: 'diego.morales@email.com', telefono: '221-5555555' },
+        { nombre: 'Patricia', apellido: 'Herrera', dni: '39123456', correo: 'patricia.herrera@email.com', telefono: '221-6666666' },
+        { nombre: 'Miguel', apellido: 'Ramírez', dni: '40123457', correo: 'miguel.ramirez@email.com', telefono: '221-7777777' },
+        { nombre: 'Sofía', apellido: 'Vargas', dni: '41123457', correo: 'sofia.vargas@email.com', telefono: '221-8888888' },
+        { nombre: 'Alejandro', apellido: 'Mendoza', dni: '42123457', correo: 'alejandro.mendoza@email.com', telefono: '221-9999999' },
+        { nombre: 'Valeria', apellido: 'Castro', dni: '43123457', correo: 'valeria.castro@email.com', telefono: '221-1010101' },
+        { nombre: 'Ricardo', apellido: 'Flores', dni: '44123457', correo: 'ricardo.flores@email.com', telefono: '221-1111112' },
+        { nombre: 'Claudia', apellido: 'Jiménez', dni: '45123457', correo: 'claudia.jimenez@email.com', telefono: '221-1212121' },
+        { nombre: 'Fernando', apellido: 'Gutiérrez', dni: '46123457', correo: 'fernando.gutierrez@email.com', telefono: '221-1313131' },
+        { nombre: 'Lucía', apellido: 'Romero', dni: '47123457', correo: 'lucia.romero@email.com', telefono: '221-1414141' },
+        { nombre: 'Andrés', apellido: 'Moreno', dni: '48123457', correo: 'andres.moreno@email.com', telefono: '221-1515151' },
+        { nombre: 'Natalia', apellido: 'Ramos', dni: '49123457', correo: 'natalia.ramos@email.com', telefono: '221-1616161' },
+        { nombre: 'Sebastián', apellido: 'Ortega', dni: '50123457', correo: 'sebastian.ortega@email.com', telefono: '221-1717171' },
+        { nombre: 'Gabriela', apellido: 'Delgado', dni: '51123457', correo: 'gabriela.delgado@email.com', telefono: '221-1818181' },
+        { nombre: 'Martín', apellido: 'Aguilar', dni: '52123457', correo: 'martin.aguilar@email.com', telefono: '221-1919191' },
+        { nombre: 'Camila', apellido: 'Vega', dni: '53123457', correo: 'camila.vega@email.com', telefono: '221-2020202' },
+        { nombre: 'Joaquín', apellido: 'Cruz', dni: '54123457', correo: 'joaquin.cruz@email.com', telefono: '221-2121212' },
+        { nombre: 'Isabella', apellido: 'Paredes', dni: '55123457', correo: 'isabella.paredes@email.com', telefono: '221-2222223' },
+        { nombre: 'Emilio', apellido: 'Santana', dni: '56123457', correo: 'emilio.santana@email.com', telefono: '221-2323232' },
+        { nombre: 'Valentina', apellido: 'Navarro', dni: '57123457', correo: 'valentina.navarro@email.com', telefono: '221-2424242' },
+        { nombre: 'Tomás', apellido: 'Hernández', dni: '58123457', correo: 'tomas.hernandez@email.com', telefono: '221-2525252' },
+        { nombre: 'Agustina', apellido: 'Reyes', dni: '59123457', correo: 'agustina.reyes@email.com', telefono: '221-2626262' },
     ];
     
     const duenios: Usuario[] = [];
@@ -1851,7 +1860,7 @@ async function main() {
 
       const solicitud = await prisma.solicitud.create({
         data: {
-          cuit: data.cuit,
+          cuit: data.cuit.toString(),
           estado: EstadoSolicitud.APROBADA,
           usuarioId: duenios[data.usuarioIdx].id,
           adminId: admin.id,
@@ -1866,6 +1875,7 @@ async function main() {
           domicilioId: domicilio.id,
           usuarioId: duenios[data.usuarioIdx].id,
           solicitudId: solicitud.id,
+          cuit: data.cuit.toString(),
         }
       });
       complejos.push(complejo);
@@ -2034,14 +2044,9 @@ async function main() {
     console.log('📝 Creando alquileres de ejemplo...');
     const turnosReservados = turnos.filter(t => t.reservado).slice(0, 20); // Aumentado a 20 alquileres
     for (const turno of turnosReservados) {
-      const horaFin = new Date(turno.horaInicio);
-      horaFin.setUTCHours(horaFin.getUTCHours() + 1);
-
       const alquiler = await prisma.alquiler.create({
         data: {
           estado: EstadoAlquiler.PAGADO,
-          horaInicio: turno.horaInicio,
-          horaFin: horaFin,
           clienteId: cliente.id,
         }
       });
@@ -2068,9 +2073,9 @@ async function main() {
     // 10. Crear solicitudes pendientes
     console.log('📋 Creando solicitudes pendientes...');
     const usuariosPendientesData = [
-        { nombre: 'Fernando', apellido: 'Castro', dni: 50123456, correo: 'fernando.castro@email.com', telefono: '221-7777777' },
-        { nombre: 'Silvia', apellido: 'Ruiz', dni: 51123456, correo: 'silvia.ruiz@email.com', telefono: '221-8888888' },
-        { nombre: 'Gabriel', apellido: 'Vega', dni: 52123456, correo: 'gabriel.vega@email.com', telefono: '221-9999999' },
+        { nombre: 'Fernando', apellido: 'Castro', dni: '50123456', correo: 'fernando.castro@email.com', telefono: '221-7777777' },
+        { nombre: 'Silvia', apellido: 'Ruiz', dni: '51123456', correo: 'silvia.ruiz@email.com', telefono: '221-8888888' },
+        { nombre: 'Gabriel', apellido: 'Vega', dni: '52123456', correo: 'gabriel.vega@email.com', telefono: '221-9999999' },
     ];
     const usuariosSolicitudesPendientes: Usuario[] = [];
     for(const data of usuariosPendientesData) {
@@ -2092,7 +2097,7 @@ async function main() {
     for (const data of solicitudesPendientesData) {
       await prisma.solicitud.create({
         data: {
-          cuit: data.cuit,
+          cuit: data.cuit.toString(),
           usuarioId: data.usuarioId,
         }
       });

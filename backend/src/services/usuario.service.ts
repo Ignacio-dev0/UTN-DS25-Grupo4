@@ -43,14 +43,40 @@ export async function getUsuarioById(id: number): Promise<Usuario | null>{
 }
 
 export async function getUsuarioByEmail(email: string): Promise<Usuario | null>{
-    const usuario = await prisma.usuario.findUnique({ 
+    // Primero buscar en Usuario (campo 'correo')
+    let usuario = await prisma.usuario.findUnique({ 
         where: { correo: email }
     });
+    
+    // Si no se encuentra, buscar en Administrador
+    if (!usuario) {
+        const admin = await prisma.administrador.findUnique({
+            where: { email: email }
+        });
+        
+        if (admin) {
+            // Convertir administrador a formato Usuario para compatibilidad
+            usuario = {
+                id: admin.id,
+                apellido: 'Admin',
+                nombre: 'Administrador',
+                dni: '00000000',
+                correo: admin.email,
+                email: admin.email,
+                password: admin.password,
+                telefono: null,
+                direccion: null,
+                rol: admin.rol,
+                role: admin.rol,
+                image: null
+            } as any;
+        }
+    }
     
     return usuario;
 }
 
-export async function getUsuarioByDni(dni: number): Promise<Usuario | null>{
+export async function getUsuarioByDni(dni: string): Promise<Usuario | null>{
     const usuario = await prisma.usuario.findUnique({ 
         where: { dni: dni }
     });
@@ -66,7 +92,7 @@ export async function createUsuario(data: CreateUsuarioRequest): Promise<Usuario
         data: {
             apellido: data.lastname,
             nombre: data.name,
-            dni: data.dni,
+            dni: data.dni, // Ya es string
             correo: data.correo,
             password: hashedPassword,
             telefono: data.telefono,

@@ -1,22 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { datosDeportes } from '../data/canchas.js';
-import { datosComplejos } from '../data/complejos.js';
 import { FaSave, FaArrowLeft } from 'react-icons/fa';
 
 import GaleriaFotosEditable from '../components/GaleriaFotosEditable.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioEdicionTurnos from '../components/CalendarioEdicionTurnos.jsx';
-
-const getCanchaById = (id) => {
-    for (const deporte of datosDeportes) {
-        const cancha = deporte.canchas.find(c => c.id === parseInt(id));
-        if (cancha) {
-            return { ...cancha, deporte: deporte.deporte };
-        }
-    }
-    return null;
-}
 
 function EditarCanchaPage() {
   const { canchaId } = useParams();
@@ -24,26 +12,84 @@ function EditarCanchaPage() {
   
   const [cancha, setCancha] = useState(null);
   const [complejo, setComplejo] = useState(null);
+  const [deporte, setDeporte] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const canchaEncontrada = getCanchaById(canchaId);
-    if (canchaEncontrada) {
-      if (!canchaEncontrada.otrasImagenes) {
-        canchaEncontrada.otrasImagenes = [];
+    const fetchCanchaData = async () => {
+      try {
+        setLoading(true);
+        
+        // Obtener información completa de la cancha
+        const canchaResponse = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
+        if (!canchaResponse.ok) {
+          throw new Error('Error al cargar la cancha');
+        }
+        const canchaData = await canchaResponse.json();
+        const canchaInfo = canchaData.cancha || canchaData;
+        
+        setCancha({
+          ...canchaInfo,
+          otrasImagenes: canchaInfo.otrasImagenes || [],
+          turnos: canchaInfo.turnos || []
+        });
+        setComplejo(canchaInfo.complejo);
+        setDeporte(canchaInfo.deporte);
+        
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
-      setCancha({ ...canchaEncontrada, turnos: canchaEncontrada.turnos || [] });
-      setComplejo(datosComplejos.find(c => c.id === canchaEncontrada.complejoId));
+    };
+
+    if (canchaId) {
+      fetchCanchaData();
     }
   }, [canchaId]);
 
-  const handleSave = () => {
-    console.log("Guardando cancha:", cancha);
-    alert("Cancha guardada exitosamente (simulación)");
-    navigate(`/micomplejo/${cancha.complejoId}`);
+  const handleSave = async () => {
+    try {
+      console.log("Guardando cancha:", cancha);
+      
+      const response = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: cancha.nombre,
+          activa: cancha.activa,
+          // Agregar otros campos que se puedan editar
+        }),
+      });
+      
+      if (response.ok) {
+        alert("Cancha guardada exitosamente");
+        navigate(`/micomplejo/${cancha.complejoId}`);
+      } else {
+        throw new Error('Error al guardar la cancha');
+      }
+    } catch (error) {
+      console.error('Error guardando cancha:', error);
+      alert('Error al guardar los cambios');
+    }
   };
 
-  if (!cancha || !complejo) {
+  if (loading) {
     return <div className="text-center p-10">Cargando...</div>;
+  }
+
+  if (error || !cancha || !complejo) {
+    return (
+      <div className="text-center p-10">
+        <h1 className="text-2xl font-bold text-red-600">
+          Error: {error || 'Cancha no encontrada'}
+        </h1>
+      </div>
+    );
   }
 
   return (

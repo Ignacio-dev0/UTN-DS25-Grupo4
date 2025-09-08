@@ -58,6 +58,19 @@ export async function actualizarCancha(req: Request, res: Response<CanchaRespons
 	}
 };
 
+export async function obtenerCanchasPorComplejoId(req: Request, res: Response<CanchaListResponse>, next: NextFunction) {
+  try {
+    const complejoId = Number(req.params.complejoId);
+    const canchas = await canchaService.obtenerCanchasPorComplejoId(complejoId);
+    return res.status(200).json({
+      canchas,
+      total: canchas.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export async function eliminarCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
     const id = Number(req.params.id);

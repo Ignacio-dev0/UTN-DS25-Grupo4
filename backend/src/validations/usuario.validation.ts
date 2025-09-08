@@ -14,7 +14,6 @@ export const crearUsuarioSchema = z.object({
   })
 });
 
-<<<<<<< HEAD
 export const actualizarUsuarioSchema = z.object({
   body: z.object({
     name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").optional(),
@@ -33,22 +32,18 @@ export const actualizarUsuarioSchema = z.object({
   })
 });
 
-// ID puede pasarse como dato para crear ni actualizar un Usuario
+export const usuarioIdSchema = z.object({
+  params: z.object({
+    id: z.string().transform((val) => {
+      const num = parseInt(val);
+      if (isNaN(num)) throw new Error("ID del usuario debe ser un número");
+      return num;
+    })
+  })
+});
 
-// export const usuarioIdSchema = z.object({
-//   params: z.object({
-//     id: z.string().transform((val) => {
-//       const num = parseInt(val);
-//       if (isNaN(num)) throw new Error("ID debe ser un número");
-//       return num;
-//     })
-//   })
-// });
-
-// WTF
-
-// export const usuarioEmailSchema = z.object({
-//   params: z.object({
-//     email: z.string().email("Debe ser un email válido")
-//   })
-// });
+export const usuarioEmailSchema = z.object({
+  params: z.object({
+    email: z.string().email("Debe ser un email válido")
+  })
+});

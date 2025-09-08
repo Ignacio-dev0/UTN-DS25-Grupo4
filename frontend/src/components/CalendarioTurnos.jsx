@@ -82,7 +82,17 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                       onClick={() => estado === 'disponible' && handleSelectTurno(dia, hora, turno.precio)}
                       aria-label={`Seleccionar turno ${dia} a las ${hora}`}
                     >
-                      {estado === 'disponible' && `$${(turno.precio / 1000).toFixed(0)}k`}
+                      <div className="flex flex-col items-center justify-center h-full">
+                        {estado === 'disponible' && (
+                          <>
+                            <div className="w-3 h-3 bg-green-500 rounded-full mb-1"></div>
+                            <span className="text-xs font-bold">${(turno.precio / 1000).toFixed(0)}k</span>
+                          </>
+                        )}
+                        {estado === 'reservado' && (
+                          <span className="text-xs text-red-600 font-bold">Ocupado</span>
+                        )}
+                      </div>
                     </button>
                   </div>
                 );
