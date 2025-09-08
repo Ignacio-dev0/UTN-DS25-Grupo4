@@ -3,8 +3,12 @@ import * as horarioController from "../controllers/horario.controller"
 
 const router = Router();
 
-router.post('/', horarioController.createHorario);
+router.get('/',horarioController.getAllHorariosCronograma)
+router.get('/:id',horarioController.getHorarioCronogramaById)
+router.get('/:canchaId',horarioController.getHorariosCronogramaByCanchaId)
+router.post('/',horarioController.createHorarioCronograma)
+router.put('/:id',horarioController.updateHorarioCronograma)
+router.delete('/:id',horarioController.deleteHorarioCronograma)
 
-router.get('/:canchaId', horarioController.getHorariosCancha);
-
-export default router;
+const horarioRoutes = router;
+export default horarioRoutes;

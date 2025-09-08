@@ -62,7 +62,7 @@ export async function updateHorarioCronograma(id: number, data: UpdateCronograma
         return updated;
     } catch (e: any) {
         if (e.code === 'P2025') {
-            const error = new Error('Horario not found');
+            const error = new Error('Horario no encontrado');
             (error as any).statusCode = 404;
             throw error;
         }
@@ -76,7 +76,7 @@ export async function deleteHorarioCronograma(id: number): Promise<HorarioCronog
         return deleted;
     } catch (e: any) {
         if (e.code === 'P2025') {
-            const error = new Error('Horario not found');
+            const error = new Error('Horario no encontrado');
             (error as any).statusCode = 404;
             throw error;
         }
