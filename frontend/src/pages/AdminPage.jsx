@@ -18,7 +18,26 @@ function AdminPage() {
       const response = await fetch('http://localhost:3000/api/admin/solicitudes');
       if (response.ok) {
         const data = await response.json();
-        const solicitudesPendientes = (data.solicitudes || data || []).filter(s => s.estado === 'PENDIENTE');
+        const solicitudesPendientes = (data.solicitudes || data || [])
+          .filter(s => s.estado === 'PENDIENTE')
+          .map(solicitud => ({
+            // Estructura original para compatibilidad
+            id: solicitud.id,
+            cuit: solicitud.cuit,
+            estado: solicitud.estado,
+            // Datos transformados para el componente SolicitudDetalle
+            nombreComplejo: solicitud.complejo?.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
+            calle: solicitud.complejo?.domicilio?.calle || 'No especificado',
+            altura: solicitud.complejo?.domicilio?.altura || 'No especificado',
+            descripcion: solicitud.complejo?.descripcion || 'No especificado',
+            reembolso: 'No especificado', // Este campo no existe en el modelo actual
+            horario: 'No especificado', // Este campo no existe en el modelo actual
+            // Información adicional del usuario
+            usuarioNombre: `${solicitud.usuario?.nombre || ''} ${solicitud.usuario?.apellido || ''}`.trim() || 'Usuario sin nombre',
+            usuarioCorreo: solicitud.usuario?.correo || 'Sin correo',
+            usuarioTelefono: solicitud.usuario?.telefono || 'Sin teléfono',
+            localidad: solicitud.complejo?.domicilio?.localidad?.nombre || 'No especificado'
+          }));
         setSolicitudes(solicitudesPendientes);
         setSolicitudSeleccionada(solicitudesPendientes[0] || null);
       }
@@ -32,9 +51,10 @@ function AdminPage() {
   // Cargar complejos aprobados
   const fetchComplejosAprobados = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/complejos');
+      const response = await fetch('http://localhost:3000/api/complejos/aprobados');
       if (response.ok) {
         const data = await response.json();
+        console.log('Complejos aprobados recibidos:', data); // Debug
         setComplejosAprobados(data.complejos || data || []);
       }
     } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Menu, MenuButton, MenuItem, MenuItems, Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { MapPinIcon, GlobeAltIcon, CalendarDaysIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { getDeportes, getLocalidades } from '../services/search.js';
@@ -7,10 +7,13 @@ import CalendarioPopover from './CalendarioPopover.jsx';
 
 function Buscador() {
   const navigate = useNavigate();
-  const [localidad, setLocalidad] = useState('');
-  const [deporte, setDeporte] = useState('');
-  const [fecha, setFecha] = useState(new Date());
-  const [hora, setHora] = useState('15:00hs');
+  const [searchParams] = useSearchParams();
+  
+  // Inicializar con valores de la URL si existen
+  const [localidad, setLocalidad] = useState(searchParams.get('localidad') || '');
+  const [deporte, setDeporte] = useState(searchParams.get('deporte') || '');
+  const [fecha, setFecha] = useState(searchParams.get('fecha') ? new Date(searchParams.get('fecha')) : new Date());
+  const [hora, setHora] = useState(searchParams.get('hora') || '15:00hs');
   
   // Estados para datos del backend
   const [deportes, setDeportes] = useState([]);
@@ -18,8 +21,8 @@ function Buscador() {
   const [loading, setLoading] = useState(true);
 
   const fechaFormateada = fecha.toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' });
-  const horarios = Array.from({ length: 15 }, (_, i) => {
-    const hour = 8 + i;
+  const horarios = Array.from({ length: 17 }, (_, i) => {
+    const hour = 7 + i;
     return `${hour}:00hs`;
   });
 

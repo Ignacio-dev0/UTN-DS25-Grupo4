@@ -67,6 +67,7 @@ model Complejo {
 	domicilioId         Int				@unique
 	domicilio   				Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
 	canchas 						Cancha[]
+	servicios           ComplejoServicio[]
 	usuarioId 					Int		 		@unique
 	usuario 						Usuario 	@relation(fields: [usuarioId],references: [id])
 	solicitudId 				Int       @unique
@@ -133,6 +134,7 @@ model Turno {
 model Deporte {
 	id     	Int    	@id @default(autoincrement())
 	nombre 	String 	@unique
+	icono  	String? 	@default("⚽")
 
 	canchas Cancha[]
 }
@@ -202,4 +204,25 @@ enum Rol {
 	CLIENTE
 	DUENIO
 	ADMINISTRADOR
+}
+
+model Servicio {
+	id          Int      @id @default(autoincrement())
+	nombre      String   @unique
+	descripcion String?
+	icono       String?  // URL del icono o clase CSS
+	
+	complejos   ComplejoServicio[]
+}
+
+model ComplejoServicio {
+	id         Int      @id @default(autoincrement())
+	disponible Boolean  @default(true)
+	
+	complejoId Int
+	complejo   Complejo @relation(fields: [complejoId], references: [id])
+	servicioId Int
+	servicio   Servicio @relation(fields: [servicioId], references: [id])
+	
+	@@unique([complejoId, servicioId])
 }

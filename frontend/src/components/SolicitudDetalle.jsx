@@ -21,14 +21,26 @@ function SolicitudDetalle({ solicitud, onApprove, onDecline }) {
         <p className="text-primary">Imagen del complejo</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <InfoTag label="Calle" value={solicitud.calle} />
         <InfoTag label="Altura" value={solicitud.altura} />
         <InfoTag label="Porc. Reembolso" value={solicitud.reembolso} />
         <InfoTag label="Horario" value={solicitud.horario} />
         <InfoTag label="CUIT" value={solicitud.cuit} />
+        <InfoTag label="Localidad" value={solicitud.localidad} />
         <div className="col-span-2">
             <InfoTag label="Descripción" value={solicitud.descripcion} />
+        </div>
+      </div>
+
+      {/* Información del usuario solicitante */}
+      <div className="bg-blue-50 p-4 rounded-lg mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-3">Información del Solicitante</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <InfoTag label="Nombre" value={solicitud.usuarioNombre} />
+          <InfoTag label="Correo" value={solicitud.usuarioCorreo} />
+          <InfoTag label="Teléfono" value={solicitud.usuarioTelefono} />
+          <InfoTag label="CUIT Empresa" value={solicitud.cuit} />
         </div>
       </div>
 

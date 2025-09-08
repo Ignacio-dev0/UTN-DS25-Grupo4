@@ -306,3 +306,55 @@ export async function deleteResenia(id: number): Promise<Resenia> {
         throw e;
     }
 }
+
+export async function getResenasByCanchaId(canchaId: number): Promise<Resenia[]> {
+    const resenas = await prisma.resenia.findMany({
+        where: {
+            alquiler: {
+                turnos: {
+                    some: {
+                        canchaId: canchaId
+                    }
+                }
+            }
+        },
+        include: {
+            alquiler: {
+                include: {
+                    cliente: {
+                        select: {
+                            nombre: true,
+                            apellido: true,
+                            image: true
+                        }
+                    },
+                    turnos: {
+                        where: {
+                            canchaId: canchaId
+                        },
+                        include: {
+                            cancha: {
+                                include: {
+                                    complejo: {
+                                        select: {
+                                            nombre: true
+                                        }
+                                    },
+                                    deporte: {
+                                        select: {
+                                            nombre: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        orderBy: {
+            id: 'desc'
+        }
+    });
+    return resenas;
+}

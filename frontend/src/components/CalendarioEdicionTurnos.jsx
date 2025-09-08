@@ -1,12 +1,12 @@
 import React from 'react';
 
 const dias = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
-const horas = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 
 function CalendarioEdicionTurnos({ turnos, onTurnosChange }) {
   
   const handleTurnoClick = (dia, hora) => {
-    const turnoExistente = turnos.find(t => t.dia.toUpperCase() === dia && t.hora === hora);
+    const turnoExistente = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);
     const precioActual = turnoExistente ? turnoExistente.precio : '';
     
     const nuevoPrecioStr = prompt(`Establecer precio para ${dia} a las ${hora} hs:`, precioActual);
@@ -21,7 +21,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange }) {
     let nuevosTurnos;
     if (turnoExistente) {
       nuevosTurnos = turnos.map(t => 
-        t.dia.toUpperCase() === dia && t.hora === hora ? { ...t, precio: nuevoPrecio } : t
+        String(t.dia).toUpperCase() === dia && t.hora === hora ? { ...t, precio: nuevoPrecio } : t
       );
     } else {
       const nuevoTurno = { dia, hora, estado: 'disponible', precio: nuevoPrecio };
@@ -53,7 +53,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange }) {
             <React.Fragment key={hora}>
               <div className="py-3 px-1 text-gray-600 font-bold">{hora}</div>
               {dias.map(dia => {
-                const turno = turnos.find(t => t.dia.toUpperCase() === dia && t.hora === hora);
+                const turno = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);
                 let clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 relative text-white font-bold ";
 
                 if (turno) {

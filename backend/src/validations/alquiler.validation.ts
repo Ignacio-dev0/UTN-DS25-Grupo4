@@ -2,9 +2,8 @@ import { z } from 'zod';
 import { EstadoAlquiler, MetodoPago } from '../generated/prisma';
 
 export const createAlquilerSchema = z.object({
-
-  clienteId: z.int(),
-
+  usuarioId: z.number(),
+  turnosIds: z.array(z.number()).min(1).max(3),
 });
 
 export const pagarAlquilerSchema = z.object({

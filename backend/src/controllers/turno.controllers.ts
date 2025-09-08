@@ -1,6 +1,18 @@
 import { Request,Response } from "express";
 import * as turnoService from "../services/turno.service";
 
+export async function generarTurnos(req: Request, res: Response) {
+    try {
+        const turnosCreados = await turnoService.generarTurnosDesdeHoy();
+        res.json({
+            message: `Se generaron ${turnosCreados} turnos nuevos`,
+            turnosCreados
+        });
+    } catch (error: any) {
+        return res.status(500).json({ error: 'Error generando turnos: ' + error.message });
+    }
+}
+
 export async function createTurno(req: Request, res: Response){
     try {
         const newTurno = await turnoService.createTurno(req.body);

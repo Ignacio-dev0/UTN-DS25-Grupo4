@@ -85,7 +85,7 @@ export async function obtenerResenasPorComplejo(req: Request<{complejoId: string
 export async function obtenerResenasPorCancha(req: Request<{canchaId: string}>, res: Response<ReseniaListResponse>, next: NextFunction) {
     try {
         const { canchaId } = req.params;
-        const resenas = await resenasService.getResenasByCancha(parseInt(canchaId));
+        const resenas = await resenasService.getResenasByCanchaId(parseInt(canchaId));
         res.json({
             resenas,
             total: resenas.length

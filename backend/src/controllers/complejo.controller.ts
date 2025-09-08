@@ -25,6 +25,19 @@ export const obtenerComplejos = async (req: Request, res: Response, next:NextFun
   }
 };
 
+export const obtenerComplejosAprobados = async (req: Request, res: Response, next:NextFunction) => {
+  try {
+    const complejos = await complejoService.getComplejosAprobados();
+    res.status(200).json({
+      complejos,
+      total: complejos.length,
+    });
+  } catch (error) {
+    next(error);
+    console.log(error);
+  }
+};
+
 export const obtenerComplejoPorId = async (req: Request, res: Response, next:NextFunction) => {
   try {
     const id = parseInt(req.params.id);

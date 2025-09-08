@@ -76,7 +76,7 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
       
       <div className="bg-accent p-4 rounded-lg mb-4">
         <p className="text-xs text-primary">Cuenta en pesos</p>
-        <p className="text-3xl font-bold text-primary">${complejo.balance.toLocaleString('es-AR')}</p>
+        <p className="text-3xl font-bold text-primary">${(complejo.balance || 0).toLocaleString('es-AR')}</p>
       </div>
 
       <div className="relative bg-accent h-64 rounded-lg flex items-center justify-center mb-6">

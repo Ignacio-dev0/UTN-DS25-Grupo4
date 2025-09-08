@@ -19,24 +19,55 @@ function MiComplejoPage() {
       try {
         setLoading(true);
         
-        // Obtener información del complejo
+        // Obtener información del complejo con relaciones incluidas
         const complejoResponse = await fetch(`http://localhost:3000/api/complejos/${complejoId}`);
         if (!complejoResponse.ok) {
           throw new Error('Error al cargar el complejo');
         }
         const complejoData = await complejoResponse.json();
-        setInfoDelComplejo(complejoData.complejo || complejoData);
+        const complejo = complejoData.complejo || complejoData;
+        
+        // Solo verificar estado si no es admin
+        if (user?.role !== 'admin') {
+          if (complejo.activo === false || complejo.solicitud?.estado !== 'APROBADA') {
+            setError('El complejo no está disponible o está suspendido');
+            return;
+          }
+        }
+        
+        setInfoDelComplejo(complejo);
 
-        // Obtener canchas del complejo
+        // Cargar servicios del complejo
+        const serviciosResponse = await fetch(`http://localhost:3000/api/servicios`);
+        if (serviciosResponse.ok) {
+          const serviciosData = await serviciosResponse.json();
+          const serviciosDelComplejo = serviciosData.servicios
+            .filter(servicio => 
+              servicio.complejos.some(cs => cs.complejoId === parseInt(complejoId) && cs.disponible)
+            )
+            .map(servicio => servicio.nombre);
+          
+          // Agregar servicios al complejo
+          setInfoDelComplejo(prev => ({
+            ...prev,
+            servicios: serviciosDelComplejo
+          }));
+        }
+
+        // Obtener canchas del complejo con mejor filtrado
         const canchasResponse = await fetch(`http://localhost:3000/api/canchas/complejo/${complejoId}`);
         if (!canchasResponse.ok) {
           throw new Error('Error al cargar las canchas');
         }
         const canchasData = await canchasResponse.json();
-        const canchasConEstado = (canchasData.canchas || canchasData || []).map(cancha => ({
-          ...cancha,
-          estado: cancha.activa ? 'habilitada' : 'deshabilitada'
-        }));
+        const canchasConEstado = (canchasData.canchas || canchasData || [])
+          .map(cancha => ({
+            ...cancha,
+            // Normalizar activa: null o undefined se consideran como true (habilitada por defecto)
+            activa: cancha.activa !== false,
+            estado: (cancha.activa !== false) ? 'habilitada' : 'deshabilitada',
+            deporte: cancha.deporte?.nombre || 'No especificado'
+          }));
         setCanchas(canchasConEstado);
         
       } catch (error) {
@@ -50,11 +81,12 @@ function MiComplejoPage() {
     if (complejoId) {
       fetchComplejoData();
     }
-  }, [complejoId]);
+  }, [complejoId, user?.role]);
 
   const handleToggleEdit = async () => {
     if(isEditing) {
       try {
+        console.log('Datos a enviar:', infoDelComplejo);
         const response = await fetch(`http://localhost:3000/api/complejos/${complejoId}`, {
           method: 'PUT',
           headers: {
@@ -67,11 +99,13 @@ function MiComplejoPage() {
           console.log("Datos del complejo guardados correctamente");
           alert('Información del complejo actualizada correctamente');
         } else {
-          throw new Error('Error al actualizar el complejo');
+          const errorData = await response.json();
+          console.error('Error del backend:', errorData);
+          throw new Error(errorData.message || 'Error al actualizar el complejo');
         }
       } catch (error) {
         console.error('Error guardando datos del complejo:', error);
-        alert('Error al guardar los cambios');
+        alert('Error al guardar los cambios: ' + error.message);
       }
     }
     setIsEditing(!isEditing);
@@ -197,6 +231,45 @@ function MiComplejoPage() {
     else if (user.role === 'owner' && parseInt(user.id) === parseInt(infoDelComplejo.usuarioId)) {
       puedeVerLaPagina = true;
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando información del complejo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto p-8 rounded-lg relative z-10">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <h2 className="text-xl font-bold mb-2">Error</h2>
+          <p>{error}</p>
+          <Link to="/admin" className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary">
+            Volver al panel de administración
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!puedeVerLaPagina) {
+    return (
+      <div className="max-w-5xl mx-auto p-8 rounded-lg relative z-10">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+          <h2 className="text-xl font-bold mb-2">Acceso denegado</h2>
+          <p>No tienes permisos para ver este complejo.</p>
+          <Link to="/admin" className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded hover:bg-secondary">
+            Volver al panel de administración
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   console.log('Debug acceso:', {

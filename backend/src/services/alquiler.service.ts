@@ -53,7 +53,19 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 export async function obtenerAlquilerPorId(id: number) {
 	const alquiler = await prisma.alquiler.findUnique({
 		where: { id },
-		include: { turnos: true, pago: true },
+		include: { 
+			turnos: {
+				include: {
+					cancha: {
+						include: {
+							complejo: true,
+							deporte: true
+						}
+					}
+				}
+			}, 
+			pago: true 
+		},
 	});
 	if (!alquiler) {
 		const error = new Error('Alquiler no encontrado');
@@ -65,7 +77,19 @@ export async function obtenerAlquilerPorId(id: number) {
 
 export async function obtenerAlquileres() {
 	const alquiler = await prisma.alquiler.findMany({
-		include: { turnos: true, pago: true },
+		include: { 
+			turnos: {
+				include: {
+					cancha: {
+						include: {
+							complejo: true,
+							deporte: true
+						}
+					}
+				}
+			}, 
+			pago: true 
+		},
 	});
 
 	if (!alquiler) {
@@ -79,7 +103,19 @@ export async function obtenerAlquileres() {
 export async function obtenerAlquileresPorClienteId(clienteId: number) {
 	const alquiler = await prisma.alquiler.findMany({
 		where: { clienteId },
-		include: { turnos: true, pago: true },
+		include: { 
+			turnos: {
+				include: {
+					cancha: {
+						include: {
+							complejo: true,
+							deporte: true
+						}
+					}
+				}
+			}, 
+			pago: true 
+		},
 	});
 
 	if (!alquiler) {

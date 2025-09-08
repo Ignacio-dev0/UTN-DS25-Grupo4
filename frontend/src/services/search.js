@@ -46,9 +46,10 @@ const createImageUrl = (imagePath, deporte) => {
  * Función para transformar los datos de canchas con mapeo de imágenes
  */
 const transformCanchaData = (cancha) => {
-  // Calcular precio mínimo desde los turnos reales
-  const precios = cancha.turnos?.map(turno => turno.precio).filter(precio => precio > 0) || [];
-  const precioMinimo = precios.length > 0 ? Math.min(...precios) : 15000;
+  // Calcular precio mínimo desde los turnos disponibles (no reservados)
+  const turnosDisponibles = cancha.turnos?.filter(turno => !turno.reservado) || [];
+  const precios = turnosDisponibles.map(turno => turno.precio).filter(precio => precio > 0);
+  const precioMinimo = precios.length > 0 ? Math.min(...precios) : null;
   
   return {
     id: cancha.id,
@@ -86,8 +87,11 @@ export const getCanchas = async () => {
 
     const data = await response.json();
     
+    // Asegurar que data es un array
+    const canchasArray = Array.isArray(data) ? data : (data.canchas || []);
+    
     // Transformar datos con mapeo de imágenes
-    const transformedData = data.map(cancha => transformCanchaData(cancha));
+    const transformedData = canchasArray.map(cancha => transformCanchaData(cancha));
     
     return {
       ok: true,

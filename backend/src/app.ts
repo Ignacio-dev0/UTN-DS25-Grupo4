@@ -12,10 +12,12 @@ import canchaRoutes from './routes/cancha.routes';
 import horarioRoutes from './routes/horario.routes'
 import localidadRoutes from "./routes/localidad.routes"
 import turnoRoutes from './routes/turno.routes';
+import cronogramaRoutes from './routes/cronograma.routes';
+import alquilerRoutes from './routes/alquiler.routes';
+import servicioRoutes from './routes/servicio.routes';
 // import ownerRoutes from "./routes/owner.routes"
 // import domicilioRoutes from './routes/domicilio.routes';
 // import pagoRoutes from './routes/pago.routes';
-// import alquilerRoutes from './routes/alquiler.routes';
 // import administradorRoutes from './routes/administrador.routes';
 
 const app = express();
@@ -39,18 +41,20 @@ app.use('/images', express.static(path.join(__dirname, '../../frontend/public/im
 
 // app.use('/api/turnos',            turnoRoutes);
 app.use('/api/deportes',          deporteRoutes);
-// app.use('/api/resenas',           resenaRoutes);
+app.use('/api/resenas',           resenaRoutes);
 app.use("/api/usuarios",          usuarioRoutes);
 app.use('/api/complejos',         complejoRoutes); 
 app.use('/api/canchas',           canchaRoutes);
 app.use('/api/admin/solicitudes', solicitudRoutes);   // ---> Se ve horrible identado en columnas jaja
 app.use('/api/horarios',          horarioRoutes);
 app.use('/api/turnos',            turnoRoutes);
+app.use('/api/cronogramas',       cronogramaRoutes);
+app.use('/api/servicios',         servicioRoutes);
 app.use('/api/localidades',       localidadRoutes);
+app.use('/api/alquileres',        alquilerRoutes);
 // app.use('/api/owners',            ownerRoutes);
 // app.use('/api/domicilios',        domicilioRoutes);
 // app.use('/api/pagos',             pagoRoutes);
-// app.use('/api/alquileres',        alquilerRoutes);
 // app.use('/api/administradores',   administradorRoutes);
 
 app.listen(PORT, () => {

@@ -69,6 +69,9 @@ function InfoCancha({ cancha, complejo, deporte }) {
           <h2 className="text-2xl font-bold font-lora text-gray-800">
             {complejo.nombre} - Cancha N°{cancha.nroCancha}
           </h2>
+          {cancha.descripcion && (
+            <p className="text-gray-600 mt-1">{cancha.descripcion}</p>
+          )}
           <button className="flex items-center text-sm text-yellow-500 mt-1">
             <StarIcon className="w-4 h-4 mr-1" />
             {/* Lógica condicional para mostrar puntaje o mensaje de "Sin reseñas" */}

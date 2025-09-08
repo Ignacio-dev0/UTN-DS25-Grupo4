@@ -1,12 +1,12 @@
 export interface CreateTurno {
-    hora: string;
+    horaInicio: string;
     fecha: Date;
     precio: number;
     canchaId: number;
 }
 
 export interface UpdateTurno {
-    hora?: string;
+    horaInicio?: string;
     fecha?: Date;
     precio?: number;
     canchaId?: number;

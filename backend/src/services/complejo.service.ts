@@ -52,11 +52,54 @@ export const getAllComplejos = async () => {
   });
 };
 
+export const getComplejosAprobados = async () => {
+  return await prisma.complejo.findMany({
+    where: {
+      solicitud: {
+        estado: 'APROBADA'
+      }
+    },
+    include: { 
+      domicilio: {
+        include: {
+          localidad: true
+        }
+      },
+      solicitud: true,
+      usuario: true 
+    },
+  });
+};
+
 
 export const getComplejoById = async (id:number) => {
   return prisma.complejo.findUnique({
     where:{ id }, 
-    include: { domicilio: true },
+    include: { 
+      domicilio: {
+        include: {
+          localidad: true
+        }
+      },
+      solicitud: true,
+      usuario: true,
+      canchas: {
+        include: {
+          deporte: true,
+          cronograma: true,
+          turnos: {
+            where: {
+              fecha: {
+                gte: new Date()
+              }
+            },
+            orderBy: {
+              fecha: 'asc'
+            }
+          }
+        }
+      }
+    },
   });
 }
 

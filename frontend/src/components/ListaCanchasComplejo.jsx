@@ -14,9 +14,64 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, isEditing }) {
   const CANCHAS_POR_PAGINA = 5;
   const canchasPaginadas = canchas.slice(0, CANCHAS_POR_PAGINA);
 
-  const handleGuardarCancha = (nuevaCancha) => {
-    console.log('Guardando nueva cancha:', nuevaCancha);
-    setShowAddForm(false);
+  const handleGuardarCancha = async (nuevaCancha) => {
+    try {
+      // Obtener complejoId desde la URL o props
+      const complejoId = window.location.pathname.split('/')[2]; // Asumiendo /micomplejo/:id
+      
+      // Extraer número de la cancha del nombre
+      const nroCancha = parseInt(nuevaCancha.nombre.replace(/\D/g, '')) || Math.floor(Math.random() * 1000) + 1000;
+      
+      const canchaData = {
+        nroCancha: nroCancha,
+        deporteId: getDeporteIdByName(nuevaCancha.deporte),
+        descripcion: nuevaCancha.descripcion || 'Cancha nueva',
+        complejoId: parseInt(complejoId),
+        image: ['/images/canchas/default.jpg'] // Por ahora usamos imagen por defecto
+      };
+
+      console.log('Enviando datos de cancha:', canchaData);
+
+      const response = await fetch('http://localhost:3000/api/canchas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(canchaData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Cancha creada exitosamente:', result);
+        alert('Cancha agregada exitosamente');
+        setShowAddForm(false);
+        
+        // Recargar la página o actualizar lista de canchas
+        window.location.reload();
+      } else {
+        const errorData = await response.json();
+        console.error('Error del backend:', errorData);
+        throw new Error(errorData.message || 'Error al crear la cancha');
+      }
+    } catch (error) {
+      console.error('Error creando cancha:', error);
+      alert('Error al crear la cancha: ' + error.message);
+    }
+  };
+
+  // Función helper para obtener el ID del deporte por nombre
+  const getDeporteIdByName = (nombreDeporte) => {
+    const deportesMap = {
+      'Fútbol 5': 1,
+      'Fútbol 11': 2,
+      'Vóley': 3,
+      'Básquet': 4,
+      'Handball': 5,
+      'Tenis': 6,
+      'Pádel': 7,
+      'Hockey': 8
+    };
+    return deportesMap[nombreDeporte] || 1; // Por defecto fútbol 5
   };
   
 

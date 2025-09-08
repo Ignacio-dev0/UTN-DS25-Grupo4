@@ -12,7 +12,6 @@ function EditarCanchaPage() {
   
   const [cancha, setCancha] = useState(null);
   const [complejo, setComplejo] = useState(null);
-  const [deporte, setDeporte] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,13 +28,33 @@ function EditarCanchaPage() {
         const canchaData = await canchaResponse.json();
         const canchaInfo = canchaData.cancha || canchaData;
         
+        // Transformar turnos del formato de API al formato esperado por el componente
+        const turnosTransformados = (canchaInfo.turnos || []).map(turno => {
+          const fecha = new Date(turno.fecha);
+          const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+          const dia = dias[fecha.getDay()];
+          
+          const horaInicio = new Date(turno.horaInicio);
+          const hora = horaInicio.toLocaleTimeString('es-AR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          });
+          
+          return {
+            ...turno,
+            dia,
+            hora,
+            estado: turno.reservado ? 'reservado' : 'disponible'
+          };
+        });
+        
         setCancha({
           ...canchaInfo,
           otrasImagenes: canchaInfo.otrasImagenes || [],
-          turnos: canchaInfo.turnos || []
+          turnos: turnosTransformados
         });
         setComplejo(canchaInfo.complejo);
-        setDeporte(canchaInfo.deporte);
         
       } catch (error) {
         console.error('Error cargando datos:', error);

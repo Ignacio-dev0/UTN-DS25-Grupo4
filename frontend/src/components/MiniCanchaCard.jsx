@@ -1,30 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { StarIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
-import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis } from "react-icons/md";
-import { GiTennisRacket } from "react-icons/gi";
-
-const iconMap = {
-  'Fútbol 5': <FaFutbol />,
-  'Fútbol 11': <FaRegFutbol />,
-  'Vóley': <MdSportsVolleyball />,
-  'Básquet': <IoIosBasketball />,
-  'Handball': <MdSportsHandball />,
-  'Tenis': <MdSportsTennis />,
-  'Pádel': <GiTennisRacket />,
-  'Hockey': <FaHockeyPuck />,
-};
+import { getImageUrl, getPlaceholderImage } from '../config/api.js';
 
 function MiniCanchaCard({ cancha, onAction, isEditing }) {
-  const deporteIcono = iconMap[cancha.deporte] || null;
+  // Usar el icono del backend directamente
+  const deporteIcono = cancha.deporte?.icono || '⚽';
 
   const cardClasses = `block rounded-lg shadow-lg overflow-hidden transition-all duration-300 group relative ${
     cancha.estado === 'deshabilitada' 
     ? 'bg-gray-300'
     : 'bg-secondary hover:shadow-2xl transform hover:-translate-y-1'
   }`;
+
+  // Calcular precio mínimo
+  const precioDesde = cancha.turnos?.length > 0 ? 
+    Math.min(...cancha.turnos.filter(t => !t.reservado).map(t => t.precio)) : null;
 
   return (
     <div className={cardClasses}>
@@ -37,11 +28,16 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
         <div className="relative">
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
-            src={cancha.imageUrl || `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">Cancha ${cancha.noCancha}</text></svg>`)}`} 
-            alt={`Cancha ${cancha.noCancha}`}
+            src={getImageUrl(cancha.image?.[0]) || getPlaceholderImage(`Cancha ${cancha.nroCancha}`)} 
+            alt={`Cancha ${cancha.nroCancha}`}
           />
           {cancha.estado === 'deshabilitada' && (
             <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+          )}
+          {precioDesde && (
+            <div className="absolute top-2 right-2 bg-secondary bg-opacity-80 text-light text-xs font-bold p-1 rounded">
+              desde ${precioDesde.toLocaleString('es-AR')}
+            </div>
           )}
         </div>
       </Link>
@@ -58,13 +54,14 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
       
       <div className={`p-4 ${cancha.estado === 'deshabilitada' ? 'opacity-60' : ''}`}>
         <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold text-light font-lora">Cancha N°{cancha.noCancha}</h3>
+            <h3 className="text-lg font-bold text-light font-lora">Cancha N°{cancha.nroCancha}</h3>
             <div className="flex items-center text-sm flex-shrink-0 ml-2">
                 <StarIcon className="w-5 h-5 text-yellow-400 mr-1" />
-                <span className="font-bold text-white">{cancha.puntaje?.toFixed(1)}</span>
+                <span className="font-bold text-white">{cancha.puntaje > 0 ? cancha.puntaje.toFixed(1) : 'Nuevo'}</span>
             </div>
         </div>
         <p className="text-sm text-accent mt-1 truncate">{cancha.descripcion}</p>
+        <p className="text-xs text-accent mt-1">{cancha.deporte?.nombre}</p>
       </div>
     </div>
   );

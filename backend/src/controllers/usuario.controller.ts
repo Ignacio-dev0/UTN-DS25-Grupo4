@@ -159,10 +159,10 @@ export async function login(req: Request, res: Response) {
       ok: true,
       user: {
         id: usuario.id,
-        email: usuario.email || usuario.correo, // Compatibilidad con ambos campos
+        email: usuario.correo, // Usar correo del schema
         nombre: usuario.nombre,
         apellido: usuario.apellido,
-        role: usuario.role || usuario.rol // Compatibilidad con ambos campos
+        role: usuario.rol // Usar rol del schema
       },
       message: 'Login exitoso'
     });

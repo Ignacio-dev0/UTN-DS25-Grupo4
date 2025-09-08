@@ -5,6 +5,9 @@ import { crearTurnoSchema, actualizarTurnoSchema, turnoIdSchema, turnosCanchaSch
 
 const router = Router()
 
+// Generar turnos automáticamente
+router.post('/generar', turnoController.generarTurnos);
+
 // CRUD completo para turnos
 router.post('/', validate(crearTurnoSchema), turnoController.createTurno);
 router.get('/', turnoController.getAllTurnos);

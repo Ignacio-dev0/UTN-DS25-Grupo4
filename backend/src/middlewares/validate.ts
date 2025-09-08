@@ -21,14 +21,27 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodObject, ZodError } from 'zod';
 
 // CORRECCIÓN: El tipo del schema se ajusta a ZodObject.
+// CORRECCIÓN: El tipo del schema se ajusta a ZodObject.
 export const validate = (schema: ZodObject<any>) => 
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await schema.parseAsync({
-        body: req.body,
-        query: req.query,
-        params: req.params,
-      });
+      // Determinar qué validar basado en la estructura del schema
+      const schemaKeys = Object.keys(schema.shape);
+      let dataToValidate;
+      
+      if (schemaKeys.includes('body') || schemaKeys.includes('params') || schemaKeys.includes('query')) {
+        // Schema estructurado con body/params/query
+        dataToValidate = {
+          body: req.body,
+          params: req.params,
+          query: req.query
+        };
+      } else {
+        // Schema simple, validar directamente el body
+        dataToValidate = req.body;
+      }
+      
+      await schema.parseAsync(dataToValidate);
       return next();
     } catch (error) {
       // AÑADIMOS ESTE CONSOLE.ERROR PARA VER EL ERROR REAL

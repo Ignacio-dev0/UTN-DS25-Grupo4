@@ -6,6 +6,7 @@ export const createHorario = async(data: horarioInterface.CreateHorario) => {
         data: {
             horaInicio: data.horaInicio ,
             horaFin: data.horaFin,
+            diaSemana: data.diaSemana,
             cancha: {
                 connect: {
                     id: data.canchaId
@@ -67,7 +68,8 @@ export async function updateHorario(id: number, data: horarioInterface.UpdateCro
         where: { id },
         data: {
             ...(data.horaInicio && { horaInicio: data.horaInicio }),
-            ...(data.horaFin && { horaFin: data.horaFin })
+            ...(data.horaFin && { horaFin: data.horaFin }),
+            ...(data.diaSemana && { diaSemana: data.diaSemana })
         },
         include: {
             cancha: {

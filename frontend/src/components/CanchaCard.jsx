@@ -1,21 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
-import { FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
-import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis } from "react-icons/md";
-import { GiTennisRacket } from "react-icons/gi";
-
-const iconMap = {
-  'Fútbol 5': <FaFutbol />,
-  'Fútbol 11': <FaRegFutbol />,
-  'Vóley': <MdSportsVolleyball />,
-  'Básquet': <IoIosBasketball />,
-  'Handball': <MdSportsHandball />,
-  'Tenis': <MdSportsTennis />,
-  'Pádel': <GiTennisRacket />, 
-  'Hockey': <FaHockeyPuck />,
-};
+import { getImageUrl, getPlaceholderImage } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
   // Usar datos transformados del backend
@@ -28,7 +14,8 @@ function CanchaCard({ cancha }) {
     });
   }) || [];
   
-  const deporteIconFinal = iconMap[cancha.deporte?.nombre] || null;
+  // Usar el icono del backend directamente
+  const deporteIcono = cancha.deporte?.icono || '⚽';
 
   // Calcular precio mínimo de los turnos disponibles
   const precioDesde = cancha.turnos?.length > 0 ? 
@@ -38,13 +25,13 @@ function CanchaCard({ cancha }) {
     <Link to={`/reserva/${cancha.id}`} className="block bg-secondary rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1 group relative">
       <div className="absolute top-3 left-3 z-10 bg-secondary text-accent rounded-full w-12 h-12 flex items-center justify-center shadow-md border-2 border-white">
         <span className="text-2xl">
-          {deporteIconFinal}
+          {deporteIcono}
         </span>
       </div>
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={cancha.image?.[0] || `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${cancha.deporte?.nombre || 'Cancha'}</text></svg>`)}`}
+          src={getImageUrl(cancha.image?.[0]) || getPlaceholderImage(cancha.deporte?.nombre || 'Cancha')}
           onError={(e) => {
             // Crear un SVG placeholder inline
             e.target.src = `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${cancha.deporte?.nombre || 'Cancha'}</text></svg>`)}`;

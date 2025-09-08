@@ -111,12 +111,17 @@ export async function obtenerCanchasPorComplejoId(complejoId: number) {
 
 export async function actualizarCancha (id: number, data: UpdateCanchaRequest) {
 	const { deporteId, ...cancha } = data;
+  
+  const updateData: any = { ...cancha };
+  
+  // Solo conectar deporte si deporteId está definido
+  if (deporteId !== undefined) {
+    updateData.deporte = { connect: { id: deporteId } };
+  }
+  
   return prisma.cancha.update({
     where: { id },
-    data: {
-			...cancha,
-			deporte: { connect: { id: deporteId } },
-		}
+    data: updateData
   });
 };
 

@@ -245,14 +245,14 @@ export const transformComplejoData = (complejoBackend) => {
 };
 
 // Eliminar export default para evitar conflictos de módulos
-// export default {
-//   canchasApi,
-//   deportesApi,
-//   complejosApi,
-//   turnosApi,
-//   usuariosApi,
-//   resenasApi,
-//   localidadesApi,
-//   transformCanchaData,
-//   transformComplejoData
-// };
+export default {
+  canchasApi,
+  deportesApi,
+  complejosApi,
+  turnosApi,
+  usuariosApi,
+  resenasApi,
+  localidadesApi,
+  transformCanchaData,
+  transformComplejoData
+};

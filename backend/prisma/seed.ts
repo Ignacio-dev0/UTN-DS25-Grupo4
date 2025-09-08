@@ -1733,6 +1733,63 @@ async function main() {
     const deportes = await prisma.deporte.createManyAndReturn({ data: deportesData });
     const deporteMap = new Map(deportes.map(d => [d.nombre, d.id]));
 
+    // 2.5. Crear Servicios
+    console.log('🛠️ Creando servicios...');
+    const serviciosData = [
+      { 
+        nombre: 'WiFi Gratuito', 
+        descripcion: 'Conexión a internet inalámbrica para usuarios',
+        icono: '📶'
+      },
+      { 
+        nombre: 'Estacionamiento', 
+        descripcion: 'Lugar para estacionar vehículos',
+        icono: '🅿️'
+      },
+      { 
+        nombre: 'Vestuarios', 
+        descripcion: 'Espacios para cambio de ropa y ducha',
+        icono: '🚿'
+      },
+      { 
+        nombre: 'Cafetería', 
+        descripcion: 'Servicio de comidas y bebidas',
+        icono: '☕'
+      },
+      { 
+        nombre: 'Seguridad 24hs', 
+        descripcion: 'Vigilancia las 24 horas del día',
+        icono: '🔒'
+      },
+      { 
+        nombre: 'Aire Acondicionado', 
+        descripcion: 'Climatización en espacios cerrados',
+        icono: '❄️'
+      },
+      { 
+        nombre: 'Iluminación LED', 
+        descripcion: 'Iluminación moderna y eficiente',
+        icono: '💡'
+      },
+      { 
+        nombre: 'Alquiler de Equipos', 
+        descripción: 'Alquiler de equipamiento deportivo',
+        icono: '⚽'
+      },
+      { 
+        nombre: 'Primeros Auxilios', 
+        descripcion: 'Botiquín y atención médica básica',
+        icono: '🏥'
+      },
+      { 
+        nombre: 'Música Ambiental', 
+        descripcion: 'Sistema de audio para ambiente',
+        icono: '🎵'
+      }
+    ];
+    const servicios = await prisma.servicio.createManyAndReturn({ data: serviciosData });
+    const servicioMap = new Map(servicios.map(s => [s.nombre, s.id]));
+
     // 3. Crear Administrador
     console.log('👤 Creando administrador...');
     const hashedAdminPassword = await bcrypt.hash('admin123', 10);
@@ -2101,6 +2158,46 @@ async function main() {
           usuarioId: data.usuarioId,
         }
       });
+    }
+
+    // 8. Agregar servicios a complejos aleatoriamente
+    console.log('🛠️ Asignando servicios a complejos...');
+    const serviciosComunes = ['WiFi Gratuito', 'Estacionamiento', 'Vestuarios'];
+    const serviciosOpcionales = ['Cafetería', 'Seguridad 24hs', 'Aire Acondicionado', 'Iluminación LED', 'Alquiler de Equipos', 'Primeros Auxilios', 'Música Ambiental'];
+    
+    for (const complejo of complejos) {
+      // Agregar servicios comunes a todos los complejos
+      for (const nombreServicio of serviciosComunes) {
+        const servicioId = servicioMap.get(nombreServicio);
+        if (servicioId) {
+          await prisma.complejoServicio.create({
+            data: {
+              complejoId: complejo.id,
+              servicioId: servicioId,
+              disponible: true
+            }
+          });
+        }
+      }
+      
+      // Agregar servicios opcionales aleatoriamente (2-4 servicios por complejo)
+      const numServiciosAdicionales = Math.floor(Math.random() * 3) + 2;
+      const serviciosSeleccionados = serviciosOpcionales
+        .sort(() => 0.5 - Math.random())
+        .slice(0, numServiciosAdicionales);
+      
+      for (const nombreServicio of serviciosSeleccionados) {
+        const servicioId = servicioMap.get(nombreServicio);
+        if (servicioId) {
+          await prisma.complejoServicio.create({
+            data: {
+              complejoId: complejo.id,
+              servicioId: servicioId,
+              disponible: Math.random() > 0.1 // 90% de probabilidad de estar disponible
+            }
+          });
+        }
+      }
     }
 
     console.log('✅ Seed completado exitosamente!');
