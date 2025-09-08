@@ -117,8 +117,7 @@ model HorarioCronograma { //horarios CHIQUITITOS
 
 model Turno {
 	id        	Int      	@id @default(autoincrement())
-	fecha   		DateTime 	@db.Date
-	horaInicio 	DateTime  @db.Time 
+	fechaHora		DateTime 
 	precio    	Float
 	reservado 	Boolean 	@default(false)
 

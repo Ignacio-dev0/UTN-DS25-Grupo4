@@ -1,7 +1,9 @@
 import { Router } from "express";
 import * as turnoController from "../controllers/turno.controllers";
+import { validate } from "../middlewares/validate";
+import { createTurnoSchema, updateTurnoSchema } from "../validations/turno.validation";
 
-const router = Router()
+const router = Router();
 
 router.get('/',turnoController.getAllTurnos)
 router.get('/:id',turnoController.getTurnoById)
@@ -9,5 +11,6 @@ router.get('/cancha/:canchaId',turnoController.getTurnosByCanchaAndDate) //GET /
 router.post('/',turnoController.createTurno)
 router.put('/:id',turnoController.updateTurno)
 router.delete('/:id',turnoController.deleteTurno)
+
 
 export default router;
