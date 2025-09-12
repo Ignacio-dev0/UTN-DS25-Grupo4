@@ -177,7 +177,7 @@ export async function login(req: Request, res: Response) {
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, nombre, apellido, dni, telefono } = req.body;
+    const { email, password, nombre, apellido, dni, telefono, tipoUsuario } = req.body;
     
     if (!email || !password || !nombre || !apellido || !dni) {
       return res.status(400).json({
@@ -204,6 +204,9 @@ export async function register(req: Request, res: Response) {
       });
     }
 
+    // Determinar el rol según el tipo de usuario
+    const rol = tipoUsuario === 'DUENIO' ? 'DUENIO' : 'CLIENTE';
+
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
       correo: email,
@@ -212,7 +215,7 @@ export async function register(req: Request, res: Response) {
       lastname: apellido,
       dni: dni, // Mantener como string según el tipo
       telefono,
-      rol: 'CLIENTE' // Rol por defecto
+      rol: rol
     });
 
     res.status(201).json({

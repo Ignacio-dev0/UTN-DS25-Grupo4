@@ -31,11 +31,14 @@ function ComplejoDetallePage() {
         const canchasData = await canchasResponse.json();
         const canchasInfo = canchasData.canchas || canchasData || [];
         
-        // Adaptar las canchas para que tengan la estructura esperada por CanchaCard
+        // Las canchas ya vienen con la estructura correcta del backend
+        // Solo necesitamos asegurar que tengan los campos necesarios
         const canchasAdaptadas = canchasInfo.map(cancha => ({
           ...cancha,
-          deporte: cancha.deporte?.nombre || 'Fútbol',
-          imageUrl: cancha.deporte ? `/images/${cancha.deporte.nombre.toLowerCase().replace(' ', '')}-1.jpg` : '/images/futbol-1.jpg'
+          // Mantener el objeto deporte completo del backend
+          // No sobrescribir, solo asegurar estructura
+          puntaje: cancha.puntaje || 4.5, // Puntaje por defecto si no existe
+          complejo: complejoData.complejo || complejoData // Referencia al complejo
         }));
         
         setCanchas(canchasAdaptadas);

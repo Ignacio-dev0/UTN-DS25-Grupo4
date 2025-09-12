@@ -24,9 +24,10 @@ export const updateComplejoSchema = z.object({
     }),
     body: z.object({
         nombre: z.string().min(3).optional(),
-        descripcion: z.string().min(10).optional(),
-        puntaje: z.number().int().min(0, 'El puntaje no debe ser negativo').max(5, 'El puntaje debe ser menor igual a 5').optional(),
-        image: z.string().optional()
+        descripcion: z.string().optional(), // Removemos la validación mínima para updates
+        image: z.union([z.string(), z.null()]).optional(),
+        horarios: z.string().optional(),
+        servicios: z.array(z.number().int().positive()).optional() // Array de IDs de servicios
     })
 })
 

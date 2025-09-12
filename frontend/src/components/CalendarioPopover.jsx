@@ -55,7 +55,7 @@ function CalendarioPopover({ fechaSeleccionada, onFechaChange, close }) {
           if (estaSeleccionado) {
             clasesBoton += "bg-primary text-white font-bold";
           } else if (esHoy) {
-            clasesBoton += "bg-green-500 text-white font-bold";
+            clasesBoton += "bg-accent text-white font-bold";
           } else if (deshabilitado) {
             clasesBoton += "text-light cursor-not-allowed";
           } else {
@@ -66,7 +66,7 @@ function CalendarioPopover({ fechaSeleccionada, onFechaChange, close }) {
             <button key={dia} disabled={deshabilitado} onClick={() => handleSeleccionarDia(dia)} className={clasesBoton}>
               {dia}
               {esHoy && !estaSeleccionado && (
-                <div className="absolute inset-0 rounded-full border-2 border-green-600"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-accent"></div>
               )}
             </button>
           );

@@ -6,6 +6,8 @@ const router = Router();
 
 router.get('/', alquilerController.obtenerAlquileres);
 
+router.get('/complejo/:complejoId', alquilerController.obtenerAlquileresPorComplejo);
+
 router.get('/:id', alquilerController.obtenerAlquilerPorId);
 
 router.post('/', validate(createAlquilerSchema) ,alquilerController.crearAlquiler);

@@ -23,6 +23,9 @@ function SignUpPage() {
   const [calle, setCalle] = useState('');
   const [altura, setAltura] = useState('');
   const [localidad, setLocalidad] = useState('');
+  const [cuit, setCuit] = useState('');
+  const [complexImage, setComplexImage] = useState(null);
+  const [complexImagePreview, setComplexImagePreview] = useState(null);
   
   const [error, setError] = useState('');
   const [passwordMatch, setPasswordMatch] = useState(true);
@@ -33,6 +36,26 @@ function SignUpPage() {
   const handleUserTypeSelect = (type) => {
     setUserType(type);
     setStep('form');
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Verificar tamaño (máximo 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setError('La imagen es muy grande. Por favor selecciona una imagen menor a 2MB.');
+        return;
+      }
+      
+      setComplexImage(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setComplexImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -62,8 +85,8 @@ function SignUpPage() {
       return;
     }
     
-    if (userType === 'owner' && (!complexName || !calle || !altura || !localidad)) {
-      setError('Por favor, completa todos los datos del complejo.');
+    if (userType === 'owner' && (!complexName || !calle || !altura || !localidad || !cuit)) {
+      setError('Por favor, completa todos los datos del complejo incluyendo el CUIT.');
       return;
     }
     
@@ -92,11 +115,51 @@ function SignUpPage() {
           setError(response.error);
         }
       } else {
-        // Para dueños de complejo, por ahora solo mostrar confirmación
-        // Aquí más adelante implementaremos la creación de solicitudes
-        setStep('confirmation');
+        // Para dueños de complejo - crear usuario y solicitud
+        const userData = {
+          email,
+          password,
+          nombre: firstName,
+          apellido: lastName,
+          dni,
+          telefono: phone,
+          tipoUsuario: 'DUENIO' // Especificar que es dueño
+        };
+        
+        // Primero registrar el usuario
+        const userResponse = await register(userData);
+        
+        if (!userResponse.ok) {
+          setError(userResponse.error);
+          return;
+        }
+        
+        // Luego crear la solicitud del complejo
+        const formData = new FormData();
+        formData.append('usuarioId', userResponse.user.id);
+        formData.append('cuit', cuit);
+        formData.append('nombreComplejo', complexName);
+        formData.append('calle', calle);
+        formData.append('altura', altura);
+        formData.append('localidad', localidad);
+        
+        if (complexImage) {
+          formData.append('imagen', complexImage);
+        }
+        
+        const solicitudResponse = await fetch('http://localhost:3000/api/admin/solicitudes/with-image', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (solicitudResponse.ok) {
+          setStep('confirmation');
+        } else {
+          const errorData = await solicitudResponse.json();
+          setError(errorData.message || 'Error al crear la solicitud de complejo');
+        }
       }
-    } catch (error) {
+    } catch (err) {
       setError('Error de conexión. Intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -109,7 +172,7 @@ function SignUpPage() {
   if (step === 'confirmation') {
     return (
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
-        <FaFutbol className="mx-auto h-16 w-16 text-green-500" />
+        <FaFutbol className="mx-auto h-16 w-16 text-primary" />
         <h2 className="mt-6 text-2xl font-bold text-gray-900">¡Solicitud Enviada!</h2>
         <p className="mt-2 text-gray-600">
             Gracias por registrar tu complejo. Nuestro equipo revisará tu solicitud y te notificaremos por mail cuando sea aprobada.
@@ -169,12 +232,71 @@ function SignUpPage() {
 
           {userType === 'owner' && (
             <div className="animate-fade-in border-t pt-4 mt-4 space-y-4">
-              <input type="text" value={complexName} onChange={(e) => setComplexName(e.target.value)} placeholder="Nombre del complejo" className="w-full px-4 py-2 border rounded-md" required/>
+              <h3 className="text-lg font-semibold text-gray-800">Datos del Complejo</h3>
+              <input 
+                type="text" 
+                value={complexName} 
+                onChange={(e) => setComplexName(e.target.value)} 
+                placeholder="Nombre del complejo" 
+                className="w-full px-4 py-2 border rounded-md" 
+                required
+              />
+              <input 
+                type="text" 
+                value={cuit} 
+                onChange={(e) => setCuit(e.target.value)} 
+                placeholder="CUIT (XX-XXXXXXXX-X)" 
+                className="w-full px-4 py-2 border rounded-md" 
+                required
+              />
               <div className="grid grid-cols-3 gap-2">
-                <input type="text" value={calle} onChange={(e) => setCalle(e.target.value)} placeholder="Calle" className="col-span-2 w-full px-4 py-2 border rounded-md" required/>
-                <input type="text" value={altura} onChange={(e) => setAltura(e.target.value)} placeholder="Altura" className="w-full px-4 py-2 border rounded-md" required/>
+                <input 
+                  type="text" 
+                  value={calle} 
+                  onChange={(e) => setCalle(e.target.value)} 
+                  placeholder="Calle" 
+                  className="col-span-2 w-full px-4 py-2 border rounded-md" 
+                  required
+                />
+                <input 
+                  type="text" 
+                  value={altura} 
+                  onChange={(e) => setAltura(e.target.value)} 
+                  placeholder="Altura" 
+                  className="w-full px-4 py-2 border rounded-md" 
+                  required
+                />
               </div>
-              <input type="text" value={localidad} onChange={(e) => setLocalidad(e.target.value)} placeholder="Localidad (Ej: La Plata)" className="w-full px-4 py-2 border rounded-md" required/>
+              <input 
+                type="text" 
+                value={localidad} 
+                onChange={(e) => setLocalidad(e.target.value)} 
+                placeholder="Localidad (Ej: La Plata)" 
+                className="w-full px-4 py-2 border rounded-md" 
+                required
+              />
+              
+              {/* Campo de imagen */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Imagen del Complejo (opcional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full px-4 py-2 border rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark"
+                />
+                {complexImagePreview && (
+                  <div className="mt-2">
+                    <img 
+                      src={complexImagePreview} 
+                      alt="Preview" 
+                      className="w-32 h-32 object-cover rounded-lg border"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
           

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaSave, FaArrowLeft } from 'react-icons/fa';
 
 import GaleriaFotosEditable from '../components/GaleriaFotosEditable.jsx';
-import InfoCancha from '../components/InfoCancha.jsx';
+import InfoCanchaEditable from '../components/InfoCanchaEditable';
 import CalendarioEdicionTurnos from '../components/CalendarioEdicionTurnos.jsx';
 
 function EditarCanchaPage() {
@@ -28,7 +28,33 @@ function EditarCanchaPage() {
         const canchaData = await canchaResponse.json();
         const canchaInfo = canchaData.cancha || canchaData;
         
-        // Transformar turnos del formato de API al formato esperado por el componente
+        // Cargar cronograma existente
+        let cronogramaExistente = [];
+        try {
+          const cronogramaResponse = await fetch(`http://localhost:3000/api/cronograma/cancha/${canchaId}`);
+          if (cronogramaResponse.ok) {
+            const cronogramaData = await cronogramaResponse.json();
+            cronogramaExistente = cronogramaData.cronograma.map(item => {
+              const horaInicio = new Date(`1970-01-01T${item.horaInicio}`);
+              const hora = horaInicio.toLocaleTimeString('es-AR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+              });
+              
+              return {
+                dia: item.diaSemana,
+                hora,
+                precio: item.precio,
+                estado: 'disponible'
+              };
+            });
+          }
+        } catch (cronogramaError) {
+          console.warn('No se pudo cargar cronograma existente:', cronogramaError);
+        }
+
+        // Transformar turnos del formato de API al formato esperado por el componente (si los hay)
         const turnosTransformados = (canchaInfo.turnos || []).map(turno => {
           const fecha = new Date(turno.fecha);
           const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
@@ -49,10 +75,13 @@ function EditarCanchaPage() {
           };
         });
         
+        // Usar cronograma si no hay turnos específicos
+        const turnosFinales = turnosTransformados.length > 0 ? turnosTransformados : cronogramaExistente;
+        
         setCancha({
           ...canchaInfo,
           otrasImagenes: canchaInfo.otrasImagenes || [],
-          turnos: turnosTransformados
+          turnos: turnosFinales
         });
         setComplejo(canchaInfo.complejo);
         
@@ -73,26 +102,86 @@ function EditarCanchaPage() {
     try {
       console.log("Guardando cancha:", cancha);
       
-      const response = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
+      // Preparar array de imágenes completo
+      let imagenes = [];
+      
+      // Imagen principal
+      let imagenPrincipal = cancha.image?.[0];
+      if (cancha.imageData) {
+        imagenPrincipal = cancha.imageData;
+      } else if (cancha.imageUrl?.startsWith('data:')) {
+        imagenPrincipal = cancha.imageUrl;
+      } else if (!imagenPrincipal) {
+        imagenPrincipal = '/images/canchas/futbol5-1.jpg'; // Imagen por defecto
+      }
+      
+      imagenes.push(imagenPrincipal);
+      
+      // Agregar imágenes adicionales (thumbnails)
+      if (cancha.otrasImagenes && cancha.otrasImagenes.length > 0) {
+        cancha.otrasImagenes.forEach(imagen => {
+          if (imagen && imagen.trim() !== '') {
+            imagenes.push(imagen);
+          }
+        });
+      }
+      
+      // Guardar cambios en la cancha con todas las imágenes
+      const canchaResponse = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          nombre: cancha.nombre,
-          activa: cancha.activa,
-          // Agregar otros campos que se puedan editar
+          nroCancha: parseInt(cancha.nroCancha),
+          descripcion: cancha.descripcion || '',
+          image: imagenes, // Array completo de imágenes
+          deporteId: cancha.deporteId
         }),
       });
       
-      if (response.ok) {
-        alert("Cancha guardada exitosamente");
-        navigate(`/micomplejo/${cancha.complejoId}`);
-      } else {
+      if (!canchaResponse.ok) {
+        const errorData = await canchaResponse.text();
+        console.error('Error response:', errorData);
         throw new Error('Error al guardar la cancha');
       }
+
+      // Guardar cronograma si hay turnos configurados
+      if (cancha.turnos && cancha.turnos.length > 0) {
+        console.log("Guardando cronograma:", cancha.turnos);
+        
+        const cronogramaResponse = await fetch(`http://localhost:3000/api/cronograma/cancha/${canchaId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cronograma: cancha.turnos
+          }),
+        });
+        
+        if (!cronogramaResponse.ok) {
+          const errorData = await cronogramaResponse.json().catch(() => 
+            cronogramaResponse.text().catch(() => 'Error desconocido')
+          );
+          console.error('Error al guardar cronograma:', errorData);
+          throw new Error(`Error al guardar cronograma: ${JSON.stringify(errorData)}`);
+        }
+        
+        const cronogramaData = await cronogramaResponse.json();
+        console.log("Cronograma guardado exitosamente", cronogramaData);
+        
+        // Mostrar información sobre turnos generados
+        if (cronogramaData.turnosGenerados) {
+          console.log(`Turnos generados automáticamente: ${cronogramaData.turnosGenerados}`);
+        }
+      }
+      
+      alert("Cancha y cronograma guardados exitosamente. ¡Los turnos disponibles se han actualizado automáticamente!");
+      navigate(`/micomplejo/${cancha.complejoId}`);
+      
     } catch (error) {
-      console.error('Error guardando cancha:', error);
+      console.error('Error guardando:', error);
       alert('Error al guardar los cambios');
     }
   };
@@ -120,8 +209,8 @@ function EditarCanchaPage() {
             </button>
             <input 
               type="text"
-              value={`Cancha N° ${cancha.noCancha}`}
-              onChange={(e) => setCancha({...cancha, noCancha: e.target.value.replace('Cancha N° ', '')})}
+              value={`Cancha N° ${cancha.nroCancha}`}
+              onChange={(e) => setCancha({...cancha, nroCancha: e.target.value.replace('Cancha N° ', '')})}
               className="text-3xl font-bold font-lora text-gray-800 bg-transparent focus:outline-none focus:border-b-2 focus:border-primary"
             />
           </div>
@@ -133,11 +222,15 @@ function EditarCanchaPage() {
 
       <div className="space-y-12">
         <GaleriaFotosEditable 
-          imageUrl={cancha.imageUrl} 
-          otrasImagenes={cancha.otrasImagenes} 
+          imageUrl={cancha.image?.[0]} 
+          otrasImagenes={cancha.otrasImagenes || []} 
           setCancha={setCancha} 
         />
-        <InfoCancha cancha={cancha} complejo={complejo} deporte={cancha.deporte} />
+        <InfoCanchaEditable 
+          cancha={cancha} 
+          complejo={complejo} 
+          deporte={cancha.deporte} 
+        />
         <CalendarioEdicionTurnos 
           turnos={cancha.turnos} 
           onTurnosChange={(nuevosTurnos) => setCancha({...cancha, turnos: nuevosTurnos})} 

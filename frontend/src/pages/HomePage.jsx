@@ -26,7 +26,22 @@ function HomePage() {
     });
 
     if (deporteSeleccionado === 'Populares') {
-      return canchasConPuntaje.sort((a, b) => b.puntaje - a.puntaje).slice(0, 8);
+      // Group courts by sport and get the highest-rated court for each sport
+      const canchasPorDeporte = {};
+      
+      canchasConPuntaje.forEach(cancha => {
+        const deporteNombre = cancha.deporte?.nombre;
+        if (!deporteNombre) return;
+        
+        if (!canchasPorDeporte[deporteNombre] || 
+            canchasPorDeporte[deporteNombre].puntaje < cancha.puntaje) {
+          canchasPorDeporte[deporteNombre] = cancha;
+        }
+      });
+      
+      // Return all the highest-rated courts from each sport, sorted by rating
+      return Object.values(canchasPorDeporte)
+        .sort((a, b) => b.puntaje - a.puntaje);
     }
 
     const canchasFiltradas = canchasConPuntaje.filter(cancha => 

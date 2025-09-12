@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import ComplejoInfo from '../components/ComplejoInfo.jsx';
 import ListaCanchasComplejo from '../components/ListaCanchasComplejo.jsx';
 import { useAuth } from '../context/AuthContext.jsx'; 
@@ -7,14 +7,125 @@ import { useAuth } from '../context/AuthContext.jsx';
 function MiComplejoPage() {
   const { complejoId } = useParams();
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [infoDelComplejo, setInfoDelComplejo] = useState(null);
   const [canchas, setCanchas] = useState([]);
+  const [ultimosAlquileres, setUltimosAlquileres] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Verificar autorización antes de cargar datos
+  useEffect(() => {
+    const verificarAcceso = async () => {
+      if (!isAuthenticated) {
+        navigate('/');
+        return;
+      }
+
+      // Para administradores, permitir acceso directo
+      if (user?.rol === 'admin') {
+        return; // Los admins pueden acceder a cualquier complejo
+      }
+
+      // Para dueños, verificar que tengan una solicitud aprobada
+      if (user?.rol === 'owner') {
+        try {
+          const response = await fetch(`http://localhost:3000/api/admin/solicitudes?usuarioId=${user.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
+            
+            if (!solicitud || solicitud.estado !== 'APROBADA') {
+              navigate('/estado-solicitud');
+              return;
+            }
+
+            // Verificar que el complejoId corresponde al usuario
+            if (solicitud.complejo?.id !== parseInt(complejoId)) {
+              navigate('/estado-solicitud');
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error verificando acceso:', error);
+          navigate('/estado-solicitud');
+        }
+      } else {
+        // Si no es admin ni owner, redirigir
+        navigate('/');
+      }
+    };
+
+    verificarAcceso();
+  }, [isAuthenticated, user, complejoId, navigate]);
+  
+  // Función para recargar solo las canchas
+  const recargarCanchas = useCallback(async () => {
+    try {
+      // Usar el endpoint específico para canchas por complejo
+      const canchasResponse = await fetch(`http://localhost:3000/api/canchas/complejo/${complejoId}`);
+      if (canchasResponse.ok) {
+        const canchasData = await canchasResponse.json();
+        console.log('Canchas cargadas del backend:', canchasData);
+        const canchasConEstado = (canchasData.canchas || []).map(cancha => ({
+          ...cancha,
+          activa: cancha.activa !== false,
+          estado: (cancha.activa !== false) ? 'habilitada' : 'deshabilitada',
+          deporte: cancha.deporte?.nombre || 'No especificado'
+        }));
+        console.log('Canchas procesadas:', canchasConEstado);
+        setCanchas(canchasConEstado);
+      } else {
+        console.error('Error en la respuesta de canchas:', canchasResponse.status);
+        setCanchas([]);
+      }
+    } catch (error) {
+      console.error('Error recargando canchas:', error);
+      setCanchas([]);
+    }
+  }, [complejoId]);
   
   // Cargar datos del complejo desde el backend
   useEffect(() => {
+    const fetchAlquileres = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/alquileres/complejo/${complejoId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const alquileresCompletos = data.alquileres || data || [];
+          
+          // Calcular el total de ingresos de todos los alquileres
+          const totalIngresos = alquileresCompletos.reduce((suma, alquiler) => {
+            const turno = alquiler.turnos?.[0]; // Obtener el primer turno
+            return suma + (turno?.precio || 0);
+          }, 0);
+          
+          // Formatear solo los últimos 5 para mostrar en la lista
+          const alquileresFormateados = alquileresCompletos
+            .slice(0, 5) // Solo los últimos 5
+            .map(alquiler => {
+              const turno = alquiler.turnos?.[0]; // Obtener el primer turno
+              return {
+                id: alquiler.id,
+                cancha: `Cancha N°${turno?.cancha?.nroCancha || 'N/A'}`,
+                fecha: turno?.fecha ? new Date(turno.fecha).toLocaleDateString('es-AR') : 'N/A',
+                total: turno?.precio || 0
+              };
+            });
+          setUltimosAlquileres(alquileresFormateados);
+          
+          // Actualizar el balance del complejo
+          setInfoDelComplejo(prev => prev ? { ...prev, balance: totalIngresos } : null);
+        } else {
+          setUltimosAlquileres([]);
+        }
+      } catch (error) {
+        console.error('Error cargando alquileres:', error);
+        setUltimosAlquileres([]);
+      }
+    };
+
     const fetchComplejoData = async () => {
       try {
         setLoading(true);
@@ -28,7 +139,7 @@ function MiComplejoPage() {
         const complejo = complejoData.complejo || complejoData;
         
         // Solo verificar estado si no es admin
-        if (user?.role !== 'admin') {
+        if (user?.rol !== 'admin') {
           if (complejo.activo === false || complejo.solicitud?.estado !== 'APROBADA') {
             setError('El complejo no está disponible o está suspendido');
             return;
@@ -37,38 +148,28 @@ function MiComplejoPage() {
         
         setInfoDelComplejo(complejo);
 
-        // Cargar servicios del complejo
+        // Cargar servicios del complejo - ahora usando IDs
         const serviciosResponse = await fetch(`http://localhost:3000/api/servicios`);
         if (serviciosResponse.ok) {
           const serviciosData = await serviciosResponse.json();
-          const serviciosDelComplejo = serviciosData.servicios
+          const serviciosIdsDelComplejo = serviciosData.servicios
             .filter(servicio => 
               servicio.complejos.some(cs => cs.complejoId === parseInt(complejoId) && cs.disponible)
             )
-            .map(servicio => servicio.nombre);
+            .map(servicio => servicio.id);
           
-          // Agregar servicios al complejo
+          // Agregar servicios al complejo (ahora como IDs)
           setInfoDelComplejo(prev => ({
             ...prev,
-            servicios: serviciosDelComplejo
+            servicios: serviciosIdsDelComplejo
           }));
         }
 
-        // Obtener canchas del complejo con mejor filtrado
-        const canchasResponse = await fetch(`http://localhost:3000/api/canchas/complejo/${complejoId}`);
-        if (!canchasResponse.ok) {
-          throw new Error('Error al cargar las canchas');
-        }
-        const canchasData = await canchasResponse.json();
-        const canchasConEstado = (canchasData.canchas || canchasData || [])
-          .map(cancha => ({
-            ...cancha,
-            // Normalizar activa: null o undefined se consideran como true (habilitada por defecto)
-            activa: cancha.activa !== false,
-            estado: (cancha.activa !== false) ? 'habilitada' : 'deshabilitada',
-            deporte: cancha.deporte?.nombre || 'No especificado'
-          }));
-        setCanchas(canchasConEstado);
+        // Obtener canchas del complejo
+        await recargarCanchas();
+        
+        // Cargar alquileres del complejo
+        await fetchAlquileres();
         
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -81,23 +182,40 @@ function MiComplejoPage() {
     if (complejoId) {
       fetchComplejoData();
     }
-  }, [complejoId, user?.role]);
+  }, [complejoId, user?.rol, recargarCanchas]);
 
-  const handleToggleEdit = async () => {
+    const handleToggleEdit = async () => {
     if(isEditing) {
       try {
-        console.log('Datos a enviar:', infoDelComplejo);
+        // Preparar datos para actualizar - servicios ya vienen como IDs
+        const datosParaActualizar = {
+          nombre: infoDelComplejo.nombre?.trim() || "",
+          descripcion: infoDelComplejo.descripcion?.trim() || "",
+          image: infoDelComplejo.image || null,
+          horarios: infoDelComplejo.horarios?.trim() || "",
+          servicios: infoDelComplejo.servicios || []
+        };
+        
+        console.log('Datos a enviar:', datosParaActualizar);
+        
         const response = await fetch(`http://localhost:3000/api/complejos/${complejoId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(infoDelComplejo),
+          body: JSON.stringify(datosParaActualizar),
         });
         
         if (response.ok) {
-          console.log("Datos del complejo guardados correctamente");
+          const responseData = await response.json();
+          console.log("Datos del complejo guardados correctamente:", responseData);
           alert('Información del complejo actualizada correctamente');
+          
+          // Actualizar el estado local con los datos guardados
+          setInfoDelComplejo(prev => ({
+            ...prev,
+            ...datosParaActualizar
+          }));
         } else {
           const errorData = await response.json();
           console.error('Error del backend:', errorData);
@@ -162,12 +280,6 @@ function MiComplejoPage() {
     }
   };
 
-  // Obtener últimos alquileres (placeholder por ahora, puedes implementar el endpoint)
-  const ultimosAlquileres = [
-    { id: 1, cancha: 'Cancha N°5', fecha: '29/06/2025', total: 28000 },
-    { id: 2, cancha: 'Cancha N°1', fecha: '29/06/2025', total: 30000 },
-  ];
-
   // Crear turnos para una cancha específica
   const crearTurnos = async (canchaId, turnos) => {
     try {
@@ -225,10 +337,10 @@ function MiComplejoPage() {
   let puedeVerLaPagina = false;
 
   if (isAuthenticated && infoDelComplejo) {
-    if (user.role === 'admin') {
+    if (user.rol === 'admin') {
       puedeVerLaPagina = true;
     } 
-    else if (user.role === 'owner' && parseInt(user.id) === parseInt(infoDelComplejo.usuarioId)) {
+    else if (user.rol === 'owner' && parseInt(user.id) === parseInt(infoDelComplejo.usuarioId)) {
       puedeVerLaPagina = true;
     }
   }
@@ -274,7 +386,7 @@ function MiComplejoPage() {
 
   console.log('Debug acceso:', {
     isAuthenticated,
-    userRole: user?.role,
+    userRole: user?.rol, // Corregir: usar 'rol' en lugar de 'role'
     userId: user?.id,
     complejoUsuarioId: infoDelComplejo?.usuarioId,
     puedeVer: puedeVerLaPagina
@@ -329,6 +441,7 @@ function MiComplejoPage() {
           onDelete={handleDeleteCancha}
           onDisable={handleDisableCancha}
           onGenerarTurnos={generarTurnosAutomaticos}
+          onRecargarCanchas={recargarCanchas}
           isEditing={isEditing}
         />
       </div>

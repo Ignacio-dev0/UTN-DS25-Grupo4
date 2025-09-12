@@ -14,6 +14,69 @@ export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) =>
     }});
 }
 
+export const createSolicitudWithComplejo = async (data: any) => {
+    // Crear la solicitud y luego el complejo asociado
+    return prisma.$transaction(async (tx) => {
+        // Buscar o crear localidad
+        let localidad = await tx.localidad.findFirst({
+            where: { nombre: data.complejo.domicilio.localidad }
+        });
+        
+        if (!localidad) {
+            localidad = await tx.localidad.create({
+                data: { nombre: data.complejo.domicilio.localidad }
+            });
+        }
+
+        // Crear la solicitud primero
+        const nuevaSolicitud = await tx.solicitud.create({
+            data: {
+                cuit: data.cuit,
+                estado: 'PENDIENTE',
+                usuarioId: data.usuarioId
+            }
+        });
+
+        // Crear el domicilio
+        const nuevoDomicilio = await tx.domicilio.create({
+            data: {
+                calle: data.complejo.domicilio.calle,
+                altura: parseInt(data.complejo.domicilio.altura),
+                localidadId: localidad.id
+            }
+        });
+
+        // Crear el complejo asociado a la solicitud
+        const nuevoComplejo = await tx.complejo.create({
+            data: {
+                nombre: data.complejo.nombre,
+                image: data.complejo.imagen,
+                cuit: data.cuit,
+                domicilioId: nuevoDomicilio.id,
+                usuarioId: data.usuarioId,
+                solicitudId: nuevaSolicitud.id
+            }
+        });
+
+        // Retornar la solicitud completa con todas las relaciones
+        return await tx.solicitud.findUnique({
+            where: { id: nuevaSolicitud.id },
+            include: {
+                usuario: true,
+                complejo: {
+                    include: {
+                        domicilio: {
+                            include: {
+                                localidad: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+};
+
 export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitudRequest) =>{
     const soliUpdate:any={
         estado: data.estado,

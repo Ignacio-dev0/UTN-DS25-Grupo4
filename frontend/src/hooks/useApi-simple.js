@@ -26,64 +26,23 @@ export const useCanchas = () => {
         throw new Error('La respuesta del servidor no es un array válido');
       }
       
-      // Transformar datos manteniendo estructura compatible con CanchaCard
+      // Transformar datos manteniendo estructura original del backend
       const transformedData = data.map(cancha => {
-        // Calcular precio mínimo desde los turnos reales
-        const precios = cancha.turnos?.map(turno => turno.precio).filter(precio => precio > 0) || [];
-        const precioMinimo = precios.length > 0 ? Math.min(...precios) : 15000;
+        console.log('Raw cancha from API:', cancha);
+        console.log('Raw cronograma:', cancha.cronograma);
         
-        // Función para normalizar rutas de imágenes (remover acentos)
-        const normalizeImagePath = (path) => {
-          return path
-            .replace(/á/g, 'a')
-            .replace(/é/g, 'e')
-            .replace(/í/g, 'i')
-            .replace(/ó/g, 'o')
-            .replace(/ú/g, 'u')
-            .replace(/ñ/g, 'n');
-        };
-
-        // Función para mapear imágenes a las que realmente existen (1-8 por deporte)
-        const mapToExistingImage = (imagePath, deporteNombre) => {
-          const normalizedPath = normalizeImagePath(imagePath);
-          
-          // Extraer el número de la imagen original
-          const match = normalizedPath.match(/(\w+)-(\d+)\.jpg$/);
-          if (!match) return normalizedPath;
-          
-          const [, deporte, numero] = match;
-          const num = parseInt(numero);
-          
-          // Mapear a números 1-8 que realmente existen
-          const mappedNum = ((num - 1) % 8) + 1;
-          const newPath = normalizedPath.replace(/(\w+)-(\d+)\.jpg$/, `$1-${mappedNum}.jpg`);
-          
-          console.log(`Mapeando imagen: ${imagePath} -> ${newPath}`);
-          return newPath;
-        };
-
-        // Función para crear URL de imagen con fallback
-        const createImageUrl = (imagePath, deporte) => {
-          const mappedPath = mapToExistingImage(imagePath, deporte);
-          const imageUrl = `http://localhost:3000${mappedPath}`;
-          return imageUrl;
-        };
+        // Calcular precio mínimo desde cronograma
+        const precios = cancha.cronograma?.map(horario => horario.precio).filter(precio => precio > 0);
+        const precioMinimo = precios?.length > 0 ? Math.min(...precios) : null;
         
+        console.log('Precios array:', precios);
+        console.log('Precio mínimo calculated:', precioMinimo);
+        
+        // Mantener estructura original del backend, solo agregar campos calculados
         return {
-          id: cancha.id,
-          nroCancha: cancha.nroCancha, // Mantener nombre original
-          numero: cancha.nroCancha, // Para compatibilidad
-          deporte: cancha.deporte || { nombre: 'Sin deporte' },
-          deporteId: cancha.deporteId,
-          complejo: cancha.complejo, // Mantener objeto completo para que funcione cancha.complejo?.nombre
-          complejoId: cancha.complejoId,
-          localidad: cancha.complejo?.domicilio?.localidad?.nombre || 'Sin localidad',
-          descripcion: cancha.descripcion || '',
-          puntaje: cancha.puntaje || 0,
-          image: cancha.image ? cancha.image.map(img => createImageUrl(img, cancha.deporte?.nombre)) : [], // Mantener nombre 'image'
-          imagenes: cancha.image ? cancha.image.map(img => createImageUrl(img, cancha.deporte?.nombre)) : [], // Para compatibilidad
-          turnos: cancha.turnos || [],
-          precioDesde: precioMinimo,
+          ...cancha, // Mantener todos los datos originales
+          precioDesde: precioMinimo, // Campo calculado para mostrar precio mínimo
+          localidad: cancha.complejo?.domicilio?.localidad?.nombre || 'Sin localidad', // Campo de conveniencia
         };
       });
       
@@ -129,9 +88,18 @@ export const useCancha = (canchaId) => {
       // El backend devuelve { cancha: {...} } para endpoints individuales
       const data = result.cancha || result;
       
+      const createImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+          return imagePath;
+        }
+        // Por ahora, usar placeholder hasta que el backend sirva imágenes correctamente
+        return null; // Esto hará que se use el placeholder
+      };
+      
       // Transformar datos manteniendo estructura compatible con CanchaCard
-      const precios = data.turnos?.map(turno => turno.precio).filter(precio => precio > 0) || [];
-      const precioMinimo = precios.length > 0 ? Math.min(...precios) : 15000;
+      const precios = data.cronograma?.map(horario => horario.precio).filter(precio => precio > 0) || [];
+      const precioMinimo = precios.length > 0 ? Math.min(...precios) : null;
       
       const transformedCancha = {
         id: data.id,
@@ -144,9 +112,10 @@ export const useCancha = (canchaId) => {
         localidad: data.complejo?.domicilio?.localidad?.nombre || 'Sin localidad',
         descripcion: data.descripcion || '',
         puntaje: data.puntaje || 0,
-        image: data.image ? data.image.map(img => `http://localhost:3000${img}`) : [], // Mantener nombre 'image'
-        imagenes: data.image ? data.image.map(img => `http://localhost:3000${img}`) : [], // Para compatibilidad
+        image: data.image ? data.image.map(img => createImageUrl(img)) : [], // Usando createImageUrl
+        imagenes: data.image ? data.image.map(img => createImageUrl(img)) : [], // Para compatibilidad
         turnos: data.turnos || [],
+        cronograma: data.cronograma || [], // Agregar cronograma
         precioDesde: precioMinimo,
       };
       

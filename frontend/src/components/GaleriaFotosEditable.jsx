@@ -21,8 +21,9 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
           if (currentImageIndex === 'main') {
             return { 
               ...prevCancha, 
+              image: [reader.result], // Actualizar array principal
               imageUrl: reader.result,
-              imageData: reader.result // Para enviar al backend
+              imageData: reader.result
             };
           } else if (typeof currentImageIndex === 'number') {
             const updatedOtrasImagenes = [...(prevCancha.otrasImagenes || [])];

@@ -1,56 +1,29 @@
 import React from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { FaWifi, FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
+import { FaWifi } from "react-icons/fa";
 import { FaChalkboardUser } from "react-icons/fa6";
-import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis, MdRestaurant, MdFamilyRestroom, MdSportsHockey } from "react-icons/md";
-import { GiTennisRacket, GiTrophy, GiPartyPopper } from "react-icons/gi";
+import { MdRestaurant, MdFamilyRestroom } from "react-icons/md";
+import { GiTrophy, GiPartyPopper } from "react-icons/gi";
 import { PiTShirtFill, PiCarFill } from "react-icons/pi";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const deporteIconMap = {
-  'Fútbol 5': <FaFutbol />,
-  'Fútbol 11': <FaRegFutbol />,
-  'Vóley': <MdSportsVolleyball />,
-  'Básquet': <IoIosBasketball />,
-  'Handball': <MdSportsHandball />,
-  'Tenis': <MdSportsTennis />,
-  'Pádel': <GiTennisRacket />,
-  'Hockey': <FaHockeyPuck />,
-};
-
-const serviciosIconMap = {
-  'Estacionamiento': <PiCarFill />,
-  'Vestuarios': <PiTShirtFill />,
-  'Buffet': <MdRestaurant />,
-  'Parrillas': <MdFamilyRestroom />,
-  'Wi-Fi': <FaWifi />,
-  'Kiosco': <MdRestaurant />,
-  'Clases': <FaChalkboardUser />,
-  'Confitería': <MdRestaurant />,
-  'Club House': <MdFamilyRestroom />,
-  'Pro-Shop': <PiTShirtFill />,
-  'Tienda': <PiTShirtFill />,
-  'Quincho': <MdFamilyRestroom />,
-  'Cumpleaños': <GiPartyPopper />,
-  'Escuelita deportiva': <FaChalkboardUser />,
-  'Torneos': <GiTrophy />,
-  'Restaurante': <MdRestaurant />,
-};
-
 const ServicioItem = ({ servicio }) => {
-  const icono = serviciosIconMap[servicio] || <StarIcon className="w-5 h-5 text-secondary" />;
+  // Use emoji from backend if it's an object with icono property, otherwise fallback
+  const servicioNombre = typeof servicio === 'object' ? servicio.nombre : servicio;
+  const servicioIcono = typeof servicio === 'object' && servicio.icono ? servicio.icono : '⭐';
+  
   return (
     <div className="flex items-center gap-3">
-      <span className="text-secondary text-2xl">{icono}</span>
-      <span className="font-medium text-primary">{servicio}</span>
+      <span className="text-secondary text-2xl">{servicioIcono}</span>
+      <span className="font-medium text-primary">{servicioNombre}</span>
     </div>
   );
 };
 
-function InfoCancha({ cancha, complejo, deporte }) {
-  const deporteIcono = deporteIconMap[deporte] || null;
+function InfoCancha({ cancha, complejo }) {
+  // Use the emoji icon directly from the deporte object
+  const deporteIcono = cancha?.deporte?.icono || '⚽';
 
   const position = [
     complejo.lat || -34.9214,
@@ -69,9 +42,6 @@ function InfoCancha({ cancha, complejo, deporte }) {
           <h2 className="text-2xl font-bold font-lora text-gray-800">
             {complejo.nombre} - Cancha N°{cancha.nroCancha}
           </h2>
-          {cancha.descripcion && (
-            <p className="text-gray-600 mt-1">{cancha.descripcion}</p>
-          )}
           <button className="flex items-center text-sm text-yellow-500 mt-1">
             <StarIcon className="w-4 h-4 mr-1" />
             {/* Lógica condicional para mostrar puntaje o mensaje de "Sin reseñas" */}

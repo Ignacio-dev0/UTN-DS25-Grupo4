@@ -41,11 +41,18 @@ export const validate = (schema: ZodObject<any>) =>
         dataToValidate = req.body;
       }
       
+      console.log('=== VALIDACIÓN ===');
+      console.log('URL:', req.url);
+      console.log('Método:', req.method);
+      console.log('Datos a validar:', JSON.stringify(dataToValidate, null, 2));
+      console.log('Schema keys:', schemaKeys);
+      
       await schema.parseAsync(dataToValidate);
+      console.log('✅ Validación exitosa');
       return next();
     } catch (error) {
       // AÑADIMOS ESTE CONSOLE.ERROR PARA VER EL ERROR REAL
-      console.error('DEBUG: Error atrapado en el middleware de validación:', error);
+      console.error('❌ Error atrapado en el middleware de validación:', error);
 
       // Nos aseguramos de que el error sea de Zod
       // y devolvemos un JSON más informativo.

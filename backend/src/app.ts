@@ -48,7 +48,7 @@ app.use('/api/canchas',           canchaRoutes);
 app.use('/api/admin/solicitudes', solicitudRoutes);   // ---> Se ve horrible identado en columnas jaja
 app.use('/api/horarios',          horarioRoutes);
 app.use('/api/turnos',            turnoRoutes);
-app.use('/api/cronogramas',       cronogramaRoutes);
+app.use('/api/cronograma',        cronogramaRoutes);
 app.use('/api/servicios',         servicioRoutes);
 app.use('/api/localidades',       localidadRoutes);
 app.use('/api/alquileres',        alquilerRoutes);

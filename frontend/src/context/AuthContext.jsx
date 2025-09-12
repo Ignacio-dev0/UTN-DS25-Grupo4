@@ -24,12 +24,30 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Helper para verificar si es dueño con solicitud aprobada
+  const isApprovedOwner = async () => {
+    if (!user || user.rol !== 'owner') return false;
+    
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/solicitudes?usuarioId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
+        return solicitud?.estado === 'APROBADA';
+      }
+    } catch (error) {
+      console.error('Error verificando estado de solicitud:', error);
+    }
+    return false;
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
     loading,
     login,
     logout,
+    isApprovedOwner,
   };
 
   if (loading) {

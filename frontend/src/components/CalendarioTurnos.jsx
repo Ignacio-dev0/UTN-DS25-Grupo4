@@ -12,18 +12,44 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
   const { isAuthenticated } = useAuth(); 
   const navigate = useNavigate();
 
-  // Obtener el día actual
+  // Obtener el día y hora actual
   const hoy = new Date();
   const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
   const diaActual = diasSemana[hoy.getDay()];
+  const horaActual = hoy.getHours();
 
-
-  const handleSelectTurno = (dia, hora, precio) => {
-    if (turnoSeleccionado?.dia === dia && turnoSeleccionado?.hora === hora) {
-      setTurnoSeleccionado(null);
-    } else {
-      setTurnoSeleccionado({ dia, hora, precio });
-      setReservaConfirmada(false);
+  // Función para verificar si un horario es para la próxima semana
+  const esSiguienteSemana = (dia, hora) => {
+    const diaIndex = dias.indexOf(dia);
+    const diaActualIndex = dias.indexOf(diaActual);
+    const horaNumero = parseInt(hora.split(':')[0]);
+    
+    // Si es el mismo día y la hora ya pasó, es para la siguiente semana
+    if (dia === diaActual && horaNumero <= horaActual) {
+      return true;
+    }
+    
+    // Si es un día anterior al actual, es para la siguiente semana
+    if (diaIndex < diaActualIndex) {
+      return true;
+    }
+    
+    return false;
+  };
+  const handleSelectTurno = (dia, hora) => {
+    const turno = getTurno(dia, hora);
+    if (turno && turno.estado === 'disponible') {
+      if (turnoSeleccionado?.dia === dia && turnoSeleccionado?.hora === hora) {
+        setTurnoSeleccionado(null);
+      } else {
+        setTurnoSeleccionado({ 
+          dia, 
+          hora, 
+          precio: turno.precio, 
+          turnoId: turno.id 
+        });
+        setReservaConfirmada(false);
+      }
     }
   };
 
@@ -46,45 +72,56 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
     }
   };
 
-  // La función ahora devuelve el objeto de turno completo para poder acceder a su precio
   const getTurno = (dia, hora) => {
-    return turnosDisponibles.find(t => t.dia.toUpperCase() === dia && t.hora === hora);
+    const turno = turnosDisponibles?.find(t => t.dia === dia && t.hora === hora);
+    // Debug logging
+    if (hora === '07:00' && dia === 'LUNES') {
+      console.log('Debug - Buscando turno para LUNES 07:00:', {
+        dia, 
+        hora, 
+        turnosTotal: turnosDisponibles?.length,
+        turnoEncontrado: turno,
+        primerosDosTurnos: turnosDisponibles?.slice(0, 2)
+      });
+    }
+    return turno;
   };
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-bold mb-4 text-center text-primary">Turnos Disponibles</h3>
+      <h3 className="text-xl font-bold text-center mb-4 text-primary">Turnos Disponibles</h3>
       <div className="overflow-x-auto pb-4">
         <div className="grid grid-cols-8 gap-1 text-center font-semibold min-w-[800px]">
           <div></div>
-          {dias.map(dia => {
-            const esDiaActual = dia === diaActual;
-            return (
-              <div key={dia} className={`py-2 text-sm md:text-base flex items-center justify-center relative ${esDiaActual ? 'text-white' : 'text-gray-700'}`}>
-                {esDiaActual && (
-                  <div className="absolute inset-0 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="font-bold">{dia}</span>
-                  </div>
-                )}
-                {!esDiaActual && dia}
-              </div>
-            );
-          })}
+          {dias.map(dia => (
+            <div key={dia} className="py-2 text-sm md:text-base text-gray-700">
+              {dia}
+            </div>
+          ))}
           {horas.map(hora => (
             <React.Fragment key={hora}>
               <div className="py-3 px-1 text-gray-600 font-bold">{hora}</div>
               {dias.map(dia => {
                 const turno = getTurno(dia, hora);
-                const estado = turno ? turno.estado : 'no-disponible';
+                let estado = 'no-disponible';
+                
+                if (turno) {
+                  if (turno.estado === 'disponible') {
+                    estado = 'disponible';
+                  } else if (turno.estado === 'reservado') {
+                    estado = 'reservado';
+                  }
+                }
+                
                 const estaSeleccionado = turnoSeleccionado?.dia === dia && turnoSeleccionado?.hora === hora;
                 
                 let clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 ";
-                if (estado === 'reservado') {
-                  clasesBoton += "bg-red-200 cursor-not-allowed opacity-50";
+                if (estado === 'no-disponible') {
+                  clasesBoton += "bg-gray-200 cursor-not-allowed opacity-50";
+                } else if (estado === 'reservado') {
+                  clasesBoton += "bg-red-200 cursor-not-allowed opacity-75";
                 } else if (estado === 'disponible') {
                   clasesBoton += "bg-accent hover:bg-secondary hover:text-white";
-                } else {
-                  clasesBoton += "bg-gray-200 cursor-not-allowed opacity-50";
                 }
                 
                 if (estaSeleccionado) {
@@ -96,18 +133,24 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                     <button 
                       className={clasesBoton}
                       disabled={estado !== 'disponible'}
-                      onClick={() => estado === 'disponible' && handleSelectTurno(dia, hora, turno.precio)}
+                      onClick={() => estado === 'disponible' && handleSelectTurno(dia, hora)}
                       aria-label={`Seleccionar turno ${dia} a las ${hora}`}
                     >
                       <div className="flex flex-col items-center justify-center h-full">
-                        {estado === 'disponible' && (
+                        {estado === 'disponible' && turno && (
                           <>
                             <div className="w-3 h-3 bg-green-500 rounded-full mb-1"></div>
                             <span className="text-xs font-bold">${(turno.precio / 1000).toFixed(0)}k</span>
                           </>
                         )}
                         {estado === 'reservado' && (
-                          <span className="text-xs text-red-600 font-bold">Ocupado</span>
+                          <>
+                            <div className="w-3 h-3 bg-red-500 rounded-full mb-1"></div>
+                            <span className="text-xs text-red-700 font-bold">Ocupado</span>
+                          </>
+                        )}
+                        {estado === 'no-disponible' && (
+                          <span className="text-xs text-gray-500 font-bold">-</span>
                         )}
                       </div>
                     </button>
@@ -134,8 +177,11 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
             {turnoSeleccionado && (
                 <div className="mb-4 text-lg text-primary">
                     <p>Turno seleccionado: <strong>{turnoSeleccionado.dia} a las {turnoSeleccionado.hora} hs</strong></p>
+                    {esSiguienteSemana(turnoSeleccionado.dia, turnoSeleccionado.hora) && (
+                      <p className="text-sm text-orange-600 font-bold">Este turno es para la próxima semana</p>
+                    )}
                     <p className="font-bold text-2xl text-secondary mt-1">
-                        Precio: ${turnoSeleccionado.precio.toLocaleString('es-AR')}
+                        Precio: ${turnoSeleccionado.precio?.toLocaleString('es-AR')}
                     </p>
                 </div>
             )}

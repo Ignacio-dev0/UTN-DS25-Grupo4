@@ -67,7 +67,7 @@ function Buscador() {
   };
 
   return (
-    <div className="bg-white rounded-lg flex flex-col md:flex-row items-center p-3 gap-6 w-full max-w-4xl mx-auto mt-8">
+    <div className="bg-white rounded-lg flex flex-col md:flex-row items-center p-3 gap-6 w-full max-w-5xl mx-auto mt-8">
       
       {/* --- Menú para LOCALIDAD --- */}
       <Menu as="div" className="relative w-full md:w-auto md:flex-grow">

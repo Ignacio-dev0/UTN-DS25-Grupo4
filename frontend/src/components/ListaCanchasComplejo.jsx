@@ -6,13 +6,23 @@ import ModalConfirmacion from './ModalConfirmacion.jsx';
 import { FaTrash, FaEyeSlash, FaEye, FaPencilAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
-function ListaCanchasComplejo({ canchas, onDisable, onDelete, isEditing }) {
+function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas, isEditing }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [canchaSeleccionada, setCanchaSeleccionada] = useState(null);
   const [accion, setAccion] = useState(''); 
   const CANCHAS_POR_PAGINA = 5;
   const canchasPaginadas = canchas.slice(0, CANCHAS_POR_PAGINA);
+
+  // Función helper para convertir archivo a base64
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const handleGuardarCancha = async (nuevaCancha) => {
     try {
@@ -22,12 +32,22 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, isEditing }) {
       // Extraer número de la cancha del nombre
       const nroCancha = parseInt(nuevaCancha.nombre.replace(/\D/g, '')) || Math.floor(Math.random() * 1000) + 1000;
       
+      // Procesar imágenes - convertir archivos a base64
+      let imagenesBase64 = [];
+      if (nuevaCancha.imagenes && nuevaCancha.imagenes.length > 0) {
+        for (let i = 0; i < nuevaCancha.imagenes.length; i++) {
+          const file = nuevaCancha.imagenes[i];
+          const base64 = await convertFileToBase64(file);
+          imagenesBase64.push(base64);
+        }
+      }
+      
       const canchaData = {
         nroCancha: nroCancha,
         deporteId: getDeporteIdByName(nuevaCancha.deporte),
         descripcion: nuevaCancha.descripcion || 'Cancha nueva',
         complejoId: parseInt(complejoId),
-        image: ['/images/canchas/default.jpg'] // Por ahora usamos imagen por defecto
+        image: imagenesBase64.length > 0 ? imagenesBase64 : ['/images/canchas/futbol5-1.jpg']
       };
 
       console.log('Enviando datos de cancha:', canchaData);
@@ -46,8 +66,10 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, isEditing }) {
         alert('Cancha agregada exitosamente');
         setShowAddForm(false);
         
-        // Recargar la página o actualizar lista de canchas
-        window.location.reload();
+        // Recargar solo las canchas en lugar de toda la página
+        if (onRecargarCanchas) {
+          onRecargarCanchas();
+        }
       } else {
         const errorData = await response.json();
         console.error('Error del backend:', errorData);

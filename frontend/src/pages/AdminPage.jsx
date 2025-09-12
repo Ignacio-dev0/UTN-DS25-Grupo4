@@ -3,6 +3,7 @@ import SolicitudDetalle from '../components/SolicitudDetalle.jsx';
 import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
 import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
 import GestionDeportes from '../components/GestionDeportes.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState('solicitudes');
@@ -10,6 +11,7 @@ function AdminPage() {
   const [complejosAprobados, setComplejosAprobados] = useState([]);
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingComplejos, setLoadingComplejos] = useState(false);
 
   // Cargar solicitudes desde el backend
   const fetchSolicitudes = async () => {
@@ -29,9 +31,7 @@ function AdminPage() {
             nombreComplejo: solicitud.complejo?.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
             calle: solicitud.complejo?.domicilio?.calle || 'No especificado',
             altura: solicitud.complejo?.domicilio?.altura || 'No especificado',
-            descripcion: solicitud.complejo?.descripcion || 'No especificado',
-            reembolso: 'No especificado', // Este campo no existe en el modelo actual
-            horario: 'No especificado', // Este campo no existe en el modelo actual
+            imagen: solicitud.complejo?.image || null,
             // Información adicional del usuario
             usuarioNombre: `${solicitud.usuario?.nombre || ''} ${solicitud.usuario?.apellido || ''}`.trim() || 'Usuario sin nombre',
             usuarioCorreo: solicitud.usuario?.correo || 'Sin correo',
@@ -51,6 +51,7 @@ function AdminPage() {
   // Cargar complejos aprobados
   const fetchComplejosAprobados = async () => {
     try {
+      setLoadingComplejos(true);
       const response = await fetch('http://localhost:3000/api/complejos/aprobados');
       if (response.ok) {
         const data = await response.json();
@@ -59,6 +60,8 @@ function AdminPage() {
       }
     } catch (error) {
       console.error('Error cargando complejos:', error);
+    } finally {
+      setLoadingComplejos(false);
     }
   };
 
@@ -76,7 +79,9 @@ function AdminPage() {
         alert('Solicitud aprobada correctamente');
         // Recargar datos
         fetchSolicitudes();
-        fetchComplejosAprobados();
+        if (activeTab === 'aprobados') {
+          fetchComplejosAprobados();
+        }
       } else {
         alert('Error al aprobar solicitud');
       }
@@ -114,6 +119,7 @@ function AdminPage() {
     if (!window.confirm("¿Estás seguro de que quieres eliminar este complejo?")) return;
     
     try {
+      setLoadingComplejos(true);
       const response = await fetch(`http://localhost:3000/api/complejos/${complejoId}`, {
         method: 'DELETE',
       });
@@ -123,10 +129,12 @@ function AdminPage() {
         fetchComplejosAprobados();
       } else {
         alert('Error al eliminar complejo');
+        setLoadingComplejos(false);
       }
     } catch (error) {
       console.error('Error eliminando complejo:', error);
       alert('Error al eliminar complejo');
+      setLoadingComplejos(false);
     }
   };
   
@@ -171,8 +179,8 @@ function AdminPage() {
         {activeTab === 'solicitudes' && (
           <div className="flex">
             {loading ? (
-              <div className="p-8 text-center w-full">
-                <p>Cargando solicitudes...</p>
+              <div className="w-full">
+                <LoadingSpinner message="Cargando solicitudes..." />
               </div>
             ) : (
               <>
@@ -192,10 +200,8 @@ function AdminPage() {
         )}
         
         {activeTab === 'aprobados' && (
-          loading ? (
-            <div className="p-8 text-center">
-              <p>Cargando complejos...</p>
-            </div>
+          loadingComplejos ? (
+            <LoadingSpinner message="Cargando complejos..." />
           ) : (
             <ComplejosAprobadosLista 
               complejos={complejosAprobados}

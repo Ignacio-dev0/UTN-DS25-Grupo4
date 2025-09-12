@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { StarIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { getImageUrl, getPlaceholderImage } from '../config/api.js';
+import { getImageUrl, getCanchaImage } from '../config/api.js';
 
 function MiniCanchaCard({ cancha, onAction, isEditing }) {
   // Usar el icono del backend directamente
@@ -13,9 +13,18 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
     : 'bg-secondary hover:shadow-2xl transform hover:-translate-y-1'
   }`;
 
-  // Calcular precio mínimo
-  const precioDesde = cancha.turnos?.length > 0 ? 
-    Math.min(...cancha.turnos.filter(t => !t.reservado).map(t => t.precio)) : null;
+  // Función para calcular el precio más barato de la cancha
+  const precioDesde = React.useMemo(() => {
+    if (!cancha.cronograma || !Array.isArray(cancha.cronograma) || cancha.cronograma.length === 0) {
+      return null;
+    }
+    
+    const precios = cancha.cronograma
+      .map(c => Number(c.precio))
+      .filter(precio => !isNaN(precio) && precio > 0);
+    
+    return precios.length > 0 ? Math.min(...precios) : null;
+  }, [cancha.cronograma]);
 
   return (
     <div className={cardClasses}>
@@ -28,8 +37,11 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
         <div className="relative">
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
-            src={getImageUrl(cancha.image?.[0]) || getPlaceholderImage(`Cancha ${cancha.nroCancha}`)} 
+            src={getImageUrl(cancha.imagen) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'futbol', cancha.nroCancha)} 
             alt={`Cancha ${cancha.nroCancha}`}
+            onError={(e) => {
+              e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'futbol', cancha.nroCancha);
+            }}
           />
           {cancha.estado === 'deshabilitada' && (
             <div className="absolute inset-0 bg-black bg-opacity-40"></div>

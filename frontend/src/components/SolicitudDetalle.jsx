@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { getImageUrl, getPlaceholderImage } from '../config/api.js';
 
 const InfoTag = ({ label, value }) => (
   <div className="bg-accent rounded-lg px-4 py-2">
@@ -17,20 +18,26 @@ function SolicitudDetalle({ solicitud, onApprove, onDecline }) {
     <div className="flex-1 p-8 border-r border-accent">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">{solicitud.nombreComplejo}</h2>
       
-      <div className="bg-accent h-64 rounded-lg flex items-center justify-center mb-6">
-        <p className="text-primary">Imagen del complejo</p>
+      <div className="bg-accent h-64 rounded-lg flex items-center justify-center mb-6 overflow-hidden">
+        {solicitud.imagen ? (
+          <img 
+            src={getImageUrl(solicitud.imagen) || getPlaceholderImage('Complejo')}
+            alt={`Imagen de ${solicitud.nombreComplejo}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.src = getPlaceholderImage('Complejo');
+            }}
+          />
+        ) : (
+          <p className="text-primary">Sin imagen del complejo</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <InfoTag label="Calle" value={solicitud.calle} />
         <InfoTag label="Altura" value={solicitud.altura} />
-        <InfoTag label="Porc. Reembolso" value={solicitud.reembolso} />
-        <InfoTag label="Horario" value={solicitud.horario} />
         <InfoTag label="CUIT" value={solicitud.cuit} />
         <InfoTag label="Localidad" value={solicitud.localidad} />
-        <div className="col-span-2">
-            <InfoTag label="Descripción" value={solicitud.descripcion} />
-        </div>
       </div>
 
       {/* Información del usuario solicitante */}

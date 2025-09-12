@@ -41,7 +41,7 @@ export const login = async (email, password, rememberMe = false) => {
       // Mapear el rol del backend al frontend
       const user = {
         ...data.user,
-        role: mapBackendRoleToFrontend(data.user.role || data.user.rol)
+        rol: mapBackendRoleToFrontend(data.user.rol || data.user.role)
       };
 
       // Guardar en localStorage si rememberMe está activado
@@ -97,7 +97,7 @@ export const register = async (userData) => {
       // Mapear el rol del backend al frontend
       const user = {
         ...data.user,
-        role: mapBackendRoleToFrontend(data.user.rol)
+        rol: mapBackendRoleToFrontend(data.user.rol)
       };
 
       // Guardar usuario automáticamente después del registro
@@ -267,5 +267,5 @@ export const isAuthenticated = () => {
  */
 export const hasRole = (requiredRole) => {
   const user = getCurrentUser();
-  return user && user.role === requiredRole;
+  return user && user.rol === requiredRole;
 };

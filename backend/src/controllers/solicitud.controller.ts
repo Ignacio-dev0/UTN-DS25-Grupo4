@@ -1,5 +1,32 @@
 import { Request, Response, NextFunction } from "express";
+import multer from "multer";
+import path from "path";
 import  * as soliServ  from "../services/solicitud.service";
+
+// Configuración de multer para imágenes de solicitudes
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../../../frontend/public/images/solicitudes'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'solicitud-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB límite
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'));
+    }
+  }
+});
+
+export const uploadMiddleware = upload.single('imagen');
 
 export const createRequest =  async (req: Request, res:Response, next:NextFunction) =>{
     try{
@@ -9,6 +36,35 @@ export const createRequest =  async (req: Request, res:Response, next:NextFuncti
         next(error);
     }
 }
+
+export const createRequestWithImage = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { usuarioId, cuit, nombreComplejo, calle, altura, localidad } = req.body;
+        const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
+        
+        const solicitudData = {
+            usuarioId: parseInt(usuarioId),
+            cuit,
+            complejo: {
+                nombre: nombreComplejo,
+                imagen: imagePath,
+                domicilio: {
+                    calle,
+                    altura,
+                    localidad
+                }
+            }
+        };
+        
+        const nuevaSolicitud = await soliServ.createSolicitudWithComplejo(solicitudData);
+        res.status(201).json({
+            solicitud: nuevaSolicitud,
+            message: 'Solicitud creada correctamente'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const updateReq = async(req:Request, res:Response, next:NextFunction)=>{
     try{

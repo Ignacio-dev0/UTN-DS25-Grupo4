@@ -2,6 +2,31 @@ import prisma from '../config/prisma';
 import { EstadoAlquiler } from '../generated/prisma';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
 
+export async function obtenerAlquileresPorComplejo(complejoId: number) {
+	return await prisma.alquiler.findMany({
+		where: {
+			turnos: {
+				some: {
+					cancha: {
+						complejoId: complejoId
+					}
+				}
+			}
+		},
+		include: {
+			cliente: true,
+			turnos: {
+				include: {
+					cancha: true
+				}
+			}
+		},
+		orderBy: {
+			id: 'desc'
+		}
+	});
+}
+
 export async function crearAlquiler(data: CreateAlquilerRequest) {
 	const { usuarioId, turnosIds } = data;
 	if (turnosIds.length < 1) {

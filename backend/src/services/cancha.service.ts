@@ -5,7 +5,7 @@ import { EstadoAlquiler } from '../generated/prisma';
 
 export async function crearCancha(data: CreateCanchaRequest) {
 	const { complejoId, deporteId, ...cancha } = data;
-  return prisma.cancha.create({
+    return prisma.cancha.create({
 		data: {
 			...cancha,
 			deporte: { connect: { id: deporteId }},
@@ -15,32 +15,27 @@ export async function crearCancha(data: CreateCanchaRequest) {
 }
 
 export async function obtenerCanchas() {
-  return prisma.cancha.findMany({
-    include: {
-      deporte: true, // Para saber qué deporte se juega en la cancha
-      complejo: {
+    return prisma.cancha.findMany({
         include: {
-          domicilio: {
-            include: {
-              localidad: true
+            deporte: true, // Para saber qué deporte se juega en la cancha
+            complejo: {
+                include: {
+                    domicilio: {
+                        include: {
+                            localidad: true
+                        }
+                    }
+                }
+            }, // Para obtener datos del complejo con localidad
+            cronograma: {
+                orderBy: {
+                    precio: 'asc'
+                },
+                take: 10 // Obtener varios horarios para calcular precio mínimo
             }
-          }
-        }
-      }, // Para obtener datos del complejo con localidad
-      turnos: {
-        where: {
-          fecha: {
-            gte: new Date(), // Solo turnos futuros
-          }
         },
-        take: 5, // Solo los próximos 5 turnos
-        orderBy: {
-          fecha: 'asc'
-        }
-      }
-    },
-  });
-};
+    });
+}
 
 export async function obtenerCanchaPorId(id: number) {
 	const cancha = await prisma.cancha.findUnique({
@@ -52,6 +47,11 @@ export async function obtenerCanchaPorId(id: number) {
 					domicilio: {
 						include: {
 							localidad: true
+						}
+					},
+					servicios: {
+						include: {
+							servicio: true
 						}
 					}
 				}

@@ -40,22 +40,31 @@ function CarruselReseñas({ reseñas }) {
 
   const totalReseñas = reseñas.length;
   
-  const itemWidth = 256 + 24; 
-  const windowWidth = (RESEÑAS_VISIBLES * 256) + ((RESEÑAS_VISIBLES - 1) * 24);
+  const itemWidth = 256 + 24; // ancho de tarjeta + gap
+  // Si hay menos o igual a RESEÑAS_VISIBLES, mostrar todas sin scroll
+  // Si hay más, usar el ancho fijo para poder hacer scroll
+  const reseñasAMostrar = Math.min(totalReseñas, RESEÑAS_VISIBLES);
+  const windowWidth = (reseñasAMostrar * 256) + ((reseñasAMostrar - 1) * 24);
 
   const handleAnterior = () => {
+    if (totalReseñas <= RESEÑAS_VISIBLES) return; // No hacer nada si todas las reseñas son visibles
+    
     setIndiceActual((prevIndice) => {
       // Si estamos en el principio, vamos al final
       if (prevIndice === 0) {
-        return totalReseñas > RESEÑAS_VISIBLES ? totalReseñas - RESEÑAS_VISIBLES : 0;
+        const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
+        return maxIndex;
       }
       return prevIndice - 1;
     });
   };
 
   const handleSiguiente = () => {
+    if (totalReseñas <= RESEÑAS_VISIBLES) return; // No hacer nada si todas las reseñas son visibles
+    
     setIndiceActual((prevIndice) => {
-      if (prevIndice >= totalReseñas - RESEÑAS_VISIBLES) {
+      const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
+      if (prevIndice >= maxIndex) {
         return 0;
       }
       return prevIndice + 1;

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { PencilIcon, CheckIcon, CameraIcon } from '@heroicons/react/24/solid';
 import { FaWifi } from "react-icons/fa";
 import { FaChalkboardUser } from "react-icons/fa6";
@@ -7,24 +7,50 @@ import { GiTrophy, GiPartyPopper } from "react-icons/gi";
 import { PiTShirtFill, PiCarFill } from "react-icons/pi";
 import ServiciosSelector from './ServiciosSelector';
 
-const serviciosIconMap = {
-  'Estacionamiento': <PiCarFill />, 'Vestuarios': <PiTShirtFill />, 'Buffet': <MdRestaurant />,
-  'Parrillas': <MdFamilyRestroom />, 'Wi-Fi': <FaWifi />, 'Kiosco': <GiPartyPopper />,
-  'Torneos': <GiTrophy />, 'Escuelita': <FaChalkboardUser />,
-};
-
-const ServicioItem = ({ servicio }) => {
-  const Icono = serviciosIconMap[servicio];
+const ServicioItem = ({ servicioData, todosLosServicios }) => {
+  // Handle both formats: direct service object or service ID
+  let servicio;
+  
+  if (typeof servicioData === 'object' && servicioData.servicio) {
+    // New format: servicioData has a 'servicio' property with the actual service
+    servicio = servicioData.servicio;
+  } else if (typeof servicioData === 'number') {
+    // Old format: servicioData is just an ID
+    servicio = todosLosServicios.find(s => s.id === servicioData);
+  } else {
+    // Direct service object
+    servicio = servicioData;
+  }
+  
+  if (!servicio) return null;
+  
   return (
     <div className="flex items-center text-primary">
-      {Icono && React.cloneElement(Icono, { className: "w-6 h-6 mr-3" })}
-      <span className='font-medium'>{servicio}</span>
+      <span className="mr-2 text-2xl">{servicio.icono}</span>
+      <span className='font-medium'>{servicio.nombre}</span>
     </div>
   );
 };
 
 function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onComplejoChange }) {
   const fileInputRef = useRef(null);
+  const [todosLosServicios, setTodosLosServicios] = useState([]);
+
+  useEffect(() => {
+    const cargarServicios = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/servicios');
+        if (response.ok) {
+          const data = await response.json();
+          setTodosLosServicios(data.servicios);
+        }
+      } catch (error) {
+        console.error('Error cargando servicios:', error);
+      }
+    };
+
+    cargarServicios();
+  }, []);
 
   if (!complejo) {
     return <div>Cargando...</div>;
@@ -41,7 +67,7 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        onComplejoChange({ ...complejo, logoUrl: reader.result });
+        onComplejoChange({ ...complejo, image: reader.result });
       };
       reader.readAsDataURL(file);
     }
@@ -67,12 +93,20 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
             className="text-xl font-bold text-gray-800 w-full border-b-2 border-primary focus:outline-none bg-transparent"
           />
         ) : (
-          <h2 className="text-xl font-bold text-gray-800">{complejo.nombre}</h2>
+          <div className="flex items-center">
+            <h2 className="text-xl font-bold text-gray-800 mr-3">{complejo.nombre}</h2>
+            <span className="text-yellow-500 text-lg">
+              {'★'.repeat(Math.floor(complejo.puntaje || 0))}{'☆'.repeat(5 - Math.floor(complejo.puntaje || 0))}
+            </span>
+            <span className="text-sm text-gray-600 ml-2">({complejo.puntaje || 0})</span>
+          </div>
         )}
         <button onClick={onToggleEdit} className="text-secondary hover:text-green-400 ml-4" title={isEditing ? "Finalizar Edición" : "Editar Complejo"}>
           {isEditing ? <CheckIcon className="w-6 h-6" /> : <PencilIcon className="w-5 h-5 text-secondary hover:text-primary" />}
         </button>
       </div>
+
+      {/* Campo de descripción - movido después de horarios */}
       
       <div className="bg-accent p-4 rounded-lg mb-4">
         <p className="text-xs text-primary">Cuenta en pesos</p>
@@ -81,7 +115,7 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
 
       <div className="relative bg-accent h-64 rounded-lg flex items-center justify-center mb-6">
         <img 
-          src={complejo.logoUrl || "/images/placeholder.png"} 
+          src={complejo.image || "/images/placeholder.png"} 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
           onClick={handleImageClick}
@@ -119,14 +153,29 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
                 placeholder="Ej: Lunes a Viernes de 10:00 a 23:00..."
               />
             </div>
+            <div className="bg-accent p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Descripción</h3>
+              <textarea
+                name="descripcion"
+                value={complejo.descripcion || ''}
+                onChange={handleInputChange}
+                placeholder="Descripción del complejo..."
+                rows="3"
+                className="w-full p-2 border rounded-md text-sm resize-none"
+              />
+            </div>
           </>
         ) : (
           <>
             <div className="bg-accent p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-gray-700 mb-3">Servicios</h3>
               <div className="grid grid-cols-2 gap-3">
-                {(complejo.servicios || []).map(servicio => (
-                  <ServicioItem key={servicio} servicio={servicio} />
+                {(complejo.servicios || []).map((servicioData, index) => (
+                  <ServicioItem 
+                    key={servicioData.id || servicioData.servicioId || index} 
+                    servicioData={servicioData} 
+                    todosLosServicios={todosLosServicios} 
+                  />
                 ))}
               </div>
             </div>
@@ -134,6 +183,12 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
               <h3 className="text-lg font-semibold text-gray-700 mb-2">Horarios de Atención</h3>
               <p className="text-gray-800 text-sm whitespace-pre-line">{complejo.horarios}</p>
             </div>
+            {complejo.descripcion && (
+              <div className="bg-accent p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">Descripción</h3>
+                <p className="text-gray-800 text-sm whitespace-pre-line">{complejo.descripcion}</p>
+              </div>
+            )}
           </>
         )}
         

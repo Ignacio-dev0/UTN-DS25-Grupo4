@@ -43,6 +43,19 @@ export async function obtenerAlquileres(req: Request, res: Response<AlquilerList
 	}
 }
 
+export async function obtenerAlquileresPorComplejo(req: Request, res: Response<AlquilerListResponse>, next: NextFunction) {
+	try {
+		const { complejoId } = req.params;
+		const alquileres = await alquilerService.obtenerAlquileresPorComplejo(Number(complejoId));
+		res.status(200).json({
+			alquileres,
+			total: alquileres.length,
+		});
+	} catch(error) {
+		next(error);
+	}
+}
+
 export async function pagarAlquiler(req: Request, res: Response<AlquilerPagadoResponse>, next: NextFunction) {
 	try {
 		const { id } = req.params;

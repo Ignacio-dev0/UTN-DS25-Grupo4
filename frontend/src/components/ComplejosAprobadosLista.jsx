@@ -37,7 +37,7 @@ function ComplejosAprobadosLista({ complejos, onRemove }) {
       <h2 className="text-2xl font-bold text-secondary mb-6">Complejos Aprobados</h2>
       <ul className="space-y-4">
         {complejos.map(complejo => (
-          <li key={complejo.id} className="p-4 bg-white rounded-lg flex justify-between items-center border border-primary">
+          <li key={complejo.id} className="p-4 bg-white rounded-lg flex justify-between items-center">
             <div>
               <p className="font-semibold text-primary">{complejo.nombre}</p>
               <p className="text-sm text-secondary">

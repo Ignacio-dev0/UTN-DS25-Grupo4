@@ -71,9 +71,9 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange }) {
                       {turno ? `$${(turno.precio / 1000).toFixed(0)}k` : '+'}
                       
                       {turno && (
-                        <button 
+                        <div 
                           onClick={(e) => handleToggleEstado(e, dia, hora)}
-                          className={`absolute top-1 right-1 h-4 w-4 rounded-full ${turno.estado === 'disponible' ? 'bg-green-500' : 'bg-red-500'}`}
+                          className={`absolute top-1 right-1 h-4 w-4 rounded-full cursor-pointer ${turno.estado === 'disponible' ? 'bg-green-500' : 'bg-red-500'}`}
                           title={`Marcar como ${turno.estado === 'disponible' ? 'Reservado' : 'Disponible'}`}
                         />
                       )}

@@ -6,6 +6,7 @@ import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
+import { getImageUrl, getCanchaImage } from '../config/api.js';
 
 function ReservaPage() {
   const { canchaId } = useParams();
@@ -17,6 +18,7 @@ function ReservaPage() {
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [serviciosCompleto, setServiciosCompleto] = useState([]);
 
   // Cargar datos dinámicos desde el backend
   useEffect(() => {
@@ -41,6 +43,19 @@ function ReservaPage() {
           const complejoData = await complejoResponse.json();
           setComplejo(complejoData.complejo || complejoData);
         }
+
+        // Cargar servicios del complejo desde la API
+        if (cancha.complejoId) {
+          const serviciosResponse = await fetch(`http://localhost:3000/api/servicios`);
+          if (serviciosResponse.ok) {
+            const serviciosData = await serviciosResponse.json();
+            const serviciosDelComplejo = serviciosData.servicios
+              .filter(servicio => 
+                servicio.complejos.some(cs => cs.complejoId === cancha.complejoId && cs.disponible)
+              );
+            setServiciosCompleto(serviciosDelComplejo);
+          }
+        }
         
         // Cargar datos del deporte para obtener imágenes
         if (cancha.deporteId) {
@@ -55,7 +70,14 @@ function ReservaPage() {
         const reseñasResponse = await fetch(`http://localhost:3000/api/resenas/cancha/${canchaId}`);
         if (reseñasResponse.ok) {
           const reseñasData = await reseñasResponse.json();
-          setReseñasDeLaCancha(reseñasData.resenas || reseñasData || []);
+          // Transformar las reseñas para que coincidan con la estructura esperada por CarruselReseñas
+          const reseñasTransformadas = (reseñasData.resenas || reseñasData || []).map(resena => ({
+            id: resena.id,
+            nombre: `${resena.alquiler?.cliente?.nombre || 'Usuario'} ${resena.alquiler?.cliente?.apellido || ''}`.trim(),
+            puntaje: resena.puntaje,
+            comentario: resena.descripcion || 'Sin comentario'
+          }));
+          setReseñasDeLaCancha(reseñasTransformadas);
         }
         const turnosResponse = await fetch(`http://localhost:3000/api/turnos/cancha/${canchaId}`);
         if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
@@ -110,8 +132,8 @@ function ReservaPage() {
     // Adaptar datos para compatibilidad con componentes
     const complejoAdaptado = {
       ...complejo,
-      servicios: ['Estacionamiento', 'Vestuarios', 'Wi-Fi'], // Servicios por defecto
-      horarios: 'No especificado',
+      servicios: serviciosCompleto.map(s => s.nombre), // Solo nombres de servicios
+      horarios: complejo.horarios || 'No especificado', // Horarios reales del complejo
       ubicacion: complejo && complejo.domicilio 
         ? `${complejo.domicilio.calle || ''} ${complejo.domicilio.altura || ''}, ${complejo.domicilio.localidad?.nombre || ''}`.trim()
         : 'Ubicación no especificada',
@@ -119,16 +141,21 @@ function ReservaPage() {
       lng: -57.9545
     };
     
-    // Construir URL de imagen basada en el deporte o usar imágenes de la cancha
-    let imageUrl = '/images/futbol-1.jpg'; // imagen por defecto
+    // Construir URL de imagen usando getCanchaImage para imágenes específicas por cancha
+    let imageUrl = getCanchaImage(cancha.id, deporte?.nombre || 'futbol', cancha.nroCancha); // imagen específica por defecto
     
     if (cancha.image && cancha.image.length > 0) {
-      // Si la cancha tiene imágenes, usar la primera
-      imageUrl = cancha.image[0];
-    } else if (deporte && deporte.nombre) {
-      // Si no hay imágenes de la cancha, usar imagen por deporte
-      const deporteNormalizado = deporte.nombre.toLowerCase().replace(/\s+/g, '').replace('ú', 'u');
-      imageUrl = `/images/${deporteNormalizado}-1.jpg`;
+      // Si la cancha tiene imágenes, usar getImageUrl para procesarlas correctamente
+      const processedUrl = getImageUrl(cancha.image[0]);
+      if (processedUrl) {
+        imageUrl = processedUrl;
+      }
+    } else if (cancha.imagen) {
+      // Si existe el campo imagen (singular), usarlo también
+      const processedUrl = getImageUrl(cancha.imagen);
+      if (processedUrl) {
+        imageUrl = processedUrl;
+      }
     }
     
     return {
@@ -141,7 +168,7 @@ function ReservaPage() {
       turnos: turnos,
       complejo: complejoAdaptado
     };
-  }, [cancha, deporte, turnos, canchaId, complejo, reseñasDeLaCancha]);
+  }, [cancha, deporte, turnos, canchaId, complejo, reseñasDeLaCancha, serviciosCompleto]);
 
   const handleConfirmarReserva = async (turnoSeleccionado) => {
     if (!turnoSeleccionado || !cancha || !complejo) return false;
@@ -242,7 +269,7 @@ function ReservaPage() {
         </h1>
         <GaleriaFotos imageUrl={canchaMostrada.imageUrl} />
         <InfoCancha cancha={canchaMostrada} complejo={canchaMostrada.complejo} deporte={deporte?.nombre} />
-        <CalendarioTurnos turnosDisponibles={turnos || []} onConfirmarReserva={handleConfirmarReserva} />
+        <CalendarioTurnos turnosDisponibles={turnos || []} onConfirmarReserva={handleConfirmarReserva} canchaId={canchaId} />
         <CarruselReseñas reseñas={reseñasDeLaCancha} />
       </div>
     </div>

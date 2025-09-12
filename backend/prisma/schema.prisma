@@ -63,6 +63,7 @@ model Complejo {
 	puntaje             Float     @default(0.0)
 	cuit 								String		@unique
 	image 							String?
+	horarios            String?   // Horarios de atención del complejo
 
 	domicilioId         Int				@unique
 	domicilio   				Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
@@ -112,6 +113,7 @@ model HorarioCronograma { //horarios CHIQUITITOS
 	horaInicio  DateTime  @db.Time
 	horaFin 		DateTime  @db.Time
 	diaSemana 	DiaSemana
+	precio			Float			@default(0.0)
 
 	canchaId 		Int
 	cancha   		Cancha 		@relation(fields: [canchaId], references: [id])

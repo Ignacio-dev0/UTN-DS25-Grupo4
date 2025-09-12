@@ -37,13 +37,51 @@ export const createComplejo = async (data: CreateComplejoRequest) => {
 };
 
 export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>{
-  const complejo = await prisma.complejo.update({
-    where: { id },
-    data,
-  });
+  console.log('=== SERVICIO updateComplejo ===');
+  console.log('ID:', id);
+  console.log('Data recibida:', data);
+  
+  try {
+    // Separar servicios de los demás campos
+    const { servicios, ...complejoData } = data;
+    
+    // Actualizar el complejo
+    const complejo = await prisma.complejo.update({
+      where: { id },
+      data: complejoData,
+    });
 
-  if (!complejo) throw ('Complejo no encontrado');
-  return complejo;
+    console.log('✅ Complejo actualizado en la base de datos:', complejo);
+    
+    // Si hay servicios para actualizar, manejar la relación ComplejoServicio
+    if (servicios && servicios.length >= 0) {
+      console.log('🔄 Actualizando servicios:', servicios);
+      
+      // Primero eliminar todas las relaciones existentes
+      await prisma.complejoServicio.deleteMany({
+        where: { complejoId: id }
+      });
+      
+      // Luego crear las nuevas relaciones
+      if (servicios.length > 0) {
+        await prisma.complejoServicio.createMany({
+          data: servicios.map(servicioId => ({
+            complejoId: id,
+            servicioId,
+            disponible: true
+          }))
+        });
+      }
+      
+      console.log('✅ Servicios actualizados correctamente');
+    }
+    
+    if (!complejo) throw ('Complejo no encontrado');
+    return complejo;
+  } catch (error) {
+    console.error('❌ Error en updateComplejo service:', error);
+    throw error;
+  }
 };
 
 export const getAllComplejos = async () => {
@@ -83,6 +121,11 @@ export const getComplejoById = async (id:number) => {
       },
       solicitud: true,
       usuario: true,
+      servicios: {
+        include: {
+          servicio: true
+        }
+      },
       canchas: {
         include: {
           deporte: true,
