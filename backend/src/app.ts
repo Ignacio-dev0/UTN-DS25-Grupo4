@@ -221,6 +221,79 @@ app.get('/api/migrate', async (req, res) => {
     }
 });
 
+// Endpoint para ejecutar seed de datos
+app.get('/api/seed', async (req, res) => {
+    try {
+        const { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago } = require('../generated/prisma/client');
+        const bcrypt = require('bcrypt');
+        const prisma = new PrismaClient();
+        
+        console.log('🌱 Ejecutando seed...');
+        
+        // Limpiar base de datos en orden correcto
+        await prisma.complejoServicio.deleteMany();
+        await prisma.pago.deleteMany();
+        await prisma.resenia.deleteMany();
+        await prisma.alquiler.deleteMany();
+        await prisma.turno.deleteMany();
+        await prisma.horarioCronograma.deleteMany();
+        await prisma.cancha.deleteMany();
+        await prisma.complejo.deleteMany();
+        await prisma.solicitud.deleteMany();
+        await prisma.administrador.deleteMany();
+        await prisma.usuario.deleteMany();
+        await prisma.domicilio.deleteMany();
+        await prisma.localidad.deleteMany();
+        await prisma.deporte.deleteMany();
+        await prisma.servicio.deleteMany();
+
+        // Crear localidades
+        const localidadesData = [
+            { nombre: 'La Plata' },
+            { nombre: 'City Bell' }, 
+            { nombre: 'Gonnet' },
+            { nombre: 'Ensenada' }
+        ];
+        const localidades = await prisma.localidad.createManyAndReturn({ data: localidadesData });
+
+        // Crear deportes
+        const deportesData = [
+            { nombre: 'Fútbol 5', icono: '⚽' },
+            { nombre: 'Fútbol 11', icono: '🥅' },
+            { nombre: 'Vóley', icono: '🏐' },
+            { nombre: 'Básquet', icono: '🏀' }
+        ];
+        const deportes = await prisma.deporte.createManyAndReturn({ data: deportesData });
+
+        // Crear servicios
+        const serviciosData = [
+            { nombre: 'Estacionamiento', icono: '🚗' },
+            { nombre: 'Vestuarios', icono: '👕' },
+            { nombre: 'Parrilla', icono: '🔥' },
+            { nombre: 'Cantina', icono: '🍕' }
+        ];
+        const servicios = await prisma.servicio.createManyAndReturn({ data: serviciosData });
+
+        res.json({
+            success: true,
+            message: 'Seed ejecutado exitosamente',
+            data: {
+                localidades: localidades.length,
+                deportes: deportes.length,
+                servicios: servicios.length
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error en seed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error ejecutando seed',
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     
