@@ -5,6 +5,7 @@ import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx';
 import GestionDeportes from '../components/GestionDeportes.jsx';
 import GestionLocalidades from '../components/GestionLocalidades.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import { API_BASE_URL } from '../config/api.js';
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState('solicitudes');

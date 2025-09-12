@@ -6,7 +6,7 @@ import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
-import { getImageUrl, getCanchaImage } from '../config/api.js';
+import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
 
 // Función helper para construir la dirección completa
 const buildLocationString = (domicilio) => {
