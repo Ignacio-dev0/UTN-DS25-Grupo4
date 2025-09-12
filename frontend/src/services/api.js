@@ -1,5 +1,5 @@
 // API Service - Conexión con el backend
-const API_BASE_URL = 'http://localhost:3000/api';
+import { API_BASE_URL } from '../config/api.js';
 
 /**
  * Configuración base para las requests
@@ -221,7 +221,7 @@ export const transformCanchaData = (canchaBackend) => {
     localidad: canchaBackend.complejo?.domicilio?.localidad?.nombre || 'Sin localidad',
     descripcion: canchaBackend.descripcion || '',
     puntaje: canchaBackend.puntaje || 0,
-    imagenes: canchaBackend.image ? canchaBackend.image.map(img => `http://localhost:3000${img}`) : [],
+    imagenes: canchaBackend.image ? canchaBackend.image.map(img => `${API_BASE_URL.replace("/api", "")}${img}`) : [],
     turnos: canchaBackend.turnos || [], // Incluir turnos disponibles
     // Agregar campos adicionales que el frontend pueda necesitar
     precioDesde: 8000, // Precio base por defecto, después se puede obtener de turnos

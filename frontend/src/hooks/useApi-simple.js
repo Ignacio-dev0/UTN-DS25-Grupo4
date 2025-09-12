@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../config/api.js';
 
 /**
  * Hook simplificado para manejar canchas desde el backend
@@ -12,7 +13,7 @@ export const useCanchas = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:3000/api/canchas');
+      const response = await fetch(`${API_BASE_URL}/canchas`);
       if (!response.ok) {
         throw new Error('Error al obtener canchas');
       }
@@ -79,7 +80,7 @@ export const useCancha = (canchaId) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
+      const response = await fetch(`${API_BASE_URL}/canchas/${canchaId}`);
       if (!response.ok) {
         throw new Error('Error al obtener la cancha');
       }
@@ -147,7 +148,7 @@ export const useDeportes = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:3000/api/deportes');
+      const response = await fetch(`${API_BASE_URL}/deportes`);
       if (!response.ok) {
         throw new Error('Error al obtener deportes');
       }

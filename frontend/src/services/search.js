@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+import { API_BASE_URL } from '../config/api.js';
 
 /**
  * Función para normalizar rutas de imágenes (remover acentos)
@@ -38,7 +38,7 @@ const mapToExistingImage = (imagePath, deporteNombre) => {
  */
 const createImageUrl = (imagePath, deporte) => {
   const mappedPath = mapToExistingImage(imagePath, deporte);
-  const imageUrl = `http://localhost:3000${mappedPath}`;
+  const imageUrl = `${API_BASE_URL.replace("/api", "")}${mappedPath}`;
   return imageUrl;
 };
 
