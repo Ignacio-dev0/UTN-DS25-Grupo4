@@ -8,6 +8,6 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 4173,
-    allowedHosts: ['front-canchaya.up.railway.app']
+    allowedHosts: 'all'
   }
 })
