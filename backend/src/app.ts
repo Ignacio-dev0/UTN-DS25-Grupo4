@@ -221,6 +221,11 @@ app.get('/api/migrate', async (req, res) => {
     }
 });
 
+// Endpoint simple para probar
+app.get('/api/test-seed', async (req, res) => {
+    res.json({ message: "Seed endpoint is working!" });
+});
+
 // Endpoint para ejecutar seed de datos
 app.get('/api/seed', async (req, res) => {
     try {
