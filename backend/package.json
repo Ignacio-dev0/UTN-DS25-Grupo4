@@ -1,11 +1,11 @@
 {
   "name": "backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "build": "tsc",
-    "start": "npx prisma migrate deploy && node dist/app.js",
+    "start": "echo 'Checking migrations...' && ls -la prisma/migrations/ && npx prisma migrate deploy && echo 'Starting server...' && node dist/app.js",
     "start:dev": "node dist/app.js",
     "postbuild": "npx prisma generate",
     "migrate": "npx prisma migrate deploy",
