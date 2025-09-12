@@ -3,6 +3,7 @@ import SolicitudDetalle from '../components/SolicitudDetalle.jsx';
 import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
 import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
 import GestionDeportes from '../components/GestionDeportes.jsx';
+import GestionLocalidades from '../components/GestionLocalidades.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 
 function AdminPage() {
@@ -173,6 +174,9 @@ function AdminPage() {
             <button onClick={() => setActiveTab('deportes')} className={getTabClass('deportes')}>
               Deportes
             </button>
+            <button onClick={() => setActiveTab('localidades')} className={getTabClass('localidades')}>
+              Localidades
+            </button>
         </nav>
       </div>
       <div>
@@ -212,6 +216,10 @@ function AdminPage() {
 
         {activeTab === 'deportes' && (
           <GestionDeportes />
+        )}
+
+        {activeTab === 'localidades' && (
+          <GestionLocalidades />
         )}
         
       </div>

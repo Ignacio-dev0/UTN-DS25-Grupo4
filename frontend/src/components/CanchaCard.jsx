@@ -10,10 +10,6 @@ function CanchaCard({ cancha }) {
   // DEBUG: Ver qué datos llegan
   console.log('CanchaCard - cancha:', cancha);
   console.log('CanchaCard - cronograma:', cancha.cronograma);
-  
-  // Debug: verificar datos de la cancha
-  console.log('CanchaCard data:', cancha);
-  console.log('Cronograma:', cancha.cronograma);
 
   // Fetch available turns for this court (today from current time onwards)
   useEffect(() => {
@@ -195,10 +191,10 @@ function CanchaCard({ cancha }) {
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={getImageUrl(cancha.image?.[0]) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Cancha', cancha.nroCancha)}
+          src={getImageUrl(cancha.image?.[0]) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)}
           onError={(e) => {
             // Fallback a imagen por defecto del deporte
-            e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Cancha', cancha.nroCancha);
+            e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
           }}
           alt={`Cancha de ${cancha.deporte?.nombre}`}
         />

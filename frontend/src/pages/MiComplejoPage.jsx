@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import ComplejoInfo from '../components/ComplejoInfo.jsx';
 import ListaCanchasComplejo from '../components/ListaCanchasComplejo.jsx';
 import { useAuth } from '../context/AuthContext.jsx'; 
@@ -8,6 +8,7 @@ function MiComplejoPage() {
   const { complejoId } = useParams();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [infoDelComplejo, setInfoDelComplejo] = useState(null);
   const [canchas, setCanchas] = useState([]);
   const [ultimosAlquileres, setUltimosAlquileres] = useState([]);
@@ -63,25 +64,27 @@ function MiComplejoPage() {
   // Función para recargar solo las canchas
   const recargarCanchas = useCallback(async () => {
     try {
+      console.log('🔄 Recargando canchas para complejo:', complejoId);
       // Usar el endpoint específico para canchas por complejo
       const canchasResponse = await fetch(`http://localhost:3000/api/canchas/complejo/${complejoId}`);
       if (canchasResponse.ok) {
         const canchasData = await canchasResponse.json();
-        console.log('Canchas cargadas del backend:', canchasData);
+        console.log('✅ Canchas cargadas del backend:', canchasData);
         const canchasConEstado = (canchasData.canchas || []).map(cancha => ({
           ...cancha,
           activa: cancha.activa !== false,
           estado: (cancha.activa !== false) ? 'habilitada' : 'deshabilitada',
-          deporte: cancha.deporte?.nombre || 'No especificado'
+          // Mantener el objeto deporte completo para tener acceso al icono
+          deporte: cancha.deporte || { nombre: 'No especificado', icono: '⚽' }
         }));
-        console.log('Canchas procesadas:', canchasConEstado);
+        console.log('📊 Canchas procesadas:', canchasConEstado);
         setCanchas(canchasConEstado);
       } else {
-        console.error('Error en la respuesta de canchas:', canchasResponse.status);
+        console.error('❌ Error en la respuesta de canchas:', canchasResponse.status);
         setCanchas([]);
       }
     } catch (error) {
-      console.error('Error recargando canchas:', error);
+      console.error('❌ Error recargando canchas:', error);
       setCanchas([]);
     }
   }, [complejoId]);
@@ -183,6 +186,35 @@ function MiComplejoPage() {
       fetchComplejoData();
     }
   }, [complejoId, user?.rol, recargarCanchas]);
+
+  // Recargar datos cuando la página recobre el foco (útil cuando volvemos de editar una cancha)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (complejoId && !loading) {
+        console.log('Recargando canchas por focus del window');
+        recargarCanchas();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [complejoId, loading, recargarCanchas]);
+
+  // Recargar datos cuando cambia la ubicación (útil cuando navegamos de vuelta)
+  useEffect(() => {
+    if (location.pathname === `/micomplejo/${complejoId}` && !loading) {
+      console.log('Recargando canchas por cambio de location');
+      recargarCanchas();
+      
+      // Si viene con state indicando que debe recargar
+      if (location.state?.shouldReload) {
+        console.log('Recarga forzada por state');
+        setTimeout(() => {
+          recargarCanchas();
+        }, 100);
+      }
+    }
+  }, [location.pathname, location.state, complejoId, loading, recargarCanchas]);
 
     const handleToggleEdit = async () => {
     if(isEditing) {

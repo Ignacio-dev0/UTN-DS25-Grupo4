@@ -1,0 +1,216 @@
+import React, { useState, useEffect } from 'react';
+import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
+import ModalLocalidad from './ModalLocalidad';
+import ModalConfirmacion from './ModalConfirmacion';
+
+function GestionLocalidades() {
+  const [localidades, setLocalidades] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalLocalidadOpen, setIsModalLocalidadOpen] = useState(false);
+  const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
+  const [localidadSeleccionada, setLocalidadSeleccionada] = useState(null);
+
+  // Cargar localidades desde el backend
+  useEffect(() => {
+    const cargarLocalidades = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/localidades');
+        if (response.ok) {
+          const data = await response.json();
+          setLocalidades(data.localidades || data || []);
+        } else {
+          console.error('Error al cargar localidades');
+        }
+      } catch (error) {
+        console.error('Error cargando localidades:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarLocalidades();
+  }, []);
+
+  const handleOpenModalLocalidad = (localidad = null) => {
+    setLocalidadSeleccionada(localidad);
+    setIsModalLocalidadOpen(true);
+  };
+
+  const handleCloseModalLocalidad = () => {
+    setIsModalLocalidadOpen(false);
+    setLocalidadSeleccionada(null);
+  };
+
+  const handleSaveLocalidad = async (localidadGuardada) => {
+    try {
+      let response;
+      
+      if (localidadGuardada.id) {
+        // Actualizar localidad existente
+        response = await fetch(`http://localhost:3000/api/localidades/${localidadGuardada.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            nombre: localidadGuardada.nombre
+          }),
+        });
+      } else {
+        // Crear nueva localidad
+        response = await fetch('http://localhost:3000/api/localidades', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            nombre: localidadGuardada.nombre
+          }),
+        });
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (localidadGuardada.id) {
+          // Actualizar localidad en la lista
+          setLocalidades(prev => prev.map(l => 
+            l.id === localidadGuardada.id 
+              ? { ...l, nombre: localidadGuardada.nombre } 
+              : l
+          ));
+        } else {
+          // Agregar nueva localidad a la lista
+          const nuevaLocalidad = data.localidad || data;
+          setLocalidades(prev => [...prev, nuevaLocalidad]);
+        }
+        
+        handleCloseModalLocalidad();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al guardar localidad');
+      }
+    } catch (error) {
+      console.error('Error guardando localidad:', error);
+      alert('Error al guardar localidad');
+    }
+  };
+
+  const handleDeleteLocalidad = (localidad) => {
+    setLocalidadSeleccionada(localidad);
+    setIsModalEliminarOpen(true);
+  };
+
+  const handleConfirmarEliminar = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/localidades/${localidadSeleccionada.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setLocalidades(prev => prev.filter(l => l.id !== localidadSeleccionada.id));
+        setIsModalEliminarOpen(false);
+        setLocalidadSeleccionada(null);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al eliminar localidad');
+      }
+    } catch (error) {
+      console.error('Error eliminando localidad:', error);
+      alert('Error al eliminar localidad');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-primary text-white p-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Gestión de Localidades</h2>
+            <button
+              onClick={() => handleOpenModalLocalidad()}
+              className="bg-secondary hover:bg-accent text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+            >
+              <FaPlus className="text-sm" />
+              Agregar Localidad
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {localidades.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-lg">No hay localidades registradas</p>
+              <p className="text-gray-400 text-sm mt-2">Haz clic en "Agregar Localidad" para crear la primera</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {localidades.map((localidad) => (
+                <div
+                  key={localidad.id}
+                  className="bg-accent rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-200"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-primary mb-1">
+                        {localidad.nombre}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        ID: {localidad.id}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handleOpenModalLocalidad(localidad)}
+                        className="text-primary hover:text-secondary transition-colors duration-200 p-2"
+                        title="Editar localidad"
+                      >
+                        <FaPencilAlt />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteLocalidad(localidad)}
+                        className="text-red-500 hover:text-red-700 transition-colors duration-200 p-2"
+                        title="Eliminar localidad"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal para agregar/editar localidad */}
+      {isModalLocalidadOpen && (
+        <ModalLocalidad
+          localidad={localidadSeleccionada}
+          onSave={handleSaveLocalidad}
+          onClose={handleCloseModalLocalidad}
+        />
+      )}
+
+      {/* Modal de confirmación para eliminar */}
+      {isModalEliminarOpen && (
+        <ModalConfirmacion
+          titulo="Eliminar Localidad"
+          mensaje={`¿Estás seguro de que deseas eliminar la localidad "${localidadSeleccionada?.nombre}"? Esta acción no se puede deshacer.`}
+          onConfirmar={handleConfirmarEliminar}
+          onCancelar={() => setIsModalEliminarOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default GestionLocalidades;

@@ -8,6 +8,63 @@ import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
 import { getImageUrl, getCanchaImage } from '../config/api.js';
 
+// Función helper para construir la dirección completa
+const buildLocationString = (domicilio) => {
+  if (!domicilio) return 'Ubicación no especificada';
+  
+  const partes = [];
+  
+  // Agregar calle y altura
+  if (domicilio.calle) {
+    if (domicilio.altura) {
+      partes.push(`${domicilio.calle} ${domicilio.altura}`);
+    } else {
+      partes.push(domicilio.calle);
+    }
+  }
+  
+  // Agregar localidad
+  if (domicilio.localidad?.nombre) {
+    partes.push(domicilio.localidad.nombre);
+  }
+  
+  return partes.length > 0 ? partes.join(', ') : 'Ubicación no especificada';
+};
+
+// Función helper para obtener coordenadas aproximadas por localidad
+const getCoordinatesForLocation = (domicilio) => {
+  // Coordenadas por defecto (La Plata centro)
+  let lat = -34.9214;
+  let lng = -57.9545;
+  
+  if (domicilio?.localidad?.nombre) {
+    const localidad = domicilio.localidad.nombre.toLowerCase();
+    
+    // Coordenadas aproximadas para distintas localidades del Gran La Plata
+    const coordenadasLocalidades = {
+      'la plata': { lat: -34.9214, lng: -57.9545 },
+      'berisso': { lat: -34.8713, lng: -57.8794 },
+      'ensenada': { lat: -34.8670, lng: -57.9123 },
+      'city bell': { lat: -34.8617, lng: -58.0470 },
+      'gonnet': { lat: -34.8742, lng: -58.0171 },
+      'villa elisa': { lat: -34.8442, lng: -58.0865 },
+      'manuel b. gonnet': { lat: -34.8742, lng: -58.0171 },
+      'ringuelet': { lat: -34.9067, lng: -57.9861 },
+      'tolosa': { lat: -34.9043, lng: -57.9697 },
+      'los hornos': { lat: -34.9667, lng: -57.9667 },
+      'altos de san lorenzo': { lat: -34.9833, lng: -57.9500 }
+    };
+    
+    const coords = coordenadasLocalidades[localidad];
+    if (coords) {
+      lat = coords.lat;
+      lng = coords.lng;
+    }
+  }
+  
+  return { lat, lng };
+};
+
 function ReservaPage() {
   const { canchaId } = useParams();
   const { user, isAuthenticated } = useAuth();
@@ -17,7 +74,7 @@ function ReservaPage() {
   const [reseñasDeLaCancha, setReseñasDeLaCancha] = useState([]);
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [_error, setError] = useState(null);
   const [serviciosCompleto, setServiciosCompleto] = useState([]);
 
   // Cargar datos dinámicos desde el backend
@@ -130,32 +187,33 @@ function ReservaPage() {
       : calcularInfoReseñas(parseInt(canchaId));
     
     // Adaptar datos para compatibilidad con componentes
+    const coordenadas = getCoordinatesForLocation(complejo?.domicilio);
     const complejoAdaptado = {
       ...complejo,
-      servicios: serviciosCompleto.map(s => s.nombre), // Solo nombres de servicios
+      servicios: serviciosCompleto, // Pasar objetos completos con iconos
       horarios: complejo.horarios || 'No especificado', // Horarios reales del complejo
       ubicacion: complejo && complejo.domicilio 
-        ? `${complejo.domicilio.calle || ''} ${complejo.domicilio.altura || ''}, ${complejo.domicilio.localidad?.nombre || ''}`.trim()
+        ? buildLocationString(complejo.domicilio)
         : 'Ubicación no especificada',
-      lat: -34.9214, // Coordenadas por defecto de La Plata
-      lng: -57.9545
+      lat: complejo.lat || coordenadas.lat, // Usar coordenadas del complejo o aproximadas por localidad
+      lng: complejo.lng || coordenadas.lng
     };
     
-    // Construir URL de imagen usando getCanchaImage para imágenes específicas por cancha
-    let imageUrl = getCanchaImage(cancha.id, deporte?.nombre || 'futbol', cancha.nroCancha); // imagen específica por defecto
+    // Construir URLs de imágenes
+    let imageUrl;
+    let otrasImagenes = [];
     
     if (cancha.image && cancha.image.length > 0) {
-      // Si la cancha tiene imágenes, usar getImageUrl para procesarlas correctamente
-      const processedUrl = getImageUrl(cancha.image[0]);
-      if (processedUrl) {
-        imageUrl = processedUrl;
+      // Si la cancha tiene imágenes en la BD
+      imageUrl = getImageUrl(cancha.image[0]); // Primera imagen como principal
+      
+      // Resto de imágenes como thumbnails
+      if (cancha.image.length > 1) {
+        otrasImagenes = cancha.image.slice(1).map(img => getImageUrl(img));
       }
-    } else if (cancha.imagen) {
-      // Si existe el campo imagen (singular), usarlo también
-      const processedUrl = getImageUrl(cancha.imagen);
-      if (processedUrl) {
-        imageUrl = processedUrl;
-      }
+    } else {
+      // Si no hay imágenes en la BD, generar basada en el deporte y ID único
+      imageUrl = getCanchaImage(cancha.id, deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
     }
     
     return {
@@ -165,6 +223,7 @@ function ReservaPage() {
       puntaje: infoReseñas.promedio,
       cantidadReseñas: infoReseñas.cantidad,
       imageUrl: imageUrl,
+      otrasImagenes: otrasImagenes, // Agregar otras imágenes
       turnos: turnos,
       complejo: complejoAdaptado
     };
@@ -267,7 +326,10 @@ function ReservaPage() {
             {complejo.nombre}
           </Link>
         </h1>
-        <GaleriaFotos imageUrl={canchaMostrada.imageUrl} />
+        <GaleriaFotos 
+          imageUrl={canchaMostrada.imageUrl} 
+          otrasImagenes={canchaMostrada.otrasImagenes || []}
+        />
         <InfoCancha cancha={canchaMostrada} complejo={canchaMostrada.complejo} deporte={deporte?.nombre} />
         <CalendarioTurnos turnosDisponibles={turnos || []} onConfirmarReserva={handleConfirmarReserva} canchaId={canchaId} />
         <CarruselReseñas reseñas={reseñasDeLaCancha} />

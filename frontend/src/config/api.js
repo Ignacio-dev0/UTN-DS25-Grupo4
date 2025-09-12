@@ -11,6 +11,18 @@ export const getImageUrl = (imagePath) => {
     return imagePath;
   }
   
+  // Si viene de la base de datos, las imágenes están en /images/canchas/
+  if (imagePath.includes('.jpg') || imagePath.includes('.png') || imagePath.includes('.jpeg')) {
+    // Manejar nombres de archivo con leading zeros que necesitan ser convertidos
+    // Por ejemplo: futbol5_03.jpg -> futbol5_3.jpg
+    let normalizedPath = imagePath;
+    
+    // Convertir números con leading zero a números sin leading zero
+    normalizedPath = normalizedPath.replace(/(_)0(\d+)(\.[a-z]+)$/i, '$1$2$3');
+    
+    return `/images/canchas/${normalizedPath}`;
+  }
+  
   // Si no, asumimos que es una ruta relativa dentro de /images/
   return `/images/${imagePath}`;
 };
@@ -24,15 +36,15 @@ export const getApiUrl = (endpoint) => {
 export const getPlaceholderImage = (deporteNombre = 'Cancha') => {
   // Mapear nombres de deportes a archivos de imagen disponibles
   const deporteImageMap = {
-    'Fútbol 5': 'futbol5-1.jpg',
-    'Fútbol 11': 'futbol11-1.jpg',
-    'Básquet': 'basquet-1.jpg',
-    'Básquetbol': 'basquet-1.jpg',
-    'Tenis': 'tenis-1.jpg',
-    'Pádel': 'padel-1.jpg',
-    'Vóley': 'voley-1.jpg',
-    'Handball': 'handball-1.jpg',
-    'Hockey': 'hockey-1.jpg'
+    'Fútbol 5': 'futbol5_1.jpg',
+    'Fútbol 11': 'futbol11_1.jpg',
+    'Básquet': 'basquet_1.jpg',
+    'Básquetbol': 'basquet_1.jpg',
+    'Tenis': 'tenis_1.jpg',
+    'Pádel': 'padel_1.jpg',
+    'Vóley': 'voley_1.jpg',
+    'Handball': 'handball_1.jpg',
+    'Hockey': 'hockey_1.jpg'
   };
   
   // Buscar imagen por nombre exacto o por palabras clave
@@ -42,21 +54,21 @@ export const getPlaceholderImage = (deporteNombre = 'Cancha') => {
     // Buscar por palabras clave
     const deporteLower = deporteNombre.toLowerCase();
     if (deporteLower.includes('futbol') || deporteLower.includes('fútbol')) {
-      imageName = deporteLower.includes('11') ? 'futbol11-1.jpg' : 'futbol5-1.jpg';
+      imageName = deporteLower.includes('11') ? 'futbol11_1.jpg' : 'futbol5_1.jpg';
     } else if (deporteLower.includes('basquet')) {
-      imageName = 'basquet-1.jpg';
+      imageName = 'basquet_1.jpg';
     } else if (deporteLower.includes('tenis')) {
-      imageName = 'tenis-1.jpg';
+      imageName = 'tenis_1.jpg';
     } else if (deporteLower.includes('padel')) {
-      imageName = 'padel-1.jpg';
+      imageName = 'padel_1.jpg';
     } else if (deporteLower.includes('voley')) {
-      imageName = 'voley-1.jpg';
+      imageName = 'voley_1.jpg';
     } else if (deporteLower.includes('handball')) {
-      imageName = 'handball-1.jpg';
+      imageName = 'handball_1.jpg';
     } else if (deporteLower.includes('hockey')) {
-      imageName = 'hockey-1.jpg';
+      imageName = 'hockey_1.jpg';
     } else {
-      imageName = 'futbol5-1.jpg'; // Imagen por defecto
+      imageName = 'futbol5_1.jpg'; // Imagen por defecto
     }
   }
   
@@ -102,11 +114,10 @@ export const getCanchaImage = (canchaId, deporteNombre, nroCancha = null) => {
     }
   }
   
-  // Calcular número de imagen usando una combinación del ID y número de cancha
-  // Esto asegura que canchas con el mismo deporte tengan imágenes diferentes
-  const baseNumber = nroCancha || canchaId;
-  const seedNumber = (canchaId * 7) + (baseNumber * 3); // Multiplicadores primos para mejor distribución
-  const imageNumber = (seedNumber % 8) + 1; // Cicla entre 1-8
+  // Usar una combinación de ID de cancha y número de cancha para mayor variación
+  // Si no hay nroCancha, usar solo el ID
+  const uniqueNumber = nroCancha ? (canchaId * 13 + nroCancha * 7) : (canchaId * 17);
+  const imageNumber = (uniqueNumber % 8) + 1; // Cicla entre 1-8
   
-  return `/images/canchas/${deportePrefix}-${imageNumber}.jpg`;
+  return `/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
 };

@@ -64,17 +64,25 @@ export async function getTurnoById(req: Request, res: Response) {
 export async function getTurnosByCancha(req: Request, res: Response) {
     try {
         const canchaId = parseInt(req.params.canchaId);
+        console.log(`🔍 Buscando turnos para cancha: ${canchaId}`);
+        
         if (isNaN(canchaId)) {
+            console.log(`❌ ID de cancha inválido: ${req.params.canchaId}`);
             return res.status(400).json({ error: 'ID de cancha debe ser un número válido' });
         }
 
+        console.log(`📊 Ejecutando consulta getTurnosByCancha para cancha ${canchaId}`);
         const turnos = await turnoService.getTurnosByCancha(canchaId);
+        console.log(`✅ Turnos encontrados: ${turnos.length}`);
+        
         res.json({
             turnos,
             total: turnos.length,
             message: 'Turnos de la cancha obtenidos'
         });
     } catch (error: any) {
+        console.error(`❌ Error en getTurnosByCancha para cancha ${req.params.canchaId}:`, error);
+        console.error(`❌ Stack trace:`, error.stack);
         return res.status(500).json({ error: 'Error interno del servidor.' });
     }
 }

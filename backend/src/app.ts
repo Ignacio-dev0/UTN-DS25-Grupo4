@@ -15,6 +15,7 @@ import turnoRoutes from './routes/turno.routes';
 import cronogramaRoutes from './routes/cronograma.routes';
 import alquilerRoutes from './routes/alquiler.routes';
 import servicioRoutes from './routes/servicio.routes';
+import { resetearTurnosDiarios } from './controllers/turnoAutomatico.controller';
 // import ownerRoutes from "./routes/owner.routes"
 // import domicilioRoutes from './routes/domicilio.routes';
 // import pagoRoutes from './routes/pago.routes';
@@ -59,4 +60,26 @@ app.use('/api/alquileres',        alquilerRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    
+    // Job automático cada 24 horas para resetear turnos
+    setInterval(async () => {
+        try {
+            console.log('🔄 Ejecutando job de reseteo automático de turnos...');
+            const turnosReseteados = await resetearTurnosDiarios();
+            console.log(`✅ Job completado: ${turnosReseteados} turnos reseteados`);
+        } catch (error) {
+            console.error('❌ Error en job de reseteo de turnos:', error);
+        }
+    }, 24 * 60 * 60 * 1000); // 24 horas en milisegundos
+    
+    // Ejecutar una vez al iniciar el servidor
+    setTimeout(async () => {
+        try {
+            console.log('🔄 Ejecutando reseteo inicial de turnos...');
+            await resetearTurnosDiarios();
+            console.log('✅ Reseteo inicial completado');
+        } catch (error) {
+            console.error('❌ Error en reseteo inicial:', error);
+        }
+    }, 5000); // Esperar 5 segundos después del inicio
 });

@@ -11,8 +11,8 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [canchaSeleccionada, setCanchaSeleccionada] = useState(null);
   const [accion, setAccion] = useState(''); 
-  const CANCHAS_POR_PAGINA = 5;
-  const canchasPaginadas = canchas.slice(0, CANCHAS_POR_PAGINA);
+  // Mostrar todas las canchas (sin limitación de paginación)
+  const canchasPaginadas = canchas;
 
   // Función helper para convertir archivo a base64
   const convertFileToBase64 = (file) => {
@@ -165,7 +165,27 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
                   <FaTrash />
                 </button>
                 <Link to={`/micomplejo/cancha/${cancha.id}/editar`}>
-                  <button className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600" title="Editar Cancha">
+                  <button 
+                    className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600" 
+                    title="Editar Cancha"
+                    onClick={async (e) => {
+                      // Validar que la cancha existe antes de navegar
+                      try {
+                        const response = await fetch(`http://localhost:3000/api/canchas/${cancha.id}`);
+                        if (!response.ok) {
+                          e.preventDefault();
+                          alert('La cancha no se encuentra disponible. Recargando la lista...');
+                          onRecargarCanchas();
+                          return;
+                        }
+                      } catch (error) {
+                        e.preventDefault();
+                        console.error('Error validando cancha:', error);
+                        alert('Error al acceder a la cancha. Recargando la lista...');
+                        onRecargarCanchas();
+                      }
+                    }}
+                  >
                     <FaPencilAlt />
                   </button>
                 </Link>

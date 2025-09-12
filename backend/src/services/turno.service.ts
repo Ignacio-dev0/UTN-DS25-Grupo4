@@ -110,17 +110,74 @@ export async function getTurnoById(id: number): Promise<Turno | null> {
 }
 
 export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
-    const turnos = await prisma.turno.findMany({
-        where: { canchaId },
-        include: {
-            cancha: {
-                include: {
-                    complejo: true
-                }
-            }
+    try {
+        console.log(`🔍 Servicio: Buscando turnos para cancha ${canchaId}`);
+        
+        // Primero verificar que la cancha existe
+        const cancha = await prisma.cancha.findUnique({
+            where: { id: canchaId }
+        });
+        
+        if (!cancha) {
+            console.log(`❌ Servicio: Cancha ${canchaId} no encontrada`);
+            throw new Error(`Cancha ${canchaId} no encontrada`);
         }
-    });
-    return turnos;
+        
+        console.log(`✅ Servicio: Cancha ${canchaId} existe, buscando turnos...`);
+        
+        // Primero intentar sin include para ver si el problema está en las relaciones
+        try {
+            console.log(`🔍 Intentando consulta simple sin include...`);
+            const turnosSimple = await prisma.turno.findMany({
+                where: { canchaId },
+                orderBy: [
+                    { fecha: 'asc' },
+                    { horaInicio: 'asc' }
+                ]
+            });
+            console.log(`✅ Consulta simple exitosa: ${turnosSimple.length} turnos`);
+            
+            // Si la consulta simple funciona, intentar con include
+            console.log(`🔍 Intentando consulta con include...`);
+            const turnos = await prisma.turno.findMany({
+                where: { canchaId },
+                include: {
+                    cancha: {
+                        include: {
+                            complejo: true
+                        }
+                    }
+                },
+                orderBy: [
+                    { fecha: 'asc' },
+                    { horaInicio: 'asc' }
+                ]
+            });
+            
+            console.log(`✅ Servicio: Encontrados ${turnos.length} turnos para cancha ${canchaId}`);
+            if (turnos.length > 0) {
+                console.log(`📅 Primer turno: ${turnos[0].fecha} a las ${turnos[0].horaInicio}`);
+                console.log(`📅 Último turno: ${turnos[turnos.length - 1].fecha} a las ${turnos[turnos.length - 1].horaInicio}`);
+            }
+            
+            return turnos;
+        } catch (includeError) {
+            console.log(`⚠️ Error con include, devolviendo consulta simple`);
+            const turnosSimple = await prisma.turno.findMany({
+                where: { canchaId },
+                orderBy: [
+                    { fecha: 'asc' },
+                    { horaInicio: 'asc' }
+                ]
+            });
+            // Convertir a formato esperado sin las relaciones
+            return turnosSimple as Turno[];
+        }
+        
+    } catch (error) {
+        console.error(`❌ Servicio: Error buscando turnos para cancha ${canchaId}:`, error);
+        throw error;
+    }
 }
 
 export async function updateTurno(id: number, data: Partial<CreateTurno>): Promise<Turno> {

@@ -1,11 +1,17 @@
 import { Router } from "express";
 import * as turnoController from "../controllers/turno.controllers";
+    import * as turnoAutomaticoController from "../controllers/turnoAutomatico.controller";
 import { validate } from "../middlewares/validate";
 import { crearTurnoSchema, actualizarTurnoSchema, turnoIdSchema, turnosCanchaSchema } from "../validations/turno.validation";
 
 const router = Router()
 
-// Generar turnos automáticamente
+// Sistema de turnos automáticos (NUEVO)
+router.post('/regenerar/:canchaId', turnoAutomaticoController.regenerarTurnosSemanales);
+router.put('/individual/:turnoId', turnoAutomaticoController.actualizarTurnoIndividual);
+router.post('/individual', turnoAutomaticoController.crearTurnoIndividual);
+
+// Generar turnos automáticamente (LEGACY)
 router.post('/generar', turnoController.generarTurnos);
 
 // CRUD completo para turnos

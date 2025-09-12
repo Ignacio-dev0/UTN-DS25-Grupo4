@@ -28,60 +28,47 @@ function EditarCanchaPage() {
         const canchaData = await canchaResponse.json();
         const canchaInfo = canchaData.cancha || canchaData;
         
-        // Cargar cronograma existente
-        let cronogramaExistente = [];
-        try {
-          const cronogramaResponse = await fetch(`http://localhost:3000/api/cronograma/cancha/${canchaId}`);
-          if (cronogramaResponse.ok) {
-            const cronogramaData = await cronogramaResponse.json();
-            cronogramaExistente = cronogramaData.cronograma.map(item => {
-              const horaInicio = new Date(`1970-01-01T${item.horaInicio}`);
-              const hora = horaInicio.toLocaleTimeString('es-AR', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false 
-              });
-              
-              return {
-                dia: item.diaSemana,
-                hora,
-                precio: item.precio,
-                estado: 'disponible'
-              };
-            });
-          }
-        } catch (cronogramaError) {
-          console.warn('No se pudo cargar cronograma existente:', cronogramaError);
-        }
-
-        // Transformar turnos del formato de API al formato esperado por el componente (si los hay)
-        const turnosTransformados = (canchaInfo.turnos || []).map(turno => {
-          const fecha = new Date(turno.fecha);
-          const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-          const dia = dias[fecha.getDay()];
-          
-          const horaInicio = new Date(turno.horaInicio);
-          const hora = horaInicio.toLocaleTimeString('es-AR', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false 
-          });
-          
-          return {
-            ...turno,
-            dia,
-            hora,
-            estado: turno.reservado ? 'reservado' : 'disponible'
-          };
-        });
+        // Cargar turnos reales (como en ReservaPage)
+        const turnosResponse = await fetch(`http://localhost:3000/api/turnos/cancha/${canchaId}`);
+        if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
+        const turnosData = await turnosResponse.json();
         
-        // Usar cronograma si no hay turnos específicos
-        const turnosFinales = turnosTransformados.length > 0 ? turnosTransformados : cronogramaExistente;
+        // Función auxiliar para obtener el día de la semana en español
+        const obtenerDiaSemana = (fecha) => {
+          const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+          const fechaObj = new Date(fecha);
+          return diasSemana[fechaObj.getDay()];
+        };
+
+        // Función auxiliar para formatear hora desde ISO string
+        const formatearHora = (horaISO) => {
+          const fecha = new Date(horaISO);
+          return fecha.toTimeString().slice(0, 5); // Formato HH:mm
+        };
+        
+        // Formatear turnos reales (igual que en ReservaPage)
+        const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => ({
+          id: turno.id,
+          dia: obtenerDiaSemana(turno.fecha),
+          hora: formatearHora(turno.horaInicio),
+          precio: turno.precio,
+          reservado: turno.reservado, // Mantener el campo reservado como booleano
+          alquilerId: turno.alquilerId, // Para distinguir entre ocupado manualmente vs reservado por usuario
+          fecha: turno.fecha
+        }));
+        
+        // Separar imagen principal de otras imágenes
+        const imageArray = canchaInfo.image || [];
+        const imagenPrincipal = imageArray.length > 0 ? imageArray[0] : null;
+        const otrasImagenes = imageArray.length > 1 ? imageArray.slice(1) : [];
+        
+        console.log("📸 Imágenes cargadas:", { imagenPrincipal, otrasImagenes });
         
         setCancha({
           ...canchaInfo,
-          otrasImagenes: canchaInfo.otrasImagenes || [],
-          turnos: turnosFinales
+          imageUrl: imagenPrincipal, // Imagen principal
+          otrasImagenes: otrasImagenes, // Resto de imágenes
+          turnos: turnosFormateados
         });
         setComplejo(canchaInfo.complejo);
         
@@ -100,33 +87,28 @@ function EditarCanchaPage() {
 
   const handleSave = async () => {
     try {
-      console.log("Guardando cancha:", cancha);
+      console.log("🔄 Iniciando guardado de cancha...");
       
-      // Preparar array de imágenes completo
-      let imagenes = [];
+      // Guardar solo la información básica de la cancha
+      console.log("Guardando información básica de la cancha...");
       
-      // Imagen principal
-      let imagenPrincipal = cancha.image?.[0];
-      if (cancha.imageData) {
-        imagenPrincipal = cancha.imageData;
-      } else if (cancha.imageUrl?.startsWith('data:')) {
-        imagenPrincipal = cancha.imageUrl;
-      } else if (!imagenPrincipal) {
-        imagenPrincipal = '/images/canchas/futbol5-1.jpg'; // Imagen por defecto
+      // Combinar imagen principal con otras imágenes
+      const todasLasImagenes = [];
+      
+      // Agregar imagen principal si existe
+      if (cancha.imageUrl) {
+        todasLasImagenes.push(cancha.imageUrl);
+      } else if (cancha.image && cancha.image.length > 0) {
+        todasLasImagenes.push(cancha.image[0]);
       }
       
-      imagenes.push(imagenPrincipal);
-      
-      // Agregar imágenes adicionales (thumbnails)
+      // Agregar otras imágenes
       if (cancha.otrasImagenes && cancha.otrasImagenes.length > 0) {
-        cancha.otrasImagenes.forEach(imagen => {
-          if (imagen && imagen.trim() !== '') {
-            imagenes.push(imagen);
-          }
-        });
+        todasLasImagenes.push(...cancha.otrasImagenes);
       }
       
-      // Guardar cambios en la cancha con todas las imágenes
+      console.log("📸 Enviando imágenes:", todasLasImagenes);
+      
       const canchaResponse = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
         method: 'PUT',
         headers: {
@@ -134,59 +116,33 @@ function EditarCanchaPage() {
         },
         body: JSON.stringify({
           nroCancha: parseInt(cancha.nroCancha),
-          descripcion: cancha.descripcion || '',
-          image: imagenes, // Array completo de imágenes
-          deporteId: cancha.deporteId
+          descripcion: cancha.descripcion,
+          image: todasLasImagenes, // Enviar todas las imágenes en el array image
+          deporteId: cancha.deporteId,
         }),
       });
-      
-      if (!canchaResponse.ok) {
-        const errorData = await canchaResponse.text();
-        console.error('Error response:', errorData);
-        throw new Error('Error al guardar la cancha');
-      }
 
-      // Guardar cronograma si hay turnos configurados
-      if (cancha.turnos && cancha.turnos.length > 0) {
-        console.log("Guardando cronograma:", cancha.turnos);
-        
-        const cronogramaResponse = await fetch(`http://localhost:3000/api/cronograma/cancha/${canchaId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            cronograma: cancha.turnos
-          }),
-        });
-        
-        if (!cronogramaResponse.ok) {
-          const errorData = await cronogramaResponse.json().catch(() => 
-            cronogramaResponse.text().catch(() => 'Error desconocido')
-          );
-          console.error('Error al guardar cronograma:', errorData);
-          throw new Error(`Error al guardar cronograma: ${JSON.stringify(errorData)}`);
-        }
-        
-        const cronogramaData = await cronogramaResponse.json();
-        console.log("Cronograma guardado exitosamente", cronogramaData);
-        
-        // Mostrar información sobre turnos generados
-        if (cronogramaData.turnosGenerados) {
-          console.log(`Turnos generados automáticamente: ${cronogramaData.turnosGenerados}`);
-        }
+      if (!canchaResponse.ok) {
+        throw new Error('Error al guardar la información de la cancha');
       }
+      console.log("✅ Información básica guardada");
+
+      // Solo mostrar mensaje y redirigir - sin tocar cronograma
+      alert("✅ ¡Cancha guardada exitosamente!");
       
-      alert("Cancha y cronograma guardados exitosamente. ¡Los turnos disponibles se han actualizado automáticamente!");
-      navigate(`/micomplejo/${cancha.complejoId}`);
+      // Navegar de vuelta
+      setTimeout(() => {
+        navigate(`/micomplejo/${cancha.complejoId}`, { 
+          replace: true,
+          state: { shouldReload: true, timestamp: Date.now() }
+        });
+      }, 500);
       
     } catch (error) {
-      console.error('Error guardando:', error);
-      alert('Error al guardar los cambios');
+      console.error('❌ Error guardando:', error);
+      alert('❌ Error al guardar los cambios: ' + error.message);
     }
-  };
-
-  if (loading) {
+  };  if (loading) {
     return <div className="text-center p-10">Cargando...</div>;
   }
 
@@ -234,6 +190,7 @@ function EditarCanchaPage() {
         <CalendarioEdicionTurnos 
           turnos={cancha.turnos} 
           onTurnosChange={(nuevosTurnos) => setCancha({...cancha, turnos: nuevosTurnos})} 
+          canchaId={cancha.id}
         />
       </div>
     </div>

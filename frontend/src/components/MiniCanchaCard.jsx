@@ -37,10 +37,14 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
         <div className="relative">
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
-            src={getImageUrl(cancha.imagen) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'futbol', cancha.nroCancha)} 
+            src={
+              (cancha.image && cancha.image.length > 0) 
+                ? getImageUrl(cancha.image[0]) 
+                : getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)
+            } 
             alt={`Cancha ${cancha.nroCancha}`}
             onError={(e) => {
-              e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'futbol', cancha.nroCancha);
+              e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
             }}
           />
           {cancha.estado === 'deshabilitada' && (
