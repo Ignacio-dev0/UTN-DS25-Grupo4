@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EstadoSolicitud } from "../generated/prisma";
+import { EstadoSolicitud } from "@prisma/client";
 
 export const estadoSolicitudSchema = z.enum([
     EstadoSolicitud.APROBADA,

@@ -1,4 +1,4 @@
-import { Cancha, Deporte } from "../generated/prisma";
+import { Cancha, Deporte } from "@prisma/client";
 
 export interface CreateDeporteResquest{
     name: string;

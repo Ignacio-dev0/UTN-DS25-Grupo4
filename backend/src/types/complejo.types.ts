@@ -1,4 +1,4 @@
-import { Complejo } from "../generated/prisma";
+import { Complejo } from "@prisma/client";
 
 export interface CreateComplejoRequest {
     nombre: string;

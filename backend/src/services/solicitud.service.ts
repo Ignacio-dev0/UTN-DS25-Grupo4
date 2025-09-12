@@ -3,7 +3,7 @@ import prisma from "../config/prisma";
 
 import * as soliTypes from "../types/solicitud.types"
 import { da } from "zod/v4/locales/index.cjs";
-import { Solicitud } from "../generated/prisma";
+import { Solicitud } from "@prisma/client";
 import { primitiveTypes } from "zod/v4/core/util.cjs";
 
 export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) => {

@@ -1,4 +1,4 @@
-import { HorarioCronograma, DiaSemana } from "../generated/prisma";
+import { HorarioCronograma, DiaSemana } from "@prisma/client";
 
 export interface CreateHorario {
     horaInicio: string;

@@ -1,4 +1,4 @@
-import { Rol, Usuario } from "../generated/prisma";
+import { Rol, Usuario } from "@prisma/client";
 
 export interface CreateUsuarioRequest {
     name: string;

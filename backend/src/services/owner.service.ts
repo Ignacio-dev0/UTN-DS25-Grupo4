@@ -1,6 +1,6 @@
 import prisma from "../config/prisma";
 
-// import { Prisma } from "../generated/prisma/client";
+// import { Prisma } from "@prisma/client";
 
 // COMENTADO TEMPORALMENTE - No existe el modelo Owner en el schema actual
 // export const createOwner = async (data: Prisma.OwnerCreateInput) => {
