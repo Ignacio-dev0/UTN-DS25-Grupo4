@@ -1,6 +1,10 @@
 // Configuración de la API
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://utn-ds25-grupo4.onrender.com/api';
 
+// Debug temporal - mostrar qué URL se está usando
+console.log('🔍 API_BASE_URL:', API_BASE_URL);
+console.log('🔍 VITE_API_URL from env:', import.meta.env.VITE_API_URL);
+
 // Función helper para construir URLs de imágenes
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
