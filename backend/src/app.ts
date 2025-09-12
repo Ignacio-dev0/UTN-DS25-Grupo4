@@ -15,6 +15,7 @@ import turnoRoutes from './routes/turno.routes';
 import cronogramaRoutes from './routes/cronograma.routes';
 import alquilerRoutes from './routes/alquiler.routes';
 import servicioRoutes from './routes/servicio.routes';
+import migrationRoutes from './routes/migration.routes';
 import { resetearTurnosDiarios } from './controllers/turnoAutomatico.controller';
 // import ownerRoutes from "./routes/owner.routes"
 // import domicilioRoutes from './routes/domicilio.routes';
@@ -70,6 +71,7 @@ app.use('/api/cronograma',        cronogramaRoutes);
 app.use('/api/servicios',         servicioRoutes);
 app.use('/api/localidades',       localidadRoutes);
 app.use('/api/alquileres',        alquilerRoutes);
+app.use('/api/admin',             migrationRoutes);
 // app.use('/api/owners',            ownerRoutes);
 // app.use('/api/domicilios',        domicilioRoutes);
 // app.use('/api/pagos',             pagoRoutes);
