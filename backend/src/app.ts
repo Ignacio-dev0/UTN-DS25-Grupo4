@@ -86,6 +86,68 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// ENDPOINT DE EMERGENCIA - Crear tablas básicas
+app.get('/api/create-tables', async (req, res) => {
+    try {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        
+        await prisma.$executeRaw`
+            CREATE TABLE IF NOT EXISTS "Usuario" (
+                "id" SERIAL NOT NULL,
+                "apellido" TEXT NOT NULL,
+                "nombre" TEXT NOT NULL,
+                "telefono" TEXT NOT NULL,
+                "email" TEXT NOT NULL UNIQUE,
+                "cuit" TEXT NOT NULL UNIQUE,
+                "password" TEXT NOT NULL,
+                "rol" TEXT NOT NULL DEFAULT 'CLIENTE',
+                "direccion" TEXT,
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "Usuario_pkey" PRIMARY KEY ("id")
+            );
+        `;
+        
+        await prisma.$executeRaw`
+            CREATE TABLE IF NOT EXISTS "Cancha" (
+                "id" SERIAL NOT NULL,
+                "nroCancha" INTEGER NOT NULL,
+                "descripcion" TEXT,
+                "puntaje" DOUBLE PRECISION,
+                "image" TEXT,
+                "complejoId" INTEGER NOT NULL,
+                "deporteId" INTEGER NOT NULL,
+                CONSTRAINT "Cancha_pkey" PRIMARY KEY ("id")
+            );
+        `;
+        
+        await prisma.$executeRaw`
+            CREATE TABLE IF NOT EXISTS "Turno" (
+                "id" SERIAL NOT NULL,
+                "fecha" TIMESTAMP(3) NOT NULL,
+                "horaInicio" TIMESTAMP(3) NOT NULL,
+                "horaFin" TIMESTAMP(3) NOT NULL,
+                "reservado" BOOLEAN NOT NULL DEFAULT false,
+                "alquilerId" INTEGER,
+                "canchaId" INTEGER NOT NULL,
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "Turno_pkey" PRIMARY KEY ("id")
+            );
+        `;
+        
+        res.json({ success: true, message: 'Tablas creadas exitosamente' });
+        
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error instanceof Error ? error.message : String(error) 
+        });
+    }
+});
+
 // Endpoint temporal para ejecutar migraciones con SQL directo
 app.get('/api/setup-db', async (req, res) => {
     try {
