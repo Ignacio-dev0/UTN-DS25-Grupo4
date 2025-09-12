@@ -86,6 +86,48 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Endpoint temporal para ejecutar migraciones con SQL directo
+app.get('/api/setup-db', async (req, res) => {
+    try {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        
+        // Verificar conexión
+        await prisma.$connect();
+        
+        // Ejecutar SQL directo para crear tablas principales
+        await prisma.$executeRaw`
+            CREATE TABLE IF NOT EXISTS "Usuario" (
+                "id" SERIAL NOT NULL,
+                "apellido" TEXT NOT NULL,
+                "nombre" TEXT NOT NULL,
+                "telefono" TEXT NOT NULL,
+                "email" TEXT NOT NULL,
+                "cuit" TEXT NOT NULL,
+                "password" TEXT NOT NULL,
+                "rol" TEXT NOT NULL DEFAULT 'CLIENTE',
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" TIMESTAMP(3) NOT NULL,
+                CONSTRAINT "Usuario_pkey" PRIMARY KEY ("id")
+            );
+        `;
+        
+        res.json({
+            success: true,
+            message: 'Base de datos configurada exitosamente',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Error configurando base de datos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error configurando base de datos',
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+
 // Endpoint para ejecutar migraciones manualmente
 app.get('/api/migrate', async (req, res) => {
     try {
