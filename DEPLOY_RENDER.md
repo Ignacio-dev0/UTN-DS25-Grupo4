@@ -1,36 +1,200 @@
-# 🚀 Guía de Despliegue en Render - CanchaYa
+# 🚀 Guía de Despliegue GRATUITO en Render - CanchaYa
 
-Esta guía te ayudará a desplegar tanto el backend como el frontend de CanchaYa en Render.
+Esta guía te ayudará a desplegar el backend y frontend de CanchaYa por separado usando el **plan gratuito** de Render.
 
 ## 📋 Prerrequisitos
 
-1. Cuenta en [Render](https://render.com)
-2. Repositorio en GitHub/GitLab
+1. Cuenta **gratuita** en [Render](https://render.com)
+2. Repositorio en GitHub (público para plan gratuito)
 3. Código subido al repositorio remoto
 
-## 🗄️ Opción 1: Despliegue Automático con render.yaml
+## 🗄️ Paso 1: Configurar Base de Datos (Opcional - External DB)
 
-### Paso 1: Configurar el archivo render.yaml
-Ya tienes el archivo `render.yaml` en la raíz del proyecto. Este archivo define:
-- Backend API (Node.js)
-- Frontend estático (React)
-- Base de datos PostgreSQL
+**Para plan gratuito necesitas usar una base de datos externa gratuita:**
 
-### Paso 2: Subir cambios al repositorio
-```bash
-git add .
-git commit -m "Add Render deployment configuration"
-git push origin main
+### Opción A: Supabase (Recomendado)
+1. Ve a [Supabase](https://supabase.com) y crea cuenta gratuita
+2. Crea nuevo proyecto
+3. Ve a Settings → Database → Connection string
+4. Copia la URL que se ve así: `postgresql://user:password@host:5432/database`
+
+### Opción B: Railway
+1. Ve a [Railway](https://railway.app) y crea cuenta gratuita
+2. New Project → Provision PostgreSQL
+3. Variables → DATABASE_URL
+
+### Opción C: Neon
+1. Ve a [Neon](https://neon.tech) y crea cuenta gratuita
+2. Crea base de datos
+3. Copia connection string
+
+## 🔧 Paso 2: Desplegar Backend
+
+1. Ve a [Render Dashboard](https://dashboard.render.com/)
+2. Haz clic en **"New"** → **"Web Service"**
+3. Conecta tu repositorio de GitHub
+4. Configura:
+
+### Configuración Básica:
+- **Name**: `canchaya-backend` (o el nombre que prefieras)
+- **Runtime**: `Node`
+- **Branch**: `main` (o tu rama principal)
+- **Root Directory**: `backend`
+- **Build Command**: `npm install && npm run build && npx prisma generate`
+- **Start Command**: `npx prisma migrate deploy && npm start`
+
+### Variables de Entorno (Environment):
+```
+NODE_ENV=production
+PORT=10000
+DATABASE_URL=postgresql://tu-usuario:tu-password@tu-host:5432/tu-database
 ```
 
-### Paso 3: Crear servicios en Render
-1. Ve a [Render Dashboard](https://dashboard.render.com/)
-2. Haz clic en "New" → "Blueprint"
-3. Conecta tu repositorio de GitHub/GitLab
-4. Render detectará automáticamente el `render.yaml`
-5. Revisa la configuración y haz clic en "Apply"
+5. Haz clic en **"Create Web Service"**
+6. **Importante**: Guarda la URL que te da (ej: `https://canchaya-backend.onrender.com`)
 
-## 🔧 Opción 2: Despliegue Manual
+## 🌐 Paso 3: Desplegar Frontend
+
+1. En Render Dashboard, haz clic en **"New"** → **"Static Site"**
+2. Conecta tu repositorio (el mismo)
+3. Configura:
+
+### Configuración Básica:
+- **Name**: `canchaya-frontend`
+- **Branch**: `main`
+- **Root Directory**: `frontend`
+- **Build Command**: `npm install && npm run build`
+- **Publish Directory**: `dist`
+
+### Variables de Entorno (Environment):
+```
+VITE_API_URL=https://canchaya-backend.onrender.com/api
+VITE_APP_ENV=production
+```
+
+4. Haz clic en **"Create Static Site"**
+
+## 🔄 Paso 4: Conectar Frontend con Backend
+
+### Actualizar CORS en Backend
+1. Ve a tu servicio backend en Render
+2. Ve a "Environment" y agrega:
+```
+FRONTEND_URL=https://canchaya-frontend.onrender.com
+```
+3. Haz clic en "Save Changes" (esto redesplegará automáticamente)
+
+### Verificar conexión en Frontend
+- El frontend ya debería estar conectado con `VITE_API_URL`
+
+## 🎯 URLs Finales (Ejemplos)
+
+- **Frontend**: `https://canchaya-frontend.onrender.com`
+- **Backend API**: `https://canchaya-backend.onrender.com/api`
+- **Health Check**: `https://canchaya-backend.onrender.com/api/health`
+
+## 🔍 Verificación
+
+### 1. Verificar Backend
+```bash
+curl https://canchaya-backend.onrender.com/api/health
+# Debería responder: {"status":"OK","timestamp":"...","service":"CanchaYa Backend API"}
+```
+
+### 2. Verificar Frontend
+- Abre tu URL del frontend
+- Debería cargar la aplicación React
+- Verifica en DevTools → Network que las llamadas a la API funcionen
+
+## ⚠️ Limitaciones del Plan Gratuito
+
+### 🕒 Hibernación
+- Los servicios se "duermen" después de **15 minutos** sin actividad
+- Primera carga después del sueño: **30-60 segundos**
+- **Solución**: Usar un servicio ping cada 10-14 minutos
+
+### 📊 Recursos
+- **750 horas/mes** por servicio (más que suficiente)
+- **CPU/RAM limitados** (adecuado para desarrollo/demos)
+- **Repositorio público** requerido
+
+### 🗄️ Base de Datos
+- Render no incluye PostgreSQL gratuito
+- **Usar servicios externos** como Supabase/Railway/Neon
+
+## 🚨 Solución de Problemas
+
+### ❌ Error "Build failed"
+```bash
+# Probar localmente
+cd backend
+npm install
+npm run build
+
+cd ../frontend  
+npm install
+npm run build
+```
+
+### ❌ Error de conexión a DB
+1. Verifica que `DATABASE_URL` sea correcta
+2. Asegúrate de que la DB externa esté activa
+3. Revisa logs: Render Dashboard → tu servicio → "Logs"
+
+### ❌ Error de CORS
+```
+Access to fetch at 'backend-url' from origin 'frontend-url' has been blocked
+```
+**Solución**: Verificar que `FRONTEND_URL` esté configurada en el backend
+
+### ❌ Frontend no conecta con Backend
+1. Verifica `VITE_API_URL` en frontend
+2. Asegúrate de que ambos servicios estén desplegados
+3. Espera a que el backend "despierte" si estaba dormido
+
+## 🚀 Script de Ping (Opcional)
+
+Para evitar que tus servicios se duerman, puedes usar:
+
+### GitHub Actions (Gratis)
+Crea `.github/workflows/keep-alive.yml`:
+```yaml
+name: Keep Alive
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Cada 10 minutos
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend
+        run: curl https://tu-backend.onrender.com/api/health
+      - name: Ping Frontend  
+        run: curl https://tu-frontend.onrender.com
+```
+
+## 📞 Costos ($0)
+
+✅ **Backend Web Service**: Gratuito (750h/mes)  
+✅ **Frontend Static Site**: Gratuito (100GB/mes)  
+✅ **Base de datos externa**: Gratuito (Supabase/Railway/Neon)  
+✅ **GitHub Actions**: Gratuito (2000 min/mes)
+
+**Total: $0/mes** 🎉
+
+## 📋 Checklist Final
+
+- [ ] Base de datos externa configurada
+- [ ] Backend desplegado con `DATABASE_URL`
+- [ ] Frontend desplegado con `VITE_API_URL`
+- [ ] CORS configurado (`FRONTEND_URL` en backend)
+- [ ] Health check funcionando
+- [ ] Frontend se conecta al backend
+- [ ] (Opcional) Ping configurado
+
+---
+
+**✨ ¡Tu aplicación CanchaYa está desplegada GRATIS!**
 
 ### A. Configurar Base de Datos
 
