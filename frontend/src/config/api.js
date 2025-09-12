@@ -1,5 +1,5 @@
 // Configuración de la API
-export const API_BASE_URL = 'http://localhost:3000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://canchaya.onrender.com/api';
 
 // Función helper para construir URLs de imágenes
 export const getImageUrl = (imagePath) => {
