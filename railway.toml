@@ -1,10 +1,11 @@
 [build]
-builder = "nixpacks"
-buildCommand = "npm ci --prefix frontend && npm run build --prefix frontend"
+builder = "dockerfile"
 
 [deploy]
-startCommand = "npm run start --prefix frontend"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
+
+[variables]
+NODE_ENV = "production"

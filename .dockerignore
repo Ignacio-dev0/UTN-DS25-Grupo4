@@ -1,0 +1,11 @@
+node_modules
+backend
+Documentacion
+*.md
+.git
+.gitignore
+frontend/node_modules
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
