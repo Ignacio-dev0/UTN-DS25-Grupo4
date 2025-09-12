@@ -86,6 +86,37 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Endpoint para ejecutar migraciones manualmente
+app.get('/api/migrate', async (req, res) => {
+    try {
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execAsync = promisify(exec);
+        
+        console.log('🔄 Ejecutando migraciones de Prisma...');
+        
+        // Ejecutar migraciones
+        const { stdout, stderr } = await execAsync('npx prisma migrate deploy');
+        
+        console.log('✅ Migraciones completadas');
+        console.log('STDOUT:', stdout);
+        
+        res.json({
+            success: true,
+            message: 'Migraciones ejecutadas correctamente',
+            details: stdout
+        });
+        
+    } catch (error) {
+        console.error('❌ Error ejecutando migraciones:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error ejecutando migraciones',
+            error: error instanceof Error ? error.message : String(error)
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     
