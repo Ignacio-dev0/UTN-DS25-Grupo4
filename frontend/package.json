@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "serve -s dist -l 4173"
+    "preview": "serve -s dist -p 3000"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

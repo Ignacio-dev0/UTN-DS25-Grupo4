@@ -71,10 +71,70 @@ O **alternativamente**, cuando crees cada servicio:
 
 ## 6. Migrar Base de Datos
 
-1. **Ejecutar migraciones** en Railway:
-   - Ve al backend → "Settings" → "Variables"
-   - Agrega: `RAILWAY_RUN_MIGRATIONS = true`
-   - Redeploy el backend
+1. **PROBLEMA CRÍTICO ENCONTRADO**: Las migraciones estaban en `.gitignore`
+   - Archivo: `backend/.gitignore` tenía `prisma/migrations/`
+   - **SOLUCIÓN**: Remover esa línea y hacer commit de las migraciones
+
+2. **Ejecutar migraciones** en Railway:
+   - ✅ `RAILWAY_RUN_MIGRATIONS = true` configurado
+   - ✅ Migraciones agregadas al repositorio
+   - 🔄 Esperando deploy para aplicar cambios
+
+## 🚨 **ESTADO FINAL DEL DEPLOYMENT** (Sep 12, 2025)
+
+### 🎉 **DEPLOYMENT EXITOSO - BACKEND FUNCIONANDO:**
+- **Backend desplegado**: `https://utn-ds25-grupo4-canchaya.up.railway.app` ✅
+- **Base de datos PostgreSQL**: Funcionando ✅  
+- **Health Check**: Responde correctamente ✅
+- **Variables de entorno**: DATABASE_URL configurada ✅
+- **Migraciones ejecutadas**: Todas las 11 migraciones aplicadas ✅
+- **API Endpoints**: Funcionando correctamente ✅
+- **Tablas de BD**: Creadas exitosamente ✅
+
+### ✅ **PROBLEMAS RESUELTOS:**
+- **DATABASE_URL**: Configurada en el servicio backend
+- **Migraciones**: Se ejecutaron correctamente después del redeploy
+- **Conexión BD**: Prisma conectado y funcionando
+- **Endpoints**: API respondiendo correctamente
+
+### 🔧 **SOLUCIÓN REQUERIDA:**
+
+**OPCIÓN A: Dashboard Web (RECOMENDADO)**
+1. **Ir a**: https://railway.app/dashboard
+2. **Proyecto**: "clever-wisdom" → Servicio "back"
+3. **Settings** → **Source** → "Trigger Deploy"
+4. **O eliminar** y recrear el servicio backend
+
+**OPCIÓN B: Recrear Servicios**
+1. **Eliminar** servicio "back" actual
+2. **Crear nuevo** servicio desde GitHub
+3. **Configurar** variables de entorno nuevamente
+4. **Las migraciones** se ejecutarán en el primer deploy
+
+### � **ARCHIVOS IMPORTANTES CREADOS:**
+- ✅ `backend/.gitignore` - Removido `prisma/migrations/`
+- ✅ `backend/prisma/migrations/*` - 11 archivos de migración
+- ✅ `backend/create_tables.sql` - SQL directo de emergencia
+- ✅ `backend/src/app.ts` - Endpoints de migración manual
+
+### 🎯 **SIGUIENTE PASO CRÍTICO:**
+**Acceder al dashboard web de Railway y forzar un deploy completo o recrear el servicio backend.**
+
+---
+
+## ⚠️ **FRONTEND STATUS:**
+- **URL**: `https://front-canchaya.up.railway.app`
+- **Estado**: Error 403 - Vite preview host blocking
+- **Problema**: Vite preview no permite el host de Railway
+- **Variables**: VITE_API_URL configurada correctamente ✅
+- **Archivos modificados**: 
+  - `package.json` - Script preview con --host --port 4173
+  - `vite.config.js` - allowedHosts configurado
+
+### 🚨 **FRONTEND REQUIERE:**
+1. **Cambiar a build estático** en lugar de preview
+2. **Usar serve** o **nginx** para servir archivos
+3. **O configurar proxy** correctamente
 
 ## URLs Finales Esperadas:
 - **Backend**: `https://tu-backend.railway.app`
