@@ -37,7 +37,7 @@
    Runtime: Node
    Branch: main (o tu rama)
    Root Directory: backend
-   Build Command: npm install && npm run build && npx prisma generate
+   Build Command: npm install --production=false && npm run build && npx prisma generate
    Start Command: npx prisma migrate deploy && npm start
    ```
 5. Environment variables:

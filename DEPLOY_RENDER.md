@@ -40,7 +40,7 @@ Esta guía te ayudará a desplegar el backend y frontend de CanchaYa por separad
 - **Runtime**: `Node`
 - **Branch**: `main` (o tu rama principal)
 - **Root Directory**: `backend`
-- **Build Command**: `npm install && npm run build && npx prisma generate`
+- **Build Command**: `npm install --production=false && npm run build && npx prisma generate`
 - **Start Command**: `npx prisma migrate deploy && npm start`
 
 ### Variables de Entorno (Environment):
