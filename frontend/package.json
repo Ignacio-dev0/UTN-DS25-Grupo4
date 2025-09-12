@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host --port 4173"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
