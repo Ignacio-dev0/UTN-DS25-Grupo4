@@ -318,4 +318,4 @@ app.listen(PORT, () => {
             console.error('❌ Error en reseteo inicial:', error);
         }
     }, 5000); // Esperar 5 segundos después del inicio
-});
+});// Force rebuild Fri Sep 12 19:04:30 -03 2025
