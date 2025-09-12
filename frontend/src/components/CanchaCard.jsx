@@ -7,10 +7,6 @@ function CanchaCard({ cancha }) {
   const [turnosHoy, setTurnosHoy] = useState([]);
   const [loadingTurnos, setLoadingTurnos] = useState(false);
 
-  // DEBUG: Ver qué datos llegan
-  console.log('CanchaCard - cancha:', cancha);
-  console.log('CanchaCard - cronograma:', cancha.cronograma);
-
   // Fetch available turns for this court (today from current time onwards)
   useEffect(() => {
     const fetchTurnosDisponibles = async () => {
