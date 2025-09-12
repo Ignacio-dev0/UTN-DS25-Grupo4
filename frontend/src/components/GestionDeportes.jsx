@@ -14,7 +14,7 @@ function GestionDeportes() {
   useEffect(() => {
     const cargarDeportes = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/deportes');
+        const response = await fetch(`${API_BASE_URL}/deportes`);
         if (response.ok) {
           const data = await response.json();
           setDeportes(data.deportes || data || []);
@@ -47,7 +47,7 @@ function GestionDeportes() {
       
       if (deporteGuardado.id) {
         // Actualizar deporte existente
-        response = await fetch(`http://localhost:3000/api/deportes/${deporteGuardado.id}`, {
+        response = await fetch(`${API_BASE_URL}/deportes/${deporteGuardado.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ function GestionDeportes() {
         });
       } else {
         // Crear nuevo deporte
-        response = await fetch('http://localhost:3000/api/deportes', {
+        response = await fetch(`${API_BASE_URL}/deportes`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ function GestionDeportes() {
     if (!deporteSeleccionado) return;
     
     try {
-      const response = await fetch(`http://localhost:3000/api/deportes/${deporteSeleccionado.id}`, {
+      const response = await fetch(`${API_BASE_URL}/deportes/${deporteSeleccionado.id}`, {
         method: 'DELETE',
       });
 

@@ -21,7 +21,7 @@ function EditarCanchaPage() {
         setLoading(true);
         
         // Obtener información completa de la cancha
-        const canchaResponse = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
+        const canchaResponse = await fetch(`${API_BASE_URL}/canchas/${canchaId}`);
         if (!canchaResponse.ok) {
           throw new Error('Error al cargar la cancha');
         }
@@ -29,7 +29,7 @@ function EditarCanchaPage() {
         const canchaInfo = canchaData.cancha || canchaData;
         
         // Cargar turnos reales (como en ReservaPage)
-        const turnosResponse = await fetch(`http://localhost:3000/api/turnos/cancha/${canchaId}`);
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
         if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
         const turnosData = await turnosResponse.json();
         
@@ -109,7 +109,7 @@ function EditarCanchaPage() {
       
       console.log("📸 Enviando imágenes:", todasLasImagenes);
       
-      const canchaResponse = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
+      const canchaResponse = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

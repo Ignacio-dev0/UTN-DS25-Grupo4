@@ -86,7 +86,7 @@ function ReservaPage() {
         setLoading(true);
         
         // Cargar datos de la cancha
-        const canchaResponse = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
+        const canchaResponse = await fetch(`${API_BASE_URL}/canchas/${canchaId}`);
         if (!canchaResponse.ok) throw new Error('Error al cargar cancha');
         const canchaData = await canchaResponse.json();
         
@@ -95,7 +95,7 @@ function ReservaPage() {
         
         // Cargar datos del complejo
         if (cancha.complejoId) {
-          const complejoResponse = await fetch(`http://localhost:3000/api/complejos/${cancha.complejoId}`);
+          const complejoResponse = await fetch(`${API_BASE_URL}/complejos/${cancha.complejoId}`);
           if (!complejoResponse.ok) throw new Error('Error al cargar complejo');
           const complejoData = await complejoResponse.json();
           setComplejo(complejoData.complejo || complejoData);
@@ -103,7 +103,7 @@ function ReservaPage() {
 
         // Cargar servicios del complejo desde la API
         if (cancha.complejoId) {
-          const serviciosResponse = await fetch(`http://localhost:3000/api/servicios`);
+          const serviciosResponse = await fetch(`${API_BASE_URL}/servicios`);
           if (serviciosResponse.ok) {
             const serviciosData = await serviciosResponse.json();
             const serviciosDelComplejo = serviciosData.servicios
@@ -116,7 +116,7 @@ function ReservaPage() {
         
         // Cargar datos del deporte para obtener imágenes
         if (cancha.deporteId) {
-          const deporteResponse = await fetch(`http://localhost:3000/api/deportes/${cancha.deporteId}`);
+          const deporteResponse = await fetch(`${API_BASE_URL}/deportes/${cancha.deporteId}`);
           if (deporteResponse.ok) {
             const deporteData = await deporteResponse.json();
             setDeporte(deporteData.deporte || deporteData);
@@ -124,7 +124,7 @@ function ReservaPage() {
         }
 
         // Cargar reseñas de la cancha
-        const reseñasResponse = await fetch(`http://localhost:3000/api/resenas/cancha/${canchaId}`);
+        const reseñasResponse = await fetch(`${API_BASE_URL}/resenas/cancha/${canchaId}`);
         if (reseñasResponse.ok) {
           const reseñasData = await reseñasResponse.json();
           // Transformar las reseñas para que coincidan con la estructura esperada por CarruselReseñas
@@ -136,7 +136,7 @@ function ReservaPage() {
           }));
           setReseñasDeLaCancha(reseñasTransformadas);
         }
-        const turnosResponse = await fetch(`http://localhost:3000/api/turnos/cancha/${canchaId}`);
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
         if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
         const turnosData = await turnosResponse.json();
         
@@ -250,7 +250,7 @@ function ReservaPage() {
       }
 
       // Llamar al backend para crear el alquiler/reserva
-      const response = await fetch('http://localhost:3000/api/alquileres', {
+      const response = await fetch(`${API_BASE_URL}/alquileres`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ function ReservaPage() {
       console.log('Reserva creada exitosamente:', reservaData);
       
       // Actualizar el estado del turno como reservado
-      const response2 = await fetch(`http://localhost:3000/api/turnos/${turnoCompleto.id}`, {
+      const response2 = await fetch(`${API_BASE_URL}/turnos/${turnoCompleto.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

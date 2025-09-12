@@ -18,7 +18,7 @@ function AdminPage() {
   const fetchSolicitudes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/admin/solicitudes');
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes`);
       if (response.ok) {
         const data = await response.json();
         const solicitudesPendientes = (data.solicitudes || data || [])
@@ -53,7 +53,7 @@ function AdminPage() {
   const fetchComplejosAprobados = async () => {
     try {
       setLoadingComplejos(true);
-      const response = await fetch('http://localhost:3000/api/complejos/aprobados');
+      const response = await fetch(`${API_BASE_URL}/complejos/aprobados`);
       if (response.ok) {
         const data = await response.json();
         console.log('Complejos aprobados recibidos:', data); // Debug
@@ -68,7 +68,7 @@ function AdminPage() {
 
   const handleApprove = async (solicitudId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/solicitudes/${solicitudId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes/${solicitudId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ function AdminPage() {
     if (!confirm('¿Estás seguro de rechazar esta solicitud?')) return;
     
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/solicitudes/${solicitudId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes/${solicitudId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ function AdminPage() {
     
     try {
       setLoadingComplejos(true);
-      const response = await fetch(`http://localhost:3000/api/complejos/${complejoId}`, {
+      const response = await fetch(`${API_BASE_URL}/complejos/${complejoId}`, {
         method: 'DELETE',
       });
 

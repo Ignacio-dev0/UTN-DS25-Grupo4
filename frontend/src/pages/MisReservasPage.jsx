@@ -81,7 +81,7 @@ function MisReservasPage() {
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/alquileres?clienteId=${usuarioId}`);
+            const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
             if (response.ok) {
                 const data = await response.json();
                 const reservasFormateadas = (data.alquileres || []).map(alquiler => {
@@ -139,7 +139,7 @@ function MisReservasPage() {
 
     const handleCancelReserva = async (reservaId) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/alquileres/${reservaId}`, {
+            const response = await fetch(`${API_BASE_URL}/alquileres/${reservaId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ function MisReservasPage() {
 
     const handleConfirmarPago = async (datosPago) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/alquileres/${reservaParaPagar.id}/pagar`, {
+            const response = await fetch(`${API_BASE_URL}/alquileres/${reservaParaPagar.id}/pagar`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

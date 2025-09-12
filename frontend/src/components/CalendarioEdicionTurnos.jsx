@@ -37,7 +37,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
         console.log("✅ Turno creado exitosamente:", nuevoTurnoCreado);
         
         // Recargar turnos desde la base de datos para obtener el turno con ID correcto
-        const response = await fetch(`http://localhost:3000/api/turnos/cancha/${canchaId}`);
+        const response = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
         if (response.ok) {
           const turnosData = await response.json();
           
@@ -120,7 +120,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
   // Función para crear turno en la base de datos
   const crearTurnoEnBD = async (canchaId, dia, hora, precio) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/turnos/individual`, {
+      const response = await fetch(`${API_BASE_URL}/turnos/individual`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
   const actualizarTurnoEnBD = async (turnoId, cambios) => {
     try {
       setGuardandoCambios(true);
-      const response = await fetch(`http://localhost:3000/api/turnos/individual/${turnoId}`, {
+      const response = await fetch(`${API_BASE_URL}/turnos/individual/${turnoId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

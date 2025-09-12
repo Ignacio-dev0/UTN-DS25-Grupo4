@@ -39,7 +39,7 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
   useEffect(() => {
     const cargarServicios = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/servicios');
+        const response = await fetch(`${API_BASE_URL}/servicios`);
         if (response.ok) {
           const data = await response.json();
           setTodosLosServicios(data.servicios);

@@ -14,7 +14,7 @@ function GestionLocalidades() {
   useEffect(() => {
     const cargarLocalidades = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/localidades');
+        const response = await fetch(`${API_BASE_URL}/localidades`);
         if (response.ok) {
           const data = await response.json();
           setLocalidades(data.localidades || data || []);
@@ -47,7 +47,7 @@ function GestionLocalidades() {
       
       if (localidadGuardada.id) {
         // Actualizar localidad existente
-        response = await fetch(`http://localhost:3000/api/localidades/${localidadGuardada.id}`, {
+        response = await fetch(`${API_BASE_URL}/localidades/${localidadGuardada.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ function GestionLocalidades() {
         });
       } else {
         // Crear nueva localidad
-        response = await fetch('http://localhost:3000/api/localidades', {
+        response = await fetch(`${API_BASE_URL}/localidades`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ function GestionLocalidades() {
 
   const handleConfirmarEliminar = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/localidades/${localidadSeleccionada.id}`, {
+      const response = await fetch(`${API_BASE_URL}/localidades/${localidadSeleccionada.id}`, {
         method: 'DELETE',
       });
 

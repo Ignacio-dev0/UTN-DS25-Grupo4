@@ -52,7 +52,7 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
 
       console.log('Enviando datos de cancha:', canchaData);
 
-      const response = await fetch('http://localhost:3000/api/canchas', {
+      const response = await fetch(`${API_BASE_URL}/canchas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
                     onClick={async (e) => {
                       // Validar que la cancha existe antes de navegar
                       try {
-                        const response = await fetch(`http://localhost:3000/api/canchas/${cancha.id}`);
+                        const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`);
                         if (!response.ok) {
                           e.preventDefault();
                           alert('La cancha no se encuentra disponible. Recargando la lista...');

@@ -11,7 +11,7 @@ function EstadoSolicitudPage() {
   useEffect(() => {
     const fetchSolicitud = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/solicitudes?usuarioId=${user.id}`);
+        const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`);
         if (response.ok) {
           const data = await response.json();
           const solicitudUsuario = data.solicitudes?.find(s => s.usuarioId === user.id);

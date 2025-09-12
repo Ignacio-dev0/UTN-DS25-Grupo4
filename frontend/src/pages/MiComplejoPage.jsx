@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import ComplejoInfo from '../components/ComplejoInfo.jsx';
 import ListaCanchasComplejo from '../components/ListaCanchasComplejo.jsx';
 import { useAuth } from '../context/AuthContext.jsx'; 
+import { API_BASE_URL } from '../config/api.js'; 
 
 function MiComplejoPage() {
   const { complejoId } = useParams();
@@ -32,7 +33,7 @@ function MiComplejoPage() {
       // Para dueños, verificar que tengan una solicitud aprobada
       if (user?.rol === 'owner') {
         try {
-          const response = await fetch(`http://localhost:3000/api/admin/solicitudes?usuarioId=${user.id}`);
+          const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`);
           if (response.ok) {
             const data = await response.json();
             const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
@@ -66,7 +67,7 @@ function MiComplejoPage() {
     try {
       console.log('🔄 Recargando canchas para complejo:', complejoId);
       // Usar el endpoint específico para canchas por complejo
-      const canchasResponse = await fetch(`http://localhost:3000/api/canchas/complejo/${complejoId}`);
+      const canchasResponse = await fetch(`${API_BASE_URL}/canchas/complejo/${complejoId}`);
       if (canchasResponse.ok) {
         const canchasData = await canchasResponse.json();
         console.log('✅ Canchas cargadas del backend:', canchasData);
@@ -93,7 +94,7 @@ function MiComplejoPage() {
   useEffect(() => {
     const fetchAlquileres = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/alquileres/complejo/${complejoId}`);
+        const response = await fetch(`${API_BASE_URL}/alquileres/complejo/${complejoId}`);
         if (response.ok) {
           const data = await response.json();
           const alquileresCompletos = data.alquileres || data || [];
@@ -134,7 +135,7 @@ function MiComplejoPage() {
         setLoading(true);
         
         // Obtener información del complejo con relaciones incluidas
-        const complejoResponse = await fetch(`http://localhost:3000/api/complejos/${complejoId}`);
+        const complejoResponse = await fetch(`${API_BASE_URL}/complejos/${complejoId}`);
         if (!complejoResponse.ok) {
           throw new Error('Error al cargar el complejo');
         }
@@ -152,7 +153,7 @@ function MiComplejoPage() {
         setInfoDelComplejo(complejo);
 
         // Cargar servicios del complejo - ahora usando IDs
-        const serviciosResponse = await fetch(`http://localhost:3000/api/servicios`);
+        const serviciosResponse = await fetch(`${API_BASE_URL}/servicios`);
         if (serviciosResponse.ok) {
           const serviciosData = await serviciosResponse.json();
           const serviciosIdsDelComplejo = serviciosData.servicios
@@ -230,7 +231,7 @@ function MiComplejoPage() {
         
         console.log('Datos a enviar:', datosParaActualizar);
         
-        const response = await fetch(`http://localhost:3000/api/complejos/${complejoId}`, {
+        const response = await fetch(`${API_BASE_URL}/complejos/${complejoId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -265,7 +266,7 @@ function MiComplejoPage() {
     if (!confirm('¿Estás seguro de que quieres eliminar esta cancha?')) return;
     
     try {
-      const response = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
+      const response = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
         method: 'DELETE',
       });
       
@@ -286,7 +287,7 @@ function MiComplejoPage() {
     const nuevaActiva = !cancha.activa;
     
     try {
-      const response = await fetch(`http://localhost:3000/api/canchas/${canchaId}`, {
+      const response = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -316,7 +317,7 @@ function MiComplejoPage() {
   const crearTurnos = async (canchaId, turnos) => {
     try {
       const promises = turnos.map(turno => 
-        fetch('http://localhost:3000/api/turnos', {
+        fetch(`${API_BASE_URL}/turnos`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CanchaCard from '../components/CanchaCard.jsx';
 import { FaArrowLeft } from 'react-icons/fa';
+import { API_BASE_URL } from '../config/api.js';
 
 function ComplejoDetallePage() {
   const { complejoId } = useParams();
@@ -16,7 +17,7 @@ function ComplejoDetallePage() {
         setLoading(true);
         
         // Obtener información del complejo
-        const complejoResponse = await fetch(`http://localhost:3000/api/complejos/${complejoId}`);
+        const complejoResponse = await fetch(`${API_BASE_URL}/complejos/${complejoId}`);
         if (!complejoResponse.ok) {
           throw new Error('Error al cargar el complejo');
         }
@@ -24,7 +25,7 @@ function ComplejoDetallePage() {
         setComplejo(complejoData.complejo || complejoData);
 
         // Obtener canchas del complejo
-        const canchasResponse = await fetch(`http://localhost:3000/api/canchas/complejo/${complejoId}`);
+        const canchasResponse = await fetch(`${API_BASE_URL}/canchas/complejo/${complejoId}`);
         if (!canchasResponse.ok) {
           throw new Error('Error al cargar las canchas');
         }

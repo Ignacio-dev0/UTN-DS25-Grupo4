@@ -25,7 +25,7 @@ function CanchaCard({ cancha }) {
         // Get today's date
         const todayStr = now.toISOString().split('T')[0];
         
-        let response = await fetch(`http://localhost:3000/api/turnos/cancha/${cancha.id}?fecha=${todayStr}`);
+        let response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}?fecha=${todayStr}`);
         let data = await response.json();
         
         // Filter available turns (not reserved) and only future times for today
@@ -50,7 +50,7 @@ function CanchaCard({ cancha }) {
           tomorrow.setDate(now.getDate() + 1);
           const tomorrowStr = tomorrow.toISOString().split('T')[0];
           
-          response = await fetch(`http://localhost:3000/api/turnos/cancha/${cancha.id}?fecha=${tomorrowStr}`);
+          response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}?fecha=${tomorrowStr}`);
           if (response.ok) {
             data = await response.json();
             turnosDisponibles = (data.turnos || []).filter(turno => !turno.reservado);

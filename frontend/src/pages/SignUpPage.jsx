@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaUser, FaBuilding, FaFutbol, FaMapMarkerAlt } from "react-icons/fa";
 import { register } from '../services/auth.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { API_BASE_URL } from '../config/api.js';
 
 function SignUpPage() {
   // Estados para controlar el flujo de la página
@@ -40,7 +41,7 @@ function SignUpPage() {
     const cargarLocalidades = async () => {
       setLoadingLocalidades(true);
       try {
-        const response = await fetch('http://localhost:3000/api/localidades');
+        const response = await fetch(`${API_BASE_URL}/localidades`);
         if (response.ok) {
           const data = await response.json();
           setLocalidades(data.localidades || data); // Acceder al array de localidades
@@ -187,7 +188,7 @@ function SignUpPage() {
           formData.append('imagen', complexImage);
         }
         
-        const solicitudResponse = await fetch('http://localhost:3000/api/admin/solicitudes/with-image', {
+        const solicitudResponse = await fetch(`${API_BASE_URL}/admin/solicitudes/with-image`, {
           method: 'POST',
           body: formData
         });
