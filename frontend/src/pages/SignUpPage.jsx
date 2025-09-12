@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaUser, FaBuilding, FaFutbol } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaUser, FaBuilding, FaFutbol, FaMapMarkerAlt } from "react-icons/fa";
 import { register } from '../services/auth.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -23,6 +23,8 @@ function SignUpPage() {
   const [calle, setCalle] = useState('');
   const [altura, setAltura] = useState('');
   const [localidad, setLocalidad] = useState('');
+  const [localidades, setLocalidades] = useState([]);
+  const [loadingLocalidades, setLoadingLocalidades] = useState(false);
   const [cuit, setCuit] = useState('');
   const [complexImage, setComplexImage] = useState(null);
   const [complexImagePreview, setComplexImagePreview] = useState(null);
@@ -32,6 +34,44 @@ function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  // Cargar localidades desde la base de datos
+  useEffect(() => {
+    const cargarLocalidades = async () => {
+      setLoadingLocalidades(true);
+      try {
+        const response = await fetch('http://localhost:3000/api/localidades');
+        if (response.ok) {
+          const data = await response.json();
+          setLocalidades(data.localidades || data); // Acceder al array de localidades
+        } else {
+          console.error('Error al cargar localidades');
+          // Agregar localidades de respaldo en caso de error
+          setLocalidades([
+            { id: 1, nombre: 'La Plata' },
+            { id: 2, nombre: 'City Bell' },
+            { id: 3, nombre: 'Gonnet' },
+            { id: 4, nombre: 'Berisso' },
+            { id: 5, nombre: 'Ensenada' }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error al cargar localidades:', error);
+        // Agregar localidades de respaldo en caso de error
+        setLocalidades([
+          { id: 1, nombre: 'La Plata' },
+          { id: 2, nombre: 'City Bell' },
+          { id: 3, nombre: 'Gonnet' },
+          { id: 4, nombre: 'Berisso' },
+          { id: 5, nombre: 'Ensenada' }
+        ]);
+      } finally {
+        setLoadingLocalidades(false);
+      }
+    };
+
+    cargarLocalidades();
+  }, []);
 
   const handleUserTypeSelect = (type) => {
     setUserType(type);
@@ -86,7 +126,7 @@ function SignUpPage() {
     }
     
     if (userType === 'owner' && (!complexName || !calle || !altura || !localidad || !cuit)) {
-      setError('Por favor, completa todos los datos del complejo incluyendo el CUIT.');
+      setError('Por favor, completa todos los datos del complejo: nombre, dirección (calle, altura, localidad) y CUIT.');
       return;
     }
     
@@ -159,7 +199,8 @@ function SignUpPage() {
           setError(errorData.message || 'Error al crear la solicitud de complejo');
         }
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Error en registro:', error);
       setError('Error de conexión. Intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -267,14 +308,40 @@ function SignUpPage() {
                   required
                 />
               </div>
-              <input 
-                type="text" 
-                value={localidad} 
-                onChange={(e) => setLocalidad(e.target.value)} 
-                placeholder="Localidad (Ej: La Plata)" 
-                className="w-full px-4 py-2 border rounded-md" 
-                required
-              />
+              
+              {/* Campo de localidad - Select con opciones de la BD */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <FaMapMarkerAlt className="text-accent" />
+                  Localidad *
+                </label>
+                <select 
+                  value={localidad} 
+                  onChange={(e) => setLocalidad(e.target.value)} 
+                  className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-accent focus:border-accent bg-white" 
+                  required
+                  disabled={loadingLocalidades}
+                >
+                  <option value="">
+                    {loadingLocalidades ? "Cargando localidades..." : "Selecciona una localidad"}
+                  </option>
+                  {localidades.map((loc) => (
+                    <option key={loc.id} value={loc.nombre}>
+                      {loc.nombre}
+                    </option>
+                  ))}
+                </select>
+                {localidades.length === 0 && !loadingLocalidades && (
+                  <p className="text-sm text-red-500">
+                    No se pudieron cargar las localidades. Contacta al administrador.
+                  </p>
+                )}
+                {loadingLocalidades && (
+                  <p className="text-sm text-gray-500">
+                    Cargando localidades disponibles...
+                  </p>
+                )}
+              </div>
               
               {/* Campo de imagen */}
               <div className="space-y-2">

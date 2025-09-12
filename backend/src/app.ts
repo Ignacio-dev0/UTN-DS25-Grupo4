@@ -58,6 +58,15 @@ app.use('/api/alquileres',        alquilerRoutes);
 // app.use('/api/pagos',             pagoRoutes);
 // app.use('/api/administradores',   administradorRoutes);
 
+// Health check endpoint para Render
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        service: 'CanchaYa Backend API'
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
     
