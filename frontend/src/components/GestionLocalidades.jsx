@@ -3,6 +3,8 @@ import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
 import ModalLocalidad from './ModalLocalidad';
 import ModalConfirmacion from './ModalConfirmacion';
 
+import { API_BASE_URL } from '../config/api.js';
+
 function GestionLocalidades() {
   const [localidades, setLocalidades] = useState([]);
   const [loading, setLoading] = useState(true);

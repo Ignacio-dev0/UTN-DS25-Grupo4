@@ -3,6 +3,8 @@ import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
 import ModalDeporte from './ModalDeporte';
 import ModalConfirmacion from './ModalConfirmacion';
 
+import { API_BASE_URL } from '../config/api.js';
+
 function GestionDeportes() {
   const [deportes, setDeportes] = useState([]);
   const [loading, setLoading] = useState(true);
