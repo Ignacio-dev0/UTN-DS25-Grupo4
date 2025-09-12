@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
-import { getImageUrl, getCanchaImage } from '../config/api.js';
+import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
   const [turnosHoy, setTurnosHoy] = useState([]);
