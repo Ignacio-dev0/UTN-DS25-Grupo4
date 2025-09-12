@@ -1,5 +1,5 @@
 import prisma from "../config/prisma";
-import { Domicilio } from '../generated/prisma';
+import { Domicilio } from '@prisma/client';
 import { crearDomicilioRequest, UpdateDomicilioRequest } from "../types/domicilio.types";
 
 export async function crearDomicilio(data: crearDomicilioRequest): Promise<Domicilio> {

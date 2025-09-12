@@ -1,4 +1,4 @@
-import { Cancha } from '../generated/prisma';
+import { Cancha } from '@prisma/client';
 
 export interface CreateCanchaRequest {
 	nroCancha: number,

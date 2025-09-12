@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EstadoAlquiler, MetodoPago } from '../generated/prisma';
+import { EstadoAlquiler, MetodoPago } from '@prisma/client';
 
 export const createAlquilerSchema = z.object({
   usuarioId: z.number(),

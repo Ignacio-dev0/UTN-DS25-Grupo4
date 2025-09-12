@@ -1,5 +1,5 @@
 import prisma from '../config/prisma';
-import { EstadoAlquiler } from '../generated/prisma';
+import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {

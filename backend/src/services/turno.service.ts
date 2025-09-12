@@ -1,6 +1,6 @@
 import { number } from 'zod';
 import prisma from '../config/prisma';
-import { Turno} from '../generated/prisma';
+import { Turno} from '@prisma/client';
 import { CreateTurno } from '../types/turno.types';
 
 // Función para generar turnos basados en el cronograma

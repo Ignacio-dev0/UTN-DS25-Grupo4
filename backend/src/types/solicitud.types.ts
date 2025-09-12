@@ -1,5 +1,5 @@
 
-import { Solicitud, EstadoSolicitud, Usuario } from '../generated/prisma';
+import { Solicitud, EstadoSolicitud, Usuario } from '@prisma/client';
 
 export interface CreateSolicitudRequest{
   cuit: string,

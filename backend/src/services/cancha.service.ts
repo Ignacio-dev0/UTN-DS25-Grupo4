@@ -1,7 +1,7 @@
 // backend/src/services/cancha.service.ts
 import prisma from '../config/prisma';
 import { CreateCanchaRequest, UpdateCanchaRequest } from '../types/cancha.types'
-import { EstadoAlquiler } from '../generated/prisma';
+import { EstadoAlquiler } from '@prisma/client';
 
 export async function crearCancha(data: CreateCanchaRequest) {
 	const { complejoId, deporteId, ...cancha } = data;

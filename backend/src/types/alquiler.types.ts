@@ -1,4 +1,4 @@
-import { Alquiler, Pago, EstadoAlquiler, MetodoPago } from '../generated/prisma';
+import { Alquiler, Pago, EstadoAlquiler, MetodoPago } from '@prisma/client';
 
 export interface CreateAlquilerRequest {
 	usuarioId: number,

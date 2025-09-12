@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import {MetodoPago} from '../generated/prisma/client';
+import {MetodoPago} from '@prisma/client';
 
 export const metodoPagoShema = z.enum([
     MetodoPago.DEBITO,

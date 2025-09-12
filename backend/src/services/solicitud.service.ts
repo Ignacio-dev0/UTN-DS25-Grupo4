@@ -174,7 +174,7 @@ export async function deleteSoli(id: number) {
 
 // import prisma from '../config/prisma';
 
-import { EstadoSolicitud } from '../generated/prisma';
+import { EstadoSolicitud } from '@prisma/client';
 import { createComplejo } from './complejo.service';
 import { CreateSolicitudRequest, UpdateSolicitudRequest } from '../types/solicitud.types';
 

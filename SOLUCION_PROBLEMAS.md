@@ -8,18 +8,19 @@ error TS7016: Could not find a declaration file for module 'cors'
 error TS7016: Could not find a declaration file for module 'bcrypt'
 ```
 
-### ✅ Solución:
-Ya está solucionado en el `package.json` moviendo los tipos a `dependencies`:
+## ✅ Solución FINAL implementada:
 
-```json
-"dependencies": {
-  "@types/bcrypt": "^5.0.2",
-  "@types/cors": "^2.8.19", 
-  "@types/express": "^5.0.3",
-  "typescript": "^5.9.2",
-  // ... otras dependencias
-}
+**Build Command**:
 ```
+npm install --production=false && npx prisma generate && npm run build
+```
+
+**Start Command**:
+```
+npx prisma generate && npx prisma migrate deploy && npm start
+```
+
+**Imports de Prisma**: Todos usando `@prisma/client` (estándar)
 
 ### 🔄 Comando de Build actualizado:
 ```

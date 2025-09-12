@@ -1,6 +1,6 @@
 import { connect } from 'http2';
 import prisma from '../config/prisma';
-import {Prisma, Pago} from '../generated/prisma';
+import {Prisma, Pago} from '@prisma/client';
 import { CrearPagoRequest, actualizarPagoRequest } from '../types/pago.types';
 
 export async function getAllpagos(): Promise<Pago[]> {

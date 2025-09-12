@@ -1,6 +1,6 @@
 // backend/src/services/resenas.service.ts
 import prisma from '../config/prisma';
-import { Resenia } from '../generated/prisma';
+import { Resenia } from '@prisma/client';
 import { CreateReseniaRequest, UpdateReseniaRequest } from '../types/resenia.types';
 
 export async function getAllResenas(): Promise<Resenia[]> {

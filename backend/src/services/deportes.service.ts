@@ -1,6 +1,6 @@
 // backend/src/services/deportes.service.ts
 import prisma from '../config/prisma'; 
-import { Deporte } from '../generated/prisma';
+import { Deporte } from '@prisma/client';
 import { CreateDeporteResquest, UpdateDeporteResquest } from "../types/deporte.types";
 
 export async function getAllDeportes(): Promise<Deporte[]> {

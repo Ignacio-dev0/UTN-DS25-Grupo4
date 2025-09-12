@@ -1,6 +1,6 @@
 // backend/src/services/usuario.service.ts
 import prisma from '../config/prisma';
-import { Prisma, Usuario} from '../generated/prisma';
+import { Prisma, Usuario} from '@prisma/client';
 import { CreateUsuarioRequest, UpdateUsuarioRequest } from '../types/usuario.type';
 import bcrypt from 'bcrypt';
 
