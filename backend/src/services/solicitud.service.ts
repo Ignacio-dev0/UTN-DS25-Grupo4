@@ -17,15 +17,16 @@ export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) =>
 export const createSolicitudWithComplejo = async (data: any) => {
     // Crear la solicitud y luego el complejo asociado
     return prisma.$transaction(async (tx) => {
-        // Buscar o crear localidad
-        let localidad = await tx.localidad.findFirst({
-            where: { nombre: data.complejo.domicilio.localidad }
+        // Buscar localidad por ID (nuevo comportamiento)
+        let localidadId = data.complejo.domicilio.localidad;
+        if (typeof localidadId === 'string') {
+            localidadId = parseInt(localidadId);
+        }
+        const localidad = await tx.localidad.findUnique({
+            where: { id: localidadId }
         });
-        
         if (!localidad) {
-            localidad = await tx.localidad.create({
-                data: { nombre: data.complejo.domicilio.localidad }
-            });
+            throw new Error('Localidad no encontrada');
         }
 
         // Crear la solicitud primero
