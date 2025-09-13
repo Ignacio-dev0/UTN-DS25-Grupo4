@@ -49,7 +49,15 @@ app.use(express.json({ limit: '10mb' })); // Aumentar límite para imágenes bas
 app.use('/images', express.static(path.join(__dirname, '../../frontend/public/images')));
 
 // Servir archivos estáticos (imágenes subidas) desde la carpeta del backend - CORREGIDO para /api/images/
-app.use('/api/images', express.static(path.join(__dirname, '../public/images')));
+const imagesPath = process.env.STATIC_FILES_PATH || path.join(__dirname, '../public/images');
+app.use('/api/images', express.static(imagesPath));
+
+// Logging para debugging en Railway
+app.use('/api/images', (req, res, next) => {
+    console.log(`📷 [${new Date().toISOString()}] Requesting image: ${req.url}`);
+    console.log(`📂 Images path: ${imagesPath}`);
+    next();
+});
 
 // //con esto intento manejar el tipo bigint en las respuestas json
 // app.set('json replacer', (key: string, value:any)=>{
@@ -87,6 +95,38 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         service: 'CanchaYa Backend API'
     });
+});
+
+// Endpoint para diagnosticar archivos estáticos
+app.get('/api/debug/images', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const imagesPath = process.env.STATIC_FILES_PATH || path.join(__dirname, '../public/images');
+        
+        // Verificar si el directorio existe
+        const dirExists = fs.existsSync(imagesPath);
+        let files = [];
+        
+        if (dirExists) {
+            try {
+                files = fs.readdirSync(imagesPath, { recursive: true });
+            } catch (error) {
+                console.error('Error reading images directory:', error);
+            }
+        }
+        
+        res.json({
+            imagesPath,
+            dirExists,
+            fileCount: files.length,
+            files: files.slice(0, 10), // Solo los primeros 10 archivos
+            environment: process.env.NODE_ENV || 'development',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error in debug endpoint:', error);
+        res.status(500).json({ error: 'Debug endpoint failed' });
+    }
 });
 
 // ENDPOINT DE EMERGENCIA - Crear tablas básicas

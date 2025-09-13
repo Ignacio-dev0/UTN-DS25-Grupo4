@@ -83,14 +83,29 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
 export const eliminarComplejo = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
+    console.log(`🗑️ [${new Date().toISOString()}] Attempting to delete complejo with ID: ${id}`);
+    
     await complejoService.deleteComplejo_sol_dom(id);
+    console.log(`✅ [${new Date().toISOString()}] Complejo deleted successfully with ID: ${id}`);
+    
     res.status(200).json({ 
       message: 'Complejo eliminado correctamente. El usuario dueño asociado también fue eliminado.' 
     });
   } catch (error: any) {
+    console.error(`❌ [${new Date().toISOString()}] Error deleting complejo:`, {
+      id: req.params.id,
+      error: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Complejo no encontrado.' });
     }
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ 
+      error: 'Error interno del servidor',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };

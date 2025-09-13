@@ -153,24 +153,49 @@ export const getComplejoById = async (id:number) => {
 // }
 
 export const deleteComplejo_sol_dom = async (id: number) => {
-    const complejo = await prisma.complejo.findUnique({
-        where: { id },
-        include: {
-            solicitud: true,
-            domicilio: true,
-            usuario: true
+    try {
+        console.log(`🔍 [${new Date().toISOString()}] Looking for complejo with ID: ${id}`);
+        
+        const complejo = await prisma.complejo.findUnique({
+            where: { id },
+            include: {
+                solicitud: true,
+                domicilio: true,
+                usuario: true
+            }
+        });
+
+        if (!complejo) {
+            console.log(`❌ [${new Date().toISOString()}] Complejo not found with ID: ${id}`);
+            const error = new Error('Complejo not found');
+            (error as any).code = 'P2025';
+            throw error;
         }
-    });
 
-    if (!complejo) {
-        throw new Error('complejo not found');
+        console.log(`🗑️ [${new Date().toISOString()}] Deleting complejo and related entities:`, {
+            complejoId: id,
+            solicitudId: complejo.solicitudId,
+            domicilioId: complejo.domicilioId,
+            usuarioId: complejo.usuarioId
+        });
+
+        // Eliminar el complejo, solicitud, domicilio Y el usuario dueño en una sola transacción
+        const result = await prisma.$transaction([
+            prisma.complejo.delete({where:{id}}),
+            prisma.solicitud.delete({where:{id:complejo.solicitudId}}),
+            prisma.domicilio.delete({where:{id:complejo.domicilioId}}),
+            prisma.usuario.delete({where:{id:complejo.usuarioId}}) // ✅ Eliminar también el usuario dueño
+        ]);
+        
+        console.log(`✅ [${new Date().toISOString()}] Successfully deleted complejo and related entities`);
+        return result;
+    } catch (error: any) {
+        console.error(`❌ [${new Date().toISOString()}] Error in deleteComplejo_sol_dom:`, {
+            id,
+            error: error.message,
+            code: error.code,
+            stack: error.stack
+        });
+        throw error;
     }
-
-    // Eliminar el complejo, solicitud, domicilio Y el usuario dueño en una sola transacción
-    return prisma.$transaction([
-        prisma.complejo.delete({where:{id}}),
-        prisma.solicitud.delete({where:{id:complejo.solicitudId}}),
-        prisma.domicilio.delete({where:{id:complejo.domicilioId}}),
-        prisma.usuario.delete({where:{id:complejo.usuarioId}}) // ✅ Eliminar también el usuario dueño
-    ]);
 }

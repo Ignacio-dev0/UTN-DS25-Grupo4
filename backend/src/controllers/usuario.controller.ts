@@ -105,12 +105,23 @@ export async function actualizarUsuario(req: Request<{id: string}, UsuarioRespon
 export async function eliminarUsuario(req: Request<{id: string}>, res: Response) {
   try {
     const { id } = req.params;
+    console.log(`🗑️ [${new Date().toISOString()}] Attempting to delete user with ID: ${id}`);
+    
     const deleted = await usuarioService.deleteUsuario(parseInt(id));
+    console.log(`✅ [${new Date().toISOString()}] User deleted successfully:`, deleted);
+    
     res.json({ 
       usuario: deleted, 
       message: "Usuario eliminado exitosamente" 
     });
   } catch (error: any) {
+    console.error(`❌ [${new Date().toISOString()}] Error deleting user:`, {
+      id: req.params.id,
+      error: error.message,
+      stack: error.stack,
+      statusCode: error.statusCode
+    });
+    
     if (error.statusCode === 404) {
       return res.status(404).json({ 
         error: 'Usuario no encontrado',
@@ -119,7 +130,8 @@ export async function eliminarUsuario(req: Request<{id: string}>, res: Response)
     }
     res.status(500).json({ 
       error: 'Error interno del servidor',
-      message: 'No se pudo eliminar el usuario'
+      message: 'No se pudo eliminar el usuario',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
