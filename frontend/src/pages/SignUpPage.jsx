@@ -182,7 +182,7 @@ function SignUpPage() {
         formData.append('nombreComplejo', complexName);
         formData.append('calle', calle);
         formData.append('altura', altura);
-        formData.append('localidad', localidad);
+        formData.append('localidadId', localidad);
         
         if (complexImage) {
           formData.append('imagen', complexImage);
@@ -327,7 +327,7 @@ function SignUpPage() {
                     {loadingLocalidades ? "Cargando localidades..." : "Selecciona una localidad"}
                   </option>
                   {localidades.map((loc) => (
-                    <option key={loc.id} value={loc.nombre}>
+                    <option key={loc.id} value={loc.id}>
                       {loc.nombre}
                     </option>
                   ))}
