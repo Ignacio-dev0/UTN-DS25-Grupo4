@@ -7,6 +7,7 @@ import ListaReservas from '../components/ListaReservas';
 import ModalReseña from '../components/ModalReseña';
 import ModalPago from '../components/ModalPago';
 import { getUserProfile, updateUserProfile } from '../services/auth';
+import { API_BASE_URL } from '../config/api.js';
 
 function MisReservasPage() {
     const navigate = useNavigate();

@@ -5,6 +5,7 @@ import FormularioNuevaCancha from './FormularioNuevaCancha.jsx';
 import ModalConfirmacion from './ModalConfirmacion.jsx'; 
 import { FaTrash, FaEyeSlash, FaEye, FaPencilAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api.js';
 
 function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas, isEditing }) {
   const [showAddForm, setShowAddForm] = useState(false);

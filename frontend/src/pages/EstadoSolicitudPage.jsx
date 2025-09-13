@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import { API_BASE_URL } from '../config/api.js';
 
 function EstadoSolicitudPage() {
   const { user } = useAuth();

@@ -6,6 +6,7 @@ import { MdRestaurant, MdFamilyRestroom } from "react-icons/md";
 import { GiTrophy, GiPartyPopper } from "react-icons/gi";
 import { PiTShirtFill, PiCarFill } from "react-icons/pi";
 import ServiciosSelector from './ServiciosSelector';
+import { API_BASE_URL } from '../config/api.js';
 
 const ServicioItem = ({ servicioData, todosLosServicios }) => {
   // Handle both formats: direct service object or service ID
