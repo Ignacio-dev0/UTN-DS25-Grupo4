@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRightIcon, ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/solid';
 import MiniCanchaCard from './MiniCanchaCard.jsx';
 import FormularioNuevaCancha from './FormularioNuevaCancha.jsx';
@@ -12,6 +12,25 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [canchaSeleccionada, setCanchaSeleccionada] = useState(null);
   const [accion, setAccion] = useState(''); 
+  const [deportes, setDeportes] = useState([]);
+  
+  // Cargar deportes para mapear IDs correctamente
+  useEffect(() => {
+    const cargarDeportes = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/deportes`);
+        if (response.ok) {
+          const data = await response.json();
+          setDeportes(data.deportes || data || []);
+        }
+      } catch (error) {
+        console.error('Error al cargar deportes:', error);
+      }
+    };
+
+    cargarDeportes();
+  }, []);
+  
   // Mostrar todas las canchas (sin limitación de paginación)
   const canchasPaginadas = canchas;
 
@@ -30,26 +49,53 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
       // Obtener complejoId desde la URL o props
       const complejoId = window.location.pathname.split('/')[2]; // Asumiendo /micomplejo/:id
       
-      // Extraer número de la cancha del nombre
-      const nroCancha = parseInt(nuevaCancha.nombre.replace(/\D/g, '')) || Math.floor(Math.random() * 1000) + 1000;
+      // Extraer número de la cancha del nombre con validación
+      let nroCancha;
+      if (nuevaCancha && nuevaCancha.nombre && typeof nuevaCancha.nombre === 'string') {
+        const numerosExtraidos = nuevaCancha.nombre.replace(/\D/g, '');
+        nroCancha = parseInt(numerosExtraidos) || Math.floor(Math.random() * 9000) + 1000;
+      } else {
+        console.warn('Nombre de cancha no válido:', nuevaCancha?.nombre);
+        nroCancha = Math.floor(Math.random() * 9000) + 1000;
+      }
+
+      // Generar número único basado en timestamp para evitar duplicados
+      nroCancha = nroCancha + Date.now() % 1000;
       
       // Procesar imágenes - convertir archivos a base64
       let imagenesBase64 = [];
-      if (nuevaCancha.imagenes && nuevaCancha.imagenes.length > 0) {
+      if (nuevaCancha.imagenes && Array.isArray(nuevaCancha.imagenes) && nuevaCancha.imagenes.length > 0) {
         for (let i = 0; i < nuevaCancha.imagenes.length; i++) {
           const file = nuevaCancha.imagenes[i];
-          const base64 = await convertFileToBase64(file);
-          imagenesBase64.push(base64);
+          if (file && file instanceof File) {
+            try {
+              const base64 = await convertFileToBase64(file);
+              imagenesBase64.push(base64);
+            } catch (error) {
+              console.error('Error al convertir imagen a base64:', error);
+            }
+          }
         }
       }
       
       const canchaData = {
-        nroCancha: nroCancha,
-        deporteId: getDeporteIdByName(nuevaCancha.deporte),
-        descripcion: nuevaCancha.descripcion || 'Cancha nueva',
-        complejoId: parseInt(complejoId),
-        image: imagenesBase64.length > 0 ? imagenesBase64 : ['/images/canchas/futbol5-1.jpg']
+        nroCancha: Number(nroCancha), // Asegurar que sea número
+        nombre: nuevaCancha?.nombre || `Cancha ${nroCancha}`, // Nombre de la cancha
+        descripcion: nuevaCancha?.descripcion || '', // Descripción opcional
+        deporteId: Number(getDeporteIdByName(nuevaCancha?.deporte || 'Fútbol 5')), // Asegurar que sea número
+        complejoId: Number(parseInt(complejoId) || 34), // Asegurar que sea número (34 = Megadeportivo La Plata)
+        image: imagenesBase64.length > 0 ? imagenesBase64 : [] // Array de strings, puede estar vacío
       };
+
+      // Validar datos antes de enviar
+      if (!canchaData.nroCancha || !canchaData.deporteId || !canchaData.complejoId) {
+        throw new Error('Faltan datos requeridos para crear la cancha');
+      }
+
+      // Validar que los IDs sean números válidos
+      if (isNaN(canchaData.nroCancha) || isNaN(canchaData.deporteId) || isNaN(canchaData.complejoId)) {
+        throw new Error('Los IDs deben ser números válidos');
+      }
 
       console.log('Enviando datos de cancha:', canchaData);
 
@@ -60,6 +106,8 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
         },
         body: JSON.stringify(canchaData),
       });
+
+      console.log('Respuesta del servidor:', response.status, response.statusText);
 
       if (response.ok) {
         const result = await response.json();
@@ -72,29 +120,55 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
           onRecargarCanchas();
         }
       } else {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          console.error('Error al parsear respuesta del servidor:', jsonError);
+          errorData = { message: `Error del servidor (${response.status}): ${response.statusText}` };
+        }
         console.error('Error del backend:', errorData);
         throw new Error(errorData.message || 'Error al crear la cancha');
       }
     } catch (error) {
       console.error('Error creando cancha:', error);
-      alert('Error al crear la cancha: ' + error.message);
+      
+      // Mejor manejo de errores específicos
+      let mensajeError = 'Error al crear la cancha';
+      
+      if (error.message) {
+        if (error.message.includes('unique constraint')) {
+          mensajeError = 'Ya existe una cancha con ese número. Por favor, intenta con otro nombre.';
+        } else if (error.message.includes('foreign key constraint')) {
+          mensajeError = 'Error de datos: Complejo o deporte no válido.';
+        } else {
+          mensajeError += ': ' + error.message;
+        }
+      }
+      
+      alert(mensajeError);
     }
   };
 
   // Función helper para obtener el ID del deporte por nombre
   const getDeporteIdByName = (nombreDeporte) => {
+    if (deportes.length > 0) {
+      const deporte = deportes.find(d => d.nombre === nombreDeporte);
+      return deporte ? deporte.id : deportes[0]?.id || 33; // Por defecto el primer deporte o ID 33
+    }
+    
+    // Fallback en caso de que no se hayan cargado los deportes
     const deportesMap = {
-      'Fútbol 5': 1,
-      'Fútbol 11': 2,
-      'Vóley': 3,
-      'Básquet': 4,
-      'Handball': 5,
-      'Tenis': 6,
-      'Pádel': 7,
-      'Hockey': 8
+      'Fútbol 5': 33,
+      'Fútbol 11': 34,
+      'Vóley': 35,
+      'Básquet': 36,
+      'Handball': 37,
+      'Tenis': 38,
+      'Pádel': 39,
+      'Hockey': 40
     };
-    return deportesMap[nombreDeporte] || 1; // Por defecto fútbol 5
+    return deportesMap[nombreDeporte] || 33; // Por defecto fútbol 5
   };
   
 

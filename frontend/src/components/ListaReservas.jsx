@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StarIcon, TrashIcon, WalletIcon } from '@heroicons/react/24/solid';
+import { StarIcon, TrashIcon, WalletIcon, EyeIcon } from '@heroicons/react/24/solid';
 import ModalConfirmacion from './ModalConfirmacion'; 
 
 const getStatusClass = (estado) => {
@@ -12,7 +12,7 @@ const getStatusClass = (estado) => {
   }
 };
 
-function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReserva }) {
+function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReserva, onVerDetalle }) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [reservaToCancel, setReservaToCancel] = useState(null);
 
@@ -44,6 +44,15 @@ function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReser
                 <span className={`font-bold text-xs px-3 py-1 rounded-full ${getStatusClass(reserva.estado)}`}>
                   {reserva.estado}
                 </span>
+
+                {/* Botón Ver Detalle - siempre visible */}
+                <button 
+                  onClick={() => onVerDetalle(reserva)} 
+                  title="Ver detalle de la cancha" 
+                  className="text-primary hover:text-secondary p-2 rounded-full hover:bg-blue-100 transition-colors"
+                >
+                  <EyeIcon className="w-6 h-6" />
+                </button>
 
                 {reserva.estado === 'Finalizada' && !reserva.reseñada && (
                   <button 

@@ -2,6 +2,7 @@ import { Cancha } from '@prisma/client';
 
 export interface CreateCanchaRequest {
 	nroCancha: number,
+	nombre?: string,
   descripcion?: string,
 	image?: string[],
 	complejoId: number,
@@ -10,8 +11,10 @@ export interface CreateCanchaRequest {
 
 export interface UpdateCanchaRequest {
 	nroCancha?: number,
+	nombre?: string,
 	descripcion?: string,
 	image?: string[],
+	activa?: boolean,
 	deporteId?: number,
 }
 

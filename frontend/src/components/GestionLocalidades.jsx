@@ -99,27 +99,48 @@ function GestionLocalidades() {
   };
 
   const handleDeleteLocalidad = (localidad) => {
+    console.log('handleDeleteLocalidad llamado con:', localidad);
+    console.log('Estado actual isModalEliminarOpen:', isModalEliminarOpen);
     setLocalidadSeleccionada(localidad);
     setIsModalEliminarOpen(true);
+    console.log('Modal de eliminación debería abrirse ahora');
+    console.log('Nuevo estado debería ser: isModalEliminarOpen = true');
   };
 
   const handleConfirmarEliminar = async () => {
+    if (!localidadSeleccionada) {
+      alert('No hay localidad seleccionada');
+      return;
+    }
+
     try {
+      console.log('Eliminando localidad:', localidadSeleccionada.id);
       const response = await fetch(`${API_BASE_URL}/localidades/${localidadSeleccionada.id}`, {
         method: 'DELETE',
       });
 
+      console.log('Response status:', response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('Localidad eliminada:', result);
+        
+        // Actualizar lista local
         setLocalidades(prev => prev.filter(l => l.id !== localidadSeleccionada.id));
         setIsModalEliminarOpen(false);
         setLocalidadSeleccionada(null);
+        alert('Localidad eliminada exitosamente');
       } else {
         const errorData = await response.json();
-        alert(errorData.message || 'Error al eliminar localidad');
+        console.error('Error response:', errorData);
+        alert(errorData.error || errorData.message || 'Error al eliminar localidad');
       }
     } catch (error) {
       console.error('Error eliminando localidad:', error);
-      alert('Error al eliminar localidad');
+      alert('Error de conexión al eliminar localidad');
+    } finally {
+      setIsModalEliminarOpen(false);
+      setLocalidadSeleccionada(null);
     }
   };
 
@@ -172,17 +193,24 @@ function GestionLocalidades() {
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleOpenModalLocalidad(localidad)}
-                        className="text-primary hover:text-secondary transition-colors duration-200 p-2"
+                        className="text-primary hover:text-secondary transition-colors duration-200 p-3 rounded-md hover:bg-blue-100 min-w-[40px] min-h-[40px] flex items-center justify-center"
                         title="Editar localidad"
+                        type="button"
                       >
-                        <FaPencilAlt />
+                        <FaPencilAlt className="text-lg" />
                       </button>
                       <button
-                        onClick={() => handleDeleteLocalidad(localidad)}
-                        className="text-red-500 hover:text-red-700 transition-colors duration-200 p-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Botón eliminar presionado para:', localidad.nombre);
+                          handleDeleteLocalidad(localidad);
+                        }}
+                        className="text-red-500 hover:text-red-700 transition-colors duration-200 p-3 rounded-md hover:bg-red-100 min-w-[40px] min-h-[40px] flex items-center justify-center"
                         title="Eliminar localidad"
+                        type="button"
                       >
-                        <FaTrash />
+                        <FaTrash className="text-lg" />
                       </button>
                     </div>
                   </div>
@@ -196,7 +224,8 @@ function GestionLocalidades() {
       {/* Modal para agregar/editar localidad */}
       {isModalLocalidadOpen && (
         <ModalLocalidad
-          localidad={localidadSeleccionada}
+          isOpen={isModalLocalidadOpen}
+          localidadActual={localidadSeleccionada}
           onSave={handleSaveLocalidad}
           onClose={handleCloseModalLocalidad}
         />
@@ -204,12 +233,18 @@ function GestionLocalidades() {
 
       {/* Modal de confirmación para eliminar */}
       {isModalEliminarOpen && (
-        <ModalConfirmacion
-          titulo="Eliminar Localidad"
-          mensaje={`¿Estás seguro de que deseas eliminar la localidad "${localidadSeleccionada?.nombre}"? Esta acción no se puede deshacer.`}
-          onConfirmar={handleConfirmarEliminar}
-          onCancelar={() => setIsModalEliminarOpen(false)}
-        />
+        <>
+          {console.log('Renderizando ModalConfirmacion - isModalEliminarOpen:', isModalEliminarOpen, 'localidadSeleccionada:', localidadSeleccionada)}
+          <ModalConfirmacion
+            isOpen={isModalEliminarOpen}
+            title="Eliminar Localidad"
+            message={`¿Estás seguro de que deseas eliminar la localidad "${localidadSeleccionada?.nombre}"? Esta acción no se puede deshacer.`}
+            onConfirm={handleConfirmarEliminar}
+            onClose={() => setIsModalEliminarOpen(false)}
+            confirmText="Eliminar"
+            cancelText="Cancelar"
+          />
+        </>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { calcularInfoReseñas } from '../utils/calculos.js';
@@ -77,6 +77,38 @@ function ReservaPage() {
   const [_error, setError] = useState(null);
   const [serviciosCompleto, setServiciosCompleto] = useState([]);
 
+  // Función para cargar reseñas de la cancha
+  const cargarReseñas = useCallback(async () => {
+    if (!canchaId) return;
+    
+    try {
+      const reseñasResponse = await fetch(`${API_BASE_URL}/resenas/cancha/${canchaId}`);
+      if (reseñasResponse.ok) {
+        const reseñasData = await reseñasResponse.json();
+        // Transformar las reseñas para que coincidan con la estructura esperada por CarruselReseñas
+        const reseñasTransformadas = (reseñasData.resenas || reseñasData || []).map(resena => ({
+          id: resena.id,
+          nombre: `${resena.alquiler?.cliente?.nombre || 'Usuario'} ${resena.alquiler?.cliente?.apellido || ''}`.trim(),
+          puntaje: resena.puntaje,
+          comentario: resena.descripcion || 'Sin comentario'
+        }));
+        setReseñasDeLaCancha(reseñasTransformadas);
+      }
+    } catch (error) {
+      console.error('Error al cargar reseñas:', error);
+    }
+  }, [canchaId]);
+
+  // Efecto para refrescar reseñas cuando la página viene al foco
+  useEffect(() => {
+    const handleFocus = () => {
+      cargarReseñas();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [cargarReseñas]);
+
   // Cargar datos dinámicos desde el backend
   useEffect(() => {
     const cargarDatos = async () => {
@@ -124,18 +156,8 @@ function ReservaPage() {
         }
 
         // Cargar reseñas de la cancha
-        const reseñasResponse = await fetch(`${API_BASE_URL}/resenas/cancha/${canchaId}`);
-        if (reseñasResponse.ok) {
-          const reseñasData = await reseñasResponse.json();
-          // Transformar las reseñas para que coincidan con la estructura esperada por CarruselReseñas
-          const reseñasTransformadas = (reseñasData.resenas || reseñasData || []).map(resena => ({
-            id: resena.id,
-            nombre: `${resena.alquiler?.cliente?.nombre || 'Usuario'} ${resena.alquiler?.cliente?.apellido || ''}`.trim(),
-            puntaje: resena.puntaje,
-            comentario: resena.descripcion || 'Sin comentario'
-          }));
-          setReseñasDeLaCancha(reseñasTransformadas);
-        }
+        await cargarReseñas();
+        
         const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
         if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
         const turnosData = await turnosResponse.json();
@@ -173,7 +195,7 @@ function ReservaPage() {
     };
 
     cargarDatos();
-  }, [canchaId]);
+  }, [canchaId, cargarReseñas]);
 
   const canchaMostrada = useMemo(() => {
     if (!cancha || !complejo) return null;
@@ -270,7 +292,7 @@ function ReservaPage() {
       console.log('Reserva creada exitosamente:', reservaData);
       
       // Actualizar el estado del turno como reservado
-      const response2 = await fetch(`${API_BASE_URL}/turnos/${turnoCompleto.id}`, {
+      const response2 = await fetch(`${API_BASE_URL}/turnos/individual/${turnoCompleto.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +304,7 @@ function ReservaPage() {
         // Actualizar estado local
         const nuevosTurnos = turnos.map(t => 
           t.id === turnoCompleto.id
-            ? { ...t, estado: 'reservado' } 
+            ? { ...t, reservado: true, estado: 'reservado' } 
             : t
         );
         setTurnos(nuevosTurnos);

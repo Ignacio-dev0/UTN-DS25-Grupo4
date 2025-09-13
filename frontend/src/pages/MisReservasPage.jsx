@@ -27,10 +27,12 @@ function MisReservasPage() {
     
     const [loading, setLoading] = useState(true);
     const [reservas, setReservas] = useState([]);
+    const [turnosFinalizados, setTurnosFinalizados] = useState(0);
     const [modalReseñaVisible, setModalReseñaVisible] = useState(false);
     const [reservaParaReseñar, setReservaParaReseñar] = useState(null);
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
     const [reservaParaPagar, setReservaParaPagar] = useState(null);
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
     // Verificar autenticación al montar el componente
     useEffect(() => {
@@ -43,7 +45,7 @@ function MisReservasPage() {
 
     // Cargar datos del usuario al montar el componente
     useEffect(() => {
-        if (!isAuthenticated) return; // No cargar datos si no está autenticado
+        if (!isAuthenticated || isUpdatingProfile) return; // No cargar datos si no está autenticado o si estamos actualizando perfil
         
         const cargarPerfilUsuario = async () => {
             try {
@@ -63,21 +65,23 @@ function MisReservasPage() {
                     
                     // Cargar reservas reales del backend
                     await cargarReservas(response.user.id);
-                } else {
+                } else if (!isUpdatingProfile) {
                     console.error('Error al cargar perfil:', response.error);
-                    // Si hay error al cargar el perfil, redirigir al login
+                    // Solo redirigir al login si no estamos actualizando perfil
                     navigate('/login', { replace: true });
                 }
             } catch (error) {
-                console.error('Error al cargar perfil:', error);
-                navigate('/login', { replace: true });
+                if (!isUpdatingProfile) {
+                    console.error('Error al cargar perfil:', error);
+                    navigate('/login', { replace: true });
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         cargarPerfilUsuario();
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, isUpdatingProfile]);
 
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
@@ -101,8 +105,21 @@ function MisReservasPage() {
                         estado = 'Finalizada';
                     }
 
+                    // Auto-finalizar turnos pasados que estaban confirmados
+                    const fechaActual = new Date();
+                    fechaActual.setHours(0, 0, 0, 0); // Solo comparar fechas, no horas
+                    const fechaTurno = new Date(fecha);
+                    fechaTurno.setHours(0, 0, 0, 0);
+                    
+                    if (estado === 'Confirmada' && fechaTurno < fechaActual) {
+                        estado = 'Finalizada';
+                        // TODO: Aquí se podría hacer una llamada al backend para actualizar el estado
+                        // del alquiler a FINALIZADO si se requiere persistir el cambio
+                    }
+
                     return {
                         id: alquiler.id,
+                        canchaId: primerTurno.cancha?.id || null, // Agregar canchaId para navegación
                         complejo: primerTurno.cancha?.complejo?.nombre || 'Complejo no especificado',
                         cancha: `Cancha N°${primerTurno.cancha?.nroCancha || 'N/A'}`,
                         fecha: fecha.toISOString().split('T')[0], // YYYY-MM-DD
@@ -114,7 +131,36 @@ function MisReservasPage() {
                         userId: usuarioId
                     };
                 });
-                setReservas(reservasFormateadas);
+                
+                // Ordenar reservas por estado (pendientes primero) y luego por fecha más reciente
+                const reservasOrdenadas = reservasFormateadas.sort((a, b) => {
+                    // Definir prioridad de estados
+                    const prioridades = {
+                        'Pendiente': 1,
+                        'Confirmada': 2,
+                        'Finalizada': 3,
+                        'Cancelada': 4
+                    };
+                    
+                    // Primero ordenar por prioridad de estado
+                    const prioridadA = prioridades[a.estado] || 5;
+                    const prioridadB = prioridades[b.estado] || 5;
+                    
+                    if (prioridadA !== prioridadB) {
+                        return prioridadA - prioridadB;
+                    }
+                    
+                    // Si tienen el mismo estado, ordenar por fecha (más reciente primero)
+                    const fechaA = new Date(a.fecha);
+                    const fechaB = new Date(b.fecha);
+                    return fechaB - fechaA;
+                });
+                
+                setReservas(reservasOrdenadas);
+                
+                // Calcular turnos finalizados para el sistema de niveles
+                const finalizadas = reservasFormateadas.filter(r => r.estado === 'Finalizada').length;
+                setTurnosFinalizados(finalizadas);
             }
         } catch (error) {
             console.error('Error al cargar reservas:', error);
@@ -129,13 +175,49 @@ function MisReservasPage() {
         setModalReseñaVisible(true);
     };
 
-    const handleGuardarReseña = (datosReseña) => {
-        console.log('Guardando reseña:', datosReseña);
-        setReservas(reservas.map(r => 
-            r.id === datosReseña.reservaId ? { ...r, reseñada: true } : r
-        ));
-        setModalReseñaVisible(false);
-        setReservaParaReseñar(null);
+    const handleVerDetalle = (reserva) => {
+        if (reserva.canchaId) {
+            navigate(`/reserva/${reserva.canchaId}`);
+        } else {
+            alert('No se puede acceder a los detalles de esta reserva');
+        }
+    };
+
+    const handleGuardarReseña = async (datosReseña) => {
+        try {
+            console.log('Guardando reseña:', datosReseña);
+            
+            // Enviar reseña al backend
+            const response = await fetch(`${API_BASE_URL}/resenas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    alquilerId: datosReseña.reservaId, // El reservaId es el alquilerId
+                    puntaje: Math.round(datosReseña.puntaje), // Asegurar que sea un entero
+                    descripcion: datosReseña.comentario || ''
+                })
+            });
+
+            if (response.ok) {
+                // Actualizar estado local solo si la reseña se guardó exitosamente
+                setReservas(reservas.map(r => 
+                    r.id === datosReseña.reservaId ? { ...r, reseñada: true } : r
+                ));
+                alert('¡Reseña guardada exitosamente!');
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al guardar la reseña');
+            }
+        } catch (error) {
+            console.error('Error al guardar reseña:', error);
+            alert('Error al guardar la reseña: ' + error.message);
+        } finally {
+            setModalReseñaVisible(false);
+            setReservaParaReseñar(null);
+        }
     };
 
     const handleCancelReserva = async (reservaId) => {
@@ -154,13 +236,30 @@ function MisReservasPage() {
                     r.id === reservaId ? { ...r, estado: 'Cancelada' } : r
                 ));
                 
-                // Liberar el turno (marcar como no reservado)
+                // Liberar el turno si la reserva estaba pendiente
                 const reserva = reservas.find(r => r.id === reservaId);
-                if (reserva) {
-                    // Aquí puedes implementar la lógica para liberar el turno
-                    // dependiendo de si es tarde o temprano para la cancelación
-                    console.log('Reserva cancelada exitosamente');
+                if (reserva && reserva.estado === 'Pendiente') {
+                    try {
+                        const turnoResponse = await fetch(`http://localhost:3000/api/turnos/individual/${reserva.turnoId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify({ reservado: false })
+                        });
+                        
+                        if (turnoResponse.ok) {
+                            console.log('Turno liberado exitosamente');
+                        } else {
+                            console.error('Error al liberar el turno');
+                        }
+                    } catch (error) {
+                        console.error('Error al liberar turno:', error);
+                    }
                 }
+                
+                console.log('Reserva cancelada exitosamente');
             } else {
                 throw new Error('Error al cancelar la reserva');
             }
@@ -172,6 +271,7 @@ function MisReservasPage() {
     
     const handleSaveProfile = async (datosActualizados) => {
         try {
+            setIsUpdatingProfile(true);
             setLoading(true);
             const response = await updateUserProfile(datosActualizados);
             
@@ -186,8 +286,9 @@ function MisReservasPage() {
                 };
                 setUsuario(updatedUserData);
                 
-                // Mostrar mensaje de éxito (opcional)
+                // Mostrar mensaje de éxito
                 console.log('Perfil actualizado exitosamente');
+                alert('Perfil actualizado exitosamente');
             } else {
                 console.error('Error al actualizar perfil:', response.error);
                 // Aquí podrías mostrar un mensaje de error al usuario
@@ -198,6 +299,7 @@ function MisReservasPage() {
             alert('Error de conexión al actualizar el perfil');
         } finally {
             setLoading(false);
+            setIsUpdatingProfile(false);
         }
     };
 
@@ -214,8 +316,9 @@ function MisReservasPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    estado: 'PAGADO',
                     codigoTransaccion: datosPago.codigoTransaccion || `TXN-${Date.now()}`,
-                    metodoPago: datosPago.metodoPago || 'TARJETA_CREDITO'
+                    metodoPago: datosPago.metodoPago || 'CREDITO'
                 }),
             });
 
@@ -252,12 +355,13 @@ function MisReservasPage() {
                 </div>
             ) : (
                 <div className="flex flex-col md:flex-row -mx-4">
-                    <PerfilInfo usuario={usuario} onSave={handleSaveProfile} />
+                    <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
                     <ListaReservas 
                         reservas={reservas} 
                         onCancelReserva={handleCancelReserva}
                         onDejarReseña={handleOpenReseñaModal}
                         onPagarReserva={handleOpenPagoModal}
+                        onVerDetalle={handleVerDetalle}
                     />
                 </div>
             )}

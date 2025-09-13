@@ -178,6 +178,8 @@ export async function login(req: Request, res: Response) {
 export async function register(req: Request, res: Response) {
   // Log para depuración: ver qué llega en el body
   console.log('BODY recibido en /usuarios/register:', JSON.stringify(req.body, null, 2));
+  console.log('¿Tiene solicitudComplejo?', !!req.body.solicitudComplejo);
+  console.log('Contenido de solicitudComplejo:', req.body.solicitudComplejo);
   try {
     const { email, password, nombre, apellido, dni, telefono, tipoUsuario } = req.body;
     
@@ -282,6 +284,124 @@ export async function register(req: Request, res: Response) {
     }
 
   } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        ok: false,
+        error: 'El DNI o email ya están registrados'
+      });
+    }
+    res.status(500).json({
+      ok: false,
+      error: 'Error interno del servidor'
+    });
+  }
+}
+
+export async function registerWithImage(req: Request, res: Response) {
+  console.log('BODY recibido en /usuarios/register-with-image:', req.body);
+  console.log('Archivo de imagen:', req.file);
+  try {
+    const { email, password, nombre, apellido, dni, telefono, tipoUsuario, cuit, nombreComplejo, calle, altura, localidadId } = req.body;
+    const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
+    
+    if (!email || !password || !nombre || !apellido || !dni) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Todos los campos son requeridos'
+      });
+    }
+
+    // Verificar si el email ya existe
+    const existingUserByEmail = await usuarioService.getUsuarioByEmail(email);
+    if (existingUserByEmail) {
+      return res.status(409).json({
+        ok: false,
+        error: 'El email ya está registrado'
+      });
+    }
+
+    // Verificar si el DNI ya existe
+    const existingUserByDni = await usuarioService.getUsuarioByDni(dni);
+    if (existingUserByDni) {
+      return res.status(409).json({
+        ok: false,
+        error: 'El DNI ya está registrado'
+      });
+    }
+
+    // Determinar el rol según el tipo de usuario
+    const rol = tipoUsuario === 'DUENIO' ? 'DUENIO' : 'CLIENTE';
+
+    // Crear nuevo usuario
+    const newUsuario = await usuarioService.createUsuario({
+      correo: email,
+      password,
+      name: nombre,
+      lastname: apellido,
+      dni: dni,
+      telefono,
+      rol: rol,
+      image: imagePath || undefined
+    });
+
+    // Si es dueño, crear la solicitud automáticamente
+    if (rol === 'DUENIO' && cuit && nombreComplejo && calle && altura && localidadId) {
+      try {
+        // Validar CUIT formato XX-XXXXXXXX-X
+        if (!/^\d{2}-\d{8}-\d{1}$/.test(cuit)) {
+          await usuarioService.deleteUsuario(newUsuario.id);
+          return res.status(400).json({ ok: false, error: 'CUIT inválido. Formato esperado: XX-XXXXXXXX-X' });
+        }
+        
+        // Crear solicitud
+        const solicitudData = {
+          usuarioId: newUsuario.id,
+          cuit,
+          complejo: {
+            nombre: nombreComplejo,
+            imagen: imagePath,
+            domicilio: {
+              calle,
+              altura,
+              localidad: localidadId
+            }
+          }
+        };
+        const nuevaSolicitud = await require('../services/solicitud.service').createSolicitudWithComplejo(solicitudData);
+        return res.status(201).json({
+          ok: true,
+          user: {
+            id: newUsuario.id,
+            email: newUsuario.correo,
+            nombre: newUsuario.nombre,
+            apellido: newUsuario.apellido,
+            rol: newUsuario.rol
+          },
+          solicitud: nuevaSolicitud,
+          message: 'Usuario y solicitud registrados exitosamente'
+        });
+      } catch (error: any) {
+        console.error('Error creando solicitud:', error);
+        // Rollback usuario si falla la solicitud
+        await usuarioService.deleteUsuario(newUsuario.id);
+        return res.status(500).json({ ok: false, error: 'Error al crear la solicitud de complejo. El usuario no fue registrado.' });
+      }
+    } else {
+      res.status(201).json({
+        ok: true,
+        user: {
+          id: newUsuario.id,
+          email: newUsuario.correo,
+          nombre: newUsuario.nombre,
+          apellido: newUsuario.apellido,
+          rol: newUsuario.rol
+        },
+        message: 'Usuario registrado exitosamente'
+      });
+    }
+
+  } catch (error: any) {
+    console.error('Error en registerWithImage:', error);
     if (error.code === 'P2002') {
       return res.status(409).json({
         ok: false,

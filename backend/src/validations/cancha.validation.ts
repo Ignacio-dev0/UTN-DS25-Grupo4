@@ -9,7 +9,7 @@ export const createCanchaSchema = z.object({
     .optional(),
   
   image: z.array( z.string() )
-    .min(1, 'Se debe recibir la url de al menos una imagen'),
+    .optional(),
 
   complejoId: z.int().positive(),
 
@@ -26,7 +26,9 @@ export const updateCanchaSchema = z.object({
     .optional(),
   
   image: z.array( z.string() )
-    .min(1, 'Se debe recibir la url de al menos una imagen'),
+    .optional(),
+
+  activa: z.boolean().optional(),
 
   deporteId: z.int().positive(),
 

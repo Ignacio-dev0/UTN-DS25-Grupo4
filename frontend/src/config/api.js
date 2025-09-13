@@ -1,5 +1,5 @@
 // Configuración de la API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://utn-ds25-grupo4.onrender.com/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Función helper para construir URLs de imágenes
 export const getImageUrl = (imagePath) => {

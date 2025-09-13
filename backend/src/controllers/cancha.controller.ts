@@ -5,12 +5,21 @@ import * as canchaService from '../services/cancha.service';
 
 export async function crearCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
+    console.log('🔍 CREAR CANCHA - Datos recibidos:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 CREAR CANCHA - Headers:', JSON.stringify(req.headers, null, 2));
+    
     const cancha = await canchaService.crearCancha(req.body);
+    
+    console.log('✅ CREAR CANCHA - Cancha creada exitosamente:', cancha);
+    
     res.status(201).json({
 			cancha,
 			message: 'Cancha creada exitosamente',
 		});
   } catch (error) {
+    console.error('💥 CREAR CANCHA - Error en el controlador:', error);
+    console.error('💥 CREAR CANCHA - Error message:', error instanceof Error ? error.message : 'Error desconocido');
+    console.error('💥 CREAR CANCHA - Error stack:', error instanceof Error ? error.stack : 'No stack trace');
 		next(error);
 	}
 };
@@ -19,9 +28,12 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
   try {
     // Verificamos si la petición viene con un 'complejoId' en la query string
     const complejoId = Number(req.query.complejoId);
+    // Verificar si se solicita incluir canchas inactivas (para dueños gestionando su complejo)
+    const incluirInactivas = req.query.incluirInactivas === 'true';
+    
 		const canchas = complejoId ?
-			await canchaService.obtenerCanchasPorComplejoId(complejoId) :
-			await canchaService.obtenerCanchas();
+			await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas) :
+			await canchaService.obtenerCanchas(incluirInactivas);
 
 		return res.status(200).json({
 				canchas,
@@ -35,7 +47,9 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
 export async function obtenerCanchaPorId(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
     const id = Number(req.params.id);
-    const cancha = await canchaService.obtenerCanchaPorId(id);
+    // Permitir acceso a canchas inactivas si se especifica en query params (para dueños)
+    const permitirInactiva = req.query.permitirInactiva === 'true';
+    const cancha = await canchaService.obtenerCanchaPorId(id, permitirInactiva);
     res.status(200).json({
 			cancha,
 			message: 'Cancha encontrada exitosamente',
@@ -61,7 +75,9 @@ export async function actualizarCancha(req: Request, res: Response<CanchaRespons
 export async function obtenerCanchasPorComplejoId(req: Request, res: Response<CanchaListResponse>, next: NextFunction) {
   try {
     const complejoId = Number(req.params.complejoId);
-    const canchas = await canchaService.obtenerCanchasPorComplejoId(complejoId);
+    // Verificar si se solicita incluir canchas inactivas (para dueños gestionando su complejo)
+    const incluirInactivas = req.query.incluirInactivas === 'true';
+    const canchas = await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas);
     return res.status(200).json({
       canchas,
       total: canchas.length,

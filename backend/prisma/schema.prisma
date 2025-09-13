@@ -94,8 +94,11 @@ model Localidad {
 model Cancha {
 	id          Int    							@id @default(autoincrement())
 	nroCancha   Int    							@unique
+	nombre      String?
 	descripcion String?
+	precioHora  Float?              @default(0.0)
 	puntaje     Float               @default(0.0)
+	activa      Boolean             @default(true)
 	image 			String[]
 
 	cronograma 	HorarioCronograma[] // COMPOSICION DE HORARIOS CHIQUITITOS CONFORMAN UN CRONOGRAMA

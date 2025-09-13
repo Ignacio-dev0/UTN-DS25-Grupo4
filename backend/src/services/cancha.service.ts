@@ -4,18 +4,66 @@ import { CreateCanchaRequest, UpdateCanchaRequest } from '../types/cancha.types'
 import { EstadoAlquiler } from '@prisma/client';
 
 export async function crearCancha(data: CreateCanchaRequest) {
-	const { complejoId, deporteId, ...cancha } = data;
-    return prisma.cancha.create({
-		data: {
-			...cancha,
-			deporte: { connect: { id: deporteId }},
-			complejo: { connect: { id: complejoId }},
+	try {
+		console.log('🔧 CANCHA SERVICE - crearCancha called with data:', JSON.stringify(data, null, 2));
+		
+		const { complejoId, deporteId, ...cancha } = data;
+		
+		console.log('🔧 CANCHA SERVICE - Extracted data:');
+		console.log('   complejoId:', complejoId);
+		console.log('   deporteId:', deporteId);
+		console.log('   cancha data:', JSON.stringify(cancha, null, 2));
+		
+		// Verificar que el complejo existe
+		console.log('🔍 CANCHA SERVICE - Verificando complejo...');
+		const complejoExistente = await prisma.complejo.findUnique({
+			where: { id: complejoId }
+		});
+		
+		if (!complejoExistente) {
+			console.log('❌ CANCHA SERVICE - Complejo no encontrado');
+			throw new Error(`Complejo con ID ${complejoId} no existe`);
 		}
-	});
+		console.log('✅ CANCHA SERVICE - Complejo encontrado:', complejoExistente.nombre);
+		
+		// Verificar que el deporte existe
+		console.log('🔍 CANCHA SERVICE - Verificando deporte...');
+		const deporteExistente = await prisma.deporte.findUnique({
+			where: { id: deporteId }
+		});
+		
+		if (!deporteExistente) {
+			console.log('❌ CANCHA SERVICE - Deporte no encontrado');
+			throw new Error(`Deporte con ID ${deporteId} no existe`);
+		}
+		console.log('✅ CANCHA SERVICE - Deporte encontrado:', deporteExistente.nombre);
+		
+		console.log('🚀 CANCHA SERVICE - Creando cancha en la base de datos...');
+		
+		const nuevaCancha = await prisma.cancha.create({
+			data: {
+				...cancha,
+				deporte: { connect: { id: deporteId }},
+				complejo: { connect: { id: complejoId }},
+			},
+			include: {
+				deporte: true,
+				complejo: true
+			}
+		});
+		
+		console.log('✅ CANCHA SERVICE - Cancha creada exitosamente:', nuevaCancha);
+		return nuevaCancha;
+		
+	} catch (error) {
+		console.error('💥 CANCHA SERVICE - Error en crearCancha:', error);
+		throw error;
+	}
 }
 
-export async function obtenerCanchas() {
+export async function obtenerCanchas(incluirInactivas: boolean = false) {
     return prisma.cancha.findMany({
+        where: incluirInactivas ? {} : { activa: true },
         include: {
             deporte: true, // Para saber qué deporte se juega en la cancha
             complejo: {
@@ -37,7 +85,7 @@ export async function obtenerCanchas() {
     });
 }
 
-export async function obtenerCanchaPorId(id: number) {
+export async function obtenerCanchaPorId(id: number, permitirInactiva: boolean = false) {
 	const cancha = await prisma.cancha.findUnique({
 		where: { id },
 		include: {
@@ -75,13 +123,21 @@ export async function obtenerCanchaPorId(id: number) {
 		throw error;
 	}
 
+	// Si la cancha está inactiva y no se permite el acceso a inactivas, lanzar error
+	if (!cancha.activa && !permitirInactiva) {
+		const error = new Error('Cancha no disponible');
+		(error as any).statusCode = 403;
+		throw error;
+	}
+
 	return cancha;
 };
 
-export async function obtenerCanchasPorComplejoId(complejoId: number) {
+export async function obtenerCanchasPorComplejoId(complejoId: number, incluirInactivas: boolean = false) {
   return prisma.cancha.findMany({
     where: {
       complejoId: complejoId, // Corregir: debe filtrar por complejoId, no por id
+      ...(incluirInactivas ? {} : { activa: true })
     },
     include: {
       deporte: true,

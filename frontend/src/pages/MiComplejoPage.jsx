@@ -66,8 +66,8 @@ function MiComplejoPage() {
   const recargarCanchas = useCallback(async () => {
     try {
       console.log('🔄 Recargando canchas para complejo:', complejoId);
-      // Usar el endpoint específico para canchas por complejo
-      const canchasResponse = await fetch(`${API_BASE_URL}/canchas/complejo/${complejoId}`);
+      // Usar el endpoint específico para canchas por complejo e incluir inactivas para gestión del dueño
+      const canchasResponse = await fetch(`${API_BASE_URL}/canchas/complejo/${complejoId}?incluirInactivas=true`);
       if (canchasResponse.ok) {
         const canchasData = await canchasResponse.json();
         console.log('✅ Canchas cargadas del backend:', canchasData);

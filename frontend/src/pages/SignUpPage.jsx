@@ -156,31 +156,48 @@ function SignUpPage() {
           setError(response.error);
         }
       } else {
-        // Para dueños de complejo - enviar usuario y solicitud en un solo request
-        const userData = {
-          email,
-          password,
-          nombre: firstName,
-          apellido: lastName,
-          dni,
-          telefono: phone,
-          tipoUsuario: 'DUENIO',
-          solicitudComplejo: {
-            cuit,
-            nombreComplejo: complexName,
-            calle,
-            altura,
-            localidadId: localidad,
-            imagen: null // Si quieres soportar imagen, deberías adaptar el backend para multipart/form-data
-          }
-        };
+        // Para dueños de complejo - usar endpoint con soporte de imagen
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('password', password);
+        formData.append('nombre', firstName);
+        formData.append('apellido', lastName);
+        formData.append('dni', dni);
+        formData.append('telefono', phone);
+        formData.append('tipoUsuario', 'DUENIO');
+        formData.append('cuit', cuit);
+        formData.append('nombreComplejo', complexName);
+        formData.append('calle', calle);
+        formData.append('altura', altura);
+        formData.append('localidadId', localidad);
         
-        const response = await register(userData);
+        if (complexImage) {
+          formData.append('imagen', complexImage);
+        }
         
-        if (response.ok) {
+        const response = await fetch(`${API_BASE_URL}/usuarios/register-with-image`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Error parsing JSON:', jsonError);
+          // Si no puede parsear JSON, crear un objeto de error
+          data = { 
+            ok: false, 
+            error: response.status === 500 
+              ? 'Error interno del servidor. Intenta nuevamente.' 
+              : `Error del servidor (${response.status})`
+          };
+        }
+        
+        if (response.ok && data.ok) {
           setStep('confirmation');
         } else {
-          setError(response.error);
+          setError(data.error || 'Error al crear la solicitud de complejo');
         }
       }
     } catch (error) {
