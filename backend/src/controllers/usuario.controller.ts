@@ -176,6 +176,8 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function register(req: Request, res: Response) {
+  // Log para depuración: ver qué llega en el body
+  console.log('BODY recibido en /usuarios/register:', JSON.stringify(req.body, null, 2));
   try {
     const { email, password, nombre, apellido, dni, telefono, tipoUsuario } = req.body;
     
@@ -218,17 +220,66 @@ export async function register(req: Request, res: Response) {
       rol: rol
     });
 
-    res.status(201).json({
-      ok: true,
-      user: {
-        id: newUsuario.id,
-        email: newUsuario.correo,
-        nombre: newUsuario.nombre,
-        apellido: newUsuario.apellido,
-        rol: newUsuario.rol
-      },
-      message: 'Usuario registrado exitosamente'
-    });
+    // Si es dueño, intentar crear la solicitud automáticamente
+    if (rol === 'DUENIO' && req.body.solicitudComplejo) {
+      try {
+        // solicitudComplejo debe tener: cuit, nombreComplejo, calle, altura, localidadId, imagen (opcional)
+        const { cuit, nombreComplejo, calle, altura, localidadId, imagen } = req.body.solicitudComplejo;
+        if (!cuit || !nombreComplejo || !calle || !altura || !localidadId) {
+          // Rollback usuario
+          await usuarioService.deleteUsuario(newUsuario.id);
+          return res.status(400).json({ ok: false, error: 'Faltan datos obligatorios para la solicitud de complejo' });
+        }
+        // Validar CUIT formato XX-XXXXXXXX-X
+        if (!/^\d{2}-\d{8}-\d{1}$/.test(cuit)) {
+          await usuarioService.deleteUsuario(newUsuario.id);
+          return res.status(400).json({ ok: false, error: 'CUIT inválido. Formato esperado: XX-XXXXXXXX-X' });
+        }
+        // Crear solicitud
+        const solicitudData = {
+          usuarioId: newUsuario.id,
+          cuit,
+          complejo: {
+            nombre: nombreComplejo,
+            imagen: imagen || null,
+            domicilio: {
+              calle,
+              altura,
+              localidad: localidadId
+            }
+          }
+        };
+        const nuevaSolicitud = await require('../services/solicitud.service').createSolicitudWithComplejo(solicitudData);
+        return res.status(201).json({
+          ok: true,
+          user: {
+            id: newUsuario.id,
+            email: newUsuario.correo,
+            nombre: newUsuario.nombre,
+            apellido: newUsuario.apellido,
+            rol: newUsuario.rol
+          },
+          solicitud: nuevaSolicitud,
+          message: 'Usuario y solicitud registrados exitosamente'
+        });
+      } catch (error) {
+        // Rollback usuario si falla la solicitud
+        await usuarioService.deleteUsuario(newUsuario.id);
+        return res.status(500).json({ ok: false, error: 'Error al crear la solicitud de complejo. El usuario no fue registrado.' });
+      }
+    } else {
+      res.status(201).json({
+        ok: true,
+        user: {
+          id: newUsuario.id,
+          email: newUsuario.correo,
+          nombre: newUsuario.nombre,
+          apellido: newUsuario.apellido,
+          rol: newUsuario.rol
+        },
+        message: 'Usuario registrado exitosamente'
+      });
+    }
 
   } catch (error: any) {
     if (error.code === 'P2002') {

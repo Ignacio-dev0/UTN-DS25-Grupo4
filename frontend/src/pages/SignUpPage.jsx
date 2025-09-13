@@ -156,7 +156,7 @@ function SignUpPage() {
           setError(response.error);
         }
       } else {
-        // Para dueños de complejo - crear usuario y solicitud
+        // Para dueños de complejo - enviar usuario y solicitud en un solo request
         const userData = {
           email,
           password,
@@ -164,40 +164,23 @@ function SignUpPage() {
           apellido: lastName,
           dni,
           telefono: phone,
-          tipoUsuario: 'DUENIO' // Especificar que es dueño
+          tipoUsuario: 'DUENIO',
+          solicitudComplejo: {
+            cuit,
+            nombreComplejo: complexName,
+            calle,
+            altura,
+            localidadId: localidad,
+            imagen: null // Si quieres soportar imagen, deberías adaptar el backend para multipart/form-data
+          }
         };
         
-        // Primero registrar el usuario
-        const userResponse = await register(userData);
+        const response = await register(userData);
         
-        if (!userResponse.ok) {
-          setError(userResponse.error);
-          return;
-        }
-        
-        // Luego crear la solicitud del complejo
-        const formData = new FormData();
-        formData.append('usuarioId', userResponse.user.id);
-        formData.append('cuit', cuit);
-        formData.append('nombreComplejo', complexName);
-        formData.append('calle', calle);
-        formData.append('altura', altura);
-        formData.append('localidadId', localidad);
-        
-        if (complexImage) {
-          formData.append('imagen', complexImage);
-        }
-        
-        const solicitudResponse = await fetch(`${API_BASE_URL}/admin/solicitudes/with-image`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (solicitudResponse.ok) {
+        if (response.ok) {
           setStep('confirmation');
         } else {
-          const errorData = await solicitudResponse.json();
-          setError(errorData.message || 'Error al crear la solicitud de complejo');
+          setError(response.error);
         }
       }
     } catch (error) {
