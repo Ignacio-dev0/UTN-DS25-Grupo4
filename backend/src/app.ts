@@ -129,6 +129,44 @@ app.get('/api/debug/images', async (req, res) => {
     }
 });
 
+// Endpoint para probar conexión a base de datos
+app.get('/api/debug/database', async (req, res) => {
+    try {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        
+        // Probar la conexión
+        await prisma.$connect();
+        
+        // Obtener conteo de tablas principales
+        const counts = await Promise.all([
+            prisma.usuario.count(),
+            prisma.complejo.count(),
+            prisma.solicitud.count(),
+            prisma.alquiler.count()
+        ]);
+        
+        await prisma.$disconnect();
+        
+        res.json({
+            status: 'Database connected',
+            counts: {
+                usuarios: counts[0],
+                complejos: counts[1],
+                solicitudes: counts[2],
+                alquileres: counts[3]
+            },
+            timestamp: new Date().toISOString()
+        });
+    } catch (error: any) {
+        console.error('Database debug error:', error);
+        res.status(500).json({ 
+            error: 'Database connection failed',
+            message: error.message 
+        });
+    }
+});
+
 // ENDPOINT DE EMERGENCIA - Crear tablas básicas
 app.get('/api/create-tables', async (req, res) => {
     try {

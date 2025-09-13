@@ -161,7 +161,28 @@ export const deleteComplejo_sol_dom = async (id: number) => {
             include: {
                 solicitud: true,
                 domicilio: true,
-                usuario: true
+                usuario: {
+                    include: {
+                        reservas: {
+                            include: {
+                                turnos: true,
+                                pago: true,
+                                resenia: true
+                            }
+                        }
+                    }
+                },
+                canchas: {
+                    include: {
+                        turnos: {
+                            include: {
+                                alquiler: true
+                            }
+                        },
+                        cronograma: true
+                    }
+                },
+                servicios: true
             }
         });
 
@@ -176,18 +197,86 @@ export const deleteComplejo_sol_dom = async (id: number) => {
             complejoId: id,
             solicitudId: complejo.solicitudId,
             domicilioId: complejo.domicilioId,
-            usuarioId: complejo.usuarioId
+            usuarioId: complejo.usuarioId,
+            canchasCount: complejo.canchas.length,
+            serviciosCount: complejo.servicios.length,
+            reservasCount: complejo.usuario.reservas.length
         });
 
-        // Eliminar el complejo, solicitud, domicilio Y el usuario dueño en una sola transacción
-        const result = await prisma.$transaction([
-            prisma.complejo.delete({where:{id}}),
-            prisma.solicitud.delete({where:{id:complejo.solicitudId}}),
-            prisma.domicilio.delete({where:{id:complejo.domicilioId}}),
-            prisma.usuario.delete({where:{id:complejo.usuarioId}}) // ✅ Eliminar también el usuario dueño
-        ]);
+        // Eliminar todo en una transacción más robusta
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Eliminar reseñas de alquileres del usuario
+            for (const reserva of complejo.usuario.reservas) {
+                if (reserva.resenia) {
+                    await tx.resenia.delete({ where: { id: reserva.resenia.id } });
+                }
+                if (reserva.pago) {
+                    await tx.pago.delete({ where: { id: reserva.pago.id } });
+                }
+                // Eliminar turnos de esta reserva
+                await tx.turno.deleteMany({ where: { alquilerId: reserva.id } });
+                // Eliminar la reserva
+                await tx.alquiler.delete({ where: { id: reserva.id } });
+            }
+
+            // 2. Eliminar turnos y cronogramas de las canchas del complejo
+            for (const cancha of complejo.canchas) {
+                // Eliminar turnos que no estén en alquileres ya eliminados
+                const turnosRestantes = await tx.turno.findMany({
+                    where: { canchaId: cancha.id }
+                });
+                
+                for (const turno of turnosRestantes) {
+                    if (turno.alquilerId) {
+                        // Si hay alquiler asociado, eliminar todo
+                        const alquiler = await tx.alquiler.findUnique({
+                            where: { id: turno.alquilerId },
+                            include: { pago: true, resenia: true }
+                        });
+                        
+                        if (alquiler) {
+                            if (alquiler.resenia) {
+                                await tx.resenia.delete({ where: { id: alquiler.resenia.id } });
+                            }
+                            if (alquiler.pago) {
+                                await tx.pago.delete({ where: { id: alquiler.pago.id } });
+                            }
+                            await tx.alquiler.delete({ where: { id: alquiler.id } });
+                        }
+                    }
+                }
+                
+                // Eliminar todos los turnos de la cancha
+                await tx.turno.deleteMany({ where: { canchaId: cancha.id } });
+                
+                // Eliminar cronogramas (es un array)
+                if (cancha.cronograma && cancha.cronograma.length > 0) {
+                    await tx.horarioCronograma.deleteMany({
+                        where: { canchaId: cancha.id }
+                    });
+                }
+            }
+
+            // 3. Eliminar servicios del complejo
+            if (complejo.servicios.length > 0) {
+                await tx.complejoServicio.deleteMany({
+                    where: { complejoId: id }
+                });
+            }
+
+            // 4. Eliminar las canchas
+            await tx.cancha.deleteMany({ where: { complejoId: id } });
+
+            // 5. Eliminar el complejo, solicitud, domicilio Y el usuario dueño
+            await tx.complejo.delete({ where: { id } });
+            await tx.solicitud.delete({ where: { id: complejo.solicitudId } });
+            await tx.domicilio.delete({ where: { id: complejo.domicilioId } });
+            await tx.usuario.delete({ where: { id: complejo.usuarioId } });
+
+            return { success: true, deletedComplejoId: id };
+        });
         
-        console.log(`✅ [${new Date().toISOString()}] Successfully deleted complejo and related entities`);
+        console.log(`✅ [${new Date().toISOString()}] Successfully deleted complejo and all related entities`);
         return result;
     } catch (error: any) {
         console.error(`❌ [${new Date().toISOString()}] Error in deleteComplejo_sol_dom:`, {
