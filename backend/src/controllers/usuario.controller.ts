@@ -298,21 +298,44 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function registerWithImage(req: Request, res: Response) {
-  console.log('BODY recibido en /usuarios/register-with-image:', req.body);
-  console.log('Archivo de imagen:', req.file);
+  console.log('=== DEBUG registerWithImage ===');
+  console.log('BODY recibido:', req.body);
+  console.log('Archivo recibido:', req.file);
+  console.log('Nombre del campo esperado: imagen');
+  
   try {
-    const { email, password, nombre, apellido, dni, telefono, tipoUsuario, cuit, nombreComplejo, calle, altura, localidadId } = req.body;
+    const { 
+      correo,     // Frontend envía 'correo'
+      email,      // Mantener compatibilidad con 'email'
+      password, 
+      nombre, 
+      apellido, 
+      dni, 
+      telefono, 
+      direccion,
+      rol: userRole = 'player',
+      tipoUsuario, 
+      cuit, 
+      nombreComplejo, 
+      calle, 
+      altura, 
+      localidadId 
+    } = req.body;
+    
     const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
     
-    if (!email || !password || !nombre || !apellido || !dni) {
+    // Usar correo o email (el que venga)
+    const userEmail = correo || email;
+    
+    if (!userEmail || !password || !nombre || !apellido || !dni) {
       return res.status(400).json({
         ok: false,
-        error: 'Todos los campos son requeridos'
+        error: 'Todos los campos son requeridos (correo, password, nombre, apellido, dni)'
       });
     }
 
     // Verificar si el email ya existe
-    const existingUserByEmail = await usuarioService.getUsuarioByEmail(email);
+    const existingUserByEmail = await usuarioService.getUsuarioByEmail(userEmail);
     if (existingUserByEmail) {
       return res.status(409).json({
         ok: false,
@@ -330,22 +353,22 @@ export async function registerWithImage(req: Request, res: Response) {
     }
 
     // Determinar el rol según el tipo de usuario
-    const rol = tipoUsuario === 'DUENIO' ? 'DUENIO' : 'CLIENTE';
+    const finalRole = tipoUsuario === 'DUENIO' ? 'DUENIO' : (userRole || 'player');
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: email,
+      correo: userEmail,
       password,
       name: nombre,
       lastname: apellido,
       dni: dni,
       telefono,
-      rol: rol,
+      rol: finalRole,
       image: imagePath || undefined
     });
 
     // Si es dueño, crear la solicitud automáticamente
-    if (rol === 'DUENIO' && cuit && nombreComplejo && calle && altura && localidadId) {
+    if (finalRole === 'DUENIO' && cuit && nombreComplejo && calle && altura && localidadId) {
       try {
         // Validar CUIT formato XX-XXXXXXXX-X
         if (!/^\d{2}-\d{8}-\d{1}$/.test(cuit)) {
@@ -384,7 +407,10 @@ export async function registerWithImage(req: Request, res: Response) {
         console.error('Error creando solicitud:', error);
         // Rollback usuario si falla la solicitud
         await usuarioService.deleteUsuario(newUsuario.id);
-        return res.status(500).json({ ok: false, error: 'Error al crear la solicitud de complejo. El usuario no fue registrado.' });
+        return res.status(500).json({ 
+          ok: false, 
+          error: 'Error al crear la solicitud de complejo. El usuario no fue registrado.'
+        });
       }
     } else {
       res.status(201).json({
@@ -411,6 +437,94 @@ export async function registerWithImage(req: Request, res: Response) {
     res.status(500).json({
       ok: false,
       error: 'Error interno del servidor'
+    });
+  }
+}
+
+export async function actualizarUsuarioConImagen(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { nombre, apellido, correo, dni, telefono, direccion, rol, password } = req.body;
+    const imagePath = req.file ? `/images/usuarios/${req.file.filename}` : null;
+    
+    console.log('=== DEBUG: Actualizando usuario con imagen ===');
+    console.log('ID:', id);
+    console.log('Body completo:', req.body);
+    console.log('Archivo recibido:', req.file);
+    console.log('Imagen path:', imagePath);
+
+    if (!id) {
+      return res.status(400).json({
+        error: 'ID de usuario requerido'
+      });
+    }
+
+    // Verificar si el usuario existe
+    const usuarioExistente = await usuarioService.getUsuarioById(parseInt(id));
+    if (!usuarioExistente) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado'
+      });
+    }
+
+    // Preparar datos para actualizar
+    const updateData: any = {};
+    
+    if (nombre) updateData.name = nombre;
+    if (apellido) updateData.lastname = apellido;
+    if (correo) updateData.correo = correo;
+    if (dni && dni !== 'undefined') updateData.dni = dni;
+    if (telefono) updateData.telefono = telefono;
+    if (direccion) updateData.direccion = direccion;
+    
+    // Mapear rol del frontend al enum de Prisma
+    if (rol) {
+      switch (rol.toLowerCase()) {
+        case 'normal':
+        case 'cliente':
+          updateData.rol = 'CLIENTE';
+          break;
+        case 'duenio':
+        case 'dueño':
+          updateData.rol = 'DUENIO';
+          break;
+        case 'administrador':
+        case 'admin':
+          updateData.rol = 'ADMINISTRADOR';
+          break;
+        default:
+          updateData.rol = 'CLIENTE'; // Default fallback
+      }
+    }
+    
+    if (password) updateData.password = password;
+    if (imagePath) updateData.image = imagePath;
+
+    // Actualizar usuario
+    console.log('Datos a actualizar:', updateData);
+    const usuarioActualizado = await usuarioService.updateUsuario(parseInt(id), updateData);
+    console.log('Usuario actualizado exitosamente:', usuarioActualizado);
+
+    res.status(200).json({
+      message: 'Usuario actualizado exitosamente',
+      usuario: usuarioActualizado
+    });
+
+  } catch (error: any) {
+    console.error('=== ERROR en actualizarUsuarioConImagen ===');
+    console.error('Error completo:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        error: 'El DNI o email ya están en uso por otro usuario'
+      });
+    }
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
     });
   }
 }

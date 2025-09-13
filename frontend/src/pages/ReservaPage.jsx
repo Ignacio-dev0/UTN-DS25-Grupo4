@@ -259,6 +259,17 @@ function ReservaPage() {
       alert('Debes iniciar sesión para hacer una reserva');
       return false;
     }
+
+    // Verificar rol del usuario
+    if (user.rol === 'admin') {
+      alert('Los administradores no pueden realizar reservas. Esta funcionalidad está disponible solo para jugadores.');
+      return false;
+    }
+
+    if (user.rol === 'owner') {
+      alert('Los dueños de complejo no pueden realizar reservas. Esta funcionalidad está disponible solo para jugadores.');
+      return false;
+    }
     
     try {
       // Buscar el turno completo con su ID
@@ -353,7 +364,19 @@ function ReservaPage() {
           otrasImagenes={canchaMostrada.otrasImagenes || []}
         />
         <InfoCancha cancha={canchaMostrada} complejo={canchaMostrada.complejo} deporte={deporte?.nombre} />
+        
+        {/* Mostrar calendario para todos los usuarios */}
         <CalendarioTurnos turnosDisponibles={turnos || []} onConfirmarReserva={handleConfirmarReserva} canchaId={canchaId} />
+        
+        {/* Mostrar mensaje informativo si no está autenticado */}
+        {!isAuthenticated && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-blue-700 text-center">
+              💡 <strong>Tip:</strong> <Link to="/login" className="text-blue-600 hover:underline">Inicia sesión</Link> para poder reservar turnos en esta cancha.
+            </p>
+          </div>
+        )}
+        
         <CarruselReseñas reseñas={reseñasDeLaCancha} />
       </div>
     </div>

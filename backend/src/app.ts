@@ -48,6 +48,9 @@ app.use(express.json({ limit: '10mb' })); // Aumentar límite para imágenes bas
 // Servir archivos estáticos (imágenes) desde la carpeta del frontend
 app.use('/images', express.static(path.join(__dirname, '../../frontend/public/images')));
 
+// Servir archivos estáticos (imágenes subidas) desde la carpeta del backend - CORREGIDO para /api/images/
+app.use('/api/images', express.static(path.join(__dirname, '../public/images')));
+
 // //con esto intento manejar el tipo bigint en las respuestas json
 // app.set('json replacer', (key: string, value:any)=>{
 //     if (typeof value === 'bigint'){

@@ -47,6 +47,7 @@ model Solicitud {
 	id          Int             @id @default(autoincrement())
 	cuit        String          @unique
 	estado      EstadoSolicitud @default(PENDIENTE)
+	image       String?         // Imagen de la solicitud del complejo
 	
 	complejo    Complejo?
 	usuarioId   Int 						@unique

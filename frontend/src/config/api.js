@@ -6,9 +6,9 @@ export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http') || imagePath.startsWith('data:')) return imagePath;
   
-  // Si la ruta ya incluye /images/, la usamos directamente (sin API_BASE_URL para usar imágenes del frontend)
+  // Si la ruta ya incluye /images/, construir la URL completa con la API
   if (imagePath.startsWith('/images/')) {
-    return imagePath;
+    return `${API_BASE_URL}${imagePath}`;
   }
   
   // Si viene de la base de datos, las imágenes están en /images/canchas/

@@ -105,6 +105,7 @@ function PerfilInfo({ usuario, onSave, turnosFinalizados = 0 }) {
   };
 
   const handleSave = () => {
+    console.log('Guardando datos desde PerfilInfo:', editedData);
     onSave(editedData);
     setIsEditing(false);
   };

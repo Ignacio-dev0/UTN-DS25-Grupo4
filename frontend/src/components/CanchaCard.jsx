@@ -18,44 +18,61 @@ function CanchaCard({ cancha }) {
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
         
-        // Get today's date
+        // Get today's date in YYYY-MM-DD format
         const todayStr = now.toISOString().split('T')[0];
         
-        let response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}?fecha=${todayStr}`);
+        // Eliminamos log repetitivo - solo para debug si es necesario
+        // console.log(`Cargando turnos para cancha ${cancha.id} del día ${todayStr} desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
+        
+        let response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}`);
         let data = await response.json();
         
-        // Filter available turns (not reserved) and only future times for today
+        // Eliminamos log repetitivo de respuesta
+        // console.log('Respuesta de turnos:', data);
+        
+        // Filter for today's date and available turns (not reserved) and only future times
         let turnosDisponibles = (data.turnos || []).filter(turno => {
+          // Check if turn is for today
+          const turnoFecha = turno.fecha?.split('T')[0] || new Date(turno.fecha).toISOString().split('T')[0];
+          if (turnoFecha !== todayStr) return false;
+          
+          // Check if turn is not reserved
           if (turno.reservado) return false;
           
-          // Parse the hour from the turn time
-          const timeMatch = turno.horaInicio.match(/T(\d{2}):(\d{2})/);
-          if (timeMatch) {
-            const turnoHour = parseInt(timeMatch[1]);
-            const turnoMinute = parseInt(timeMatch[2]);
-            
-            // Only show turns that are in the future (today)
+          // Parse the hour from the turn time - handle different formats
+          let turnoHour, turnoMinute;
+          
+          if (turno.horaInicio.includes('T')) {
+            // ISO format: "2024-01-01T14:00:00.000Z"
+            const timeMatch = turno.horaInicio.match(/T(\d{2}):(\d{2})/);
+            if (timeMatch) {
+              turnoHour = parseInt(timeMatch[1]);
+              turnoMinute = parseInt(timeMatch[2]);
+            }
+          } else {
+            // Time format: "14:00:00" or "14:00"
+            const timeParts = turno.horaInicio.split(':');
+            if (timeParts.length >= 2) {
+              turnoHour = parseInt(timeParts[0]);
+              turnoMinute = parseInt(timeParts[1]);
+            }
+          }
+          
+          // Only show turns that are in the future (today from current time onwards)
+          if (turnoHour !== undefined && turnoMinute !== undefined) {
             return turnoHour > currentHour || (turnoHour === currentHour && turnoMinute > currentMinute);
           }
+          
           return false;
         });
         
-        // If no future turns for today, try tomorrow
-        if (turnosDisponibles.length === 0) {
-          const tomorrow = new Date(now);
-          tomorrow.setDate(now.getDate() + 1);
-          const tomorrowStr = tomorrow.toISOString().split('T')[0];
-          
-          response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}?fecha=${tomorrowStr}`);
-          if (response.ok) {
-            data = await response.json();
-            turnosDisponibles = (data.turnos || []).filter(turno => !turno.reservado);
-          }
-        }
+        // Solo mostrar log si hay debug habilitado
+        // console.log(`Turnos disponibles hoy desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, turnosDisponibles);
         
         setTurnosHoy(turnosDisponibles);
       } catch (error) {
         console.error('Error fetching turnos:', error);
+        setTurnosHoy([]);
       } finally {
         setLoadingTurnos(false);
       }
@@ -66,15 +83,16 @@ function CanchaCard({ cancha }) {
   
   // Generate available hours from today's turns (only future times)
   const generarHorariosDelDia = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
     if (turnosHoy.length === 0) {
-      // Fallback to cronograma if no turns data available
+      // Fallback to cronograma if no turns data available, but still filter by current time
       if (!cancha.cronograma || cancha.cronograma.length === 0) {
         return [];
       }
 
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
       const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
       const diaActual = diasSemana[now.getDay()];
       
@@ -89,7 +107,7 @@ function CanchaCard({ cancha }) {
           const cronogramaHour = horaInicio.getUTCHours();
           const cronogramaMinute = horaInicio.getUTCMinutes();
           
-          // Only show future times
+          // Only show future times from current hour onwards
           return cronogramaHour > currentHour || (cronogramaHour === currentHour && cronogramaMinute > currentMinute);
         })
         .slice(0, 5)
@@ -102,10 +120,12 @@ function CanchaCard({ cancha }) {
           });
         });
 
+      // Eliminamos log repetitivo
+      // console.log(`Horarios del cronograma desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, horariosDelDia);
       return horariosDelDia;
     }
 
-    // Use actual available turns for today, show first 5 unique hours (already filtered by time)
+    // Use actual available turns for today (already filtered by time in the useEffect)
     const horariosUnicos = new Set();
     const horariosArray = [];
     
@@ -140,6 +160,8 @@ function CanchaCard({ cancha }) {
       }
     }
     
+    // Eliminamos log repetitivo - solo mostrar en debug si es necesario
+    // console.log('Horarios únicos generados desde turnos disponibles:', horariosArray);
     return horariosArray;
   };
 
@@ -173,9 +195,10 @@ function CanchaCard({ cancha }) {
 
   const precioDesde = calcularPrecioMinimo();
   
-  console.log('CanchaCard - turnosHoy:', turnosHoy);
-  console.log('CanchaCard - precioDesde:', precioDesde);
-  console.log('CanchaCard - loadingTurnos:', loadingTurnos);
+  // Eliminamos logs repetitivos - solo para debug detallado
+  // console.log('CanchaCard - turnosHoy:', turnosHoy);
+  // console.log('CanchaCard - precioDesde:', precioDesde);
+  // console.log('CanchaCard - loadingTurnos:', loadingTurnos);
 
   return (
     <Link to={`/reserva/${cancha.id}`} className="block bg-secondary rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1 group relative">
@@ -223,11 +246,13 @@ function CanchaCard({ cancha }) {
             </div>
           ) : (
             <div className="text-sm text-accent">
-              <p>Horarios disponibles - Consultar</p>
-              {cancha.cronograma?.length > 0 && (
-                <div className="mt-2">
-                  <span className="text-xs">Días: {cancha.cronograma.map(c => c.diaSemana).join(', ')}</span>
-                </div>
+              {loadingTurnos ? (
+                <p>Cargando horarios...</p>
+              ) : (
+                <>
+                  <p>No hay turnos disponibles hoy</p>
+                  <p className="text-xs mt-1">Haz clic para ver próximos días</p>
+                </>
               )}
             </div>
           )}

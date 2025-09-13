@@ -154,15 +154,23 @@ export const getComplejoById = async (id:number) => {
 
 export const deleteComplejo_sol_dom = async (id: number) => {
     const complejo = await prisma.complejo.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+            solicitud: true,
+            domicilio: true,
+            usuario: true
+        }
     });
 
     if (!complejo) {
         throw new Error('complejo not found');
     }
+
+    // Eliminar el complejo, solicitud, domicilio Y el usuario dueño en una sola transacción
     return prisma.$transaction([
         prisma.complejo.delete({where:{id}}),
         prisma.solicitud.delete({where:{id:complejo.solicitudId}}),
         prisma.domicilio.delete({where:{id:complejo.domicilioId}}),
+        prisma.usuario.delete({where:{id:complejo.usuarioId}}) // ✅ Eliminar también el usuario dueño
     ]);
 }

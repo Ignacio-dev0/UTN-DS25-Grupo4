@@ -178,58 +178,113 @@ export const updateUserProfile = async (userData) => {
       };
     }
 
-    // Preparar datos para el backend
-    const updateData = {
-      name: userData.nombre?.split(' ')[0] || currentUser.nombre, // Solo el primer nombre
-      apellido: userData.nombre?.split(' ').slice(1).join(' ') || currentUser.apellido, // Resto como apellido
-      telefono: userData.telefono,
-      direccion: userData.direccion, // Campo de dirección
-    };
+    console.log('Datos recibidos para actualizar:', userData);
 
-    // Manejar imagen: usar imagen real si existe, sino la URL
-    if (userData.profileImageData) {
-      updateData.image = userData.profileImageData; // Imagen base64 real
-    } else if (userData.profileImageUrl) {
-      updateData.image = userData.profileImageUrl; // URL de imagen
-    }
+    // Si hay imagen, usar FormData y el endpoint con imagen
+    if (userData.profileImageData && userData.profileImageData.startsWith('data:')) {
+      // Convertir base64 a blob
+      const base64Data = userData.profileImageData.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-    console.log('Enviando datos de actualización:', updateData);
+      // Crear FormData
+      const formData = new FormData();
+      formData.append('nombre', userData.nombre || currentUser.nombre);
+      formData.append('apellido', userData.apellido || currentUser.apellido);
+      formData.append('correo', currentUser.correo || currentUser.email);
+      formData.append('dni', currentUser.dni);
+      formData.append('telefono', userData.telefono || '');
+      formData.append('direccion', userData.direccion || '');
+      formData.append('rol', currentUser.rol || currentUser.role);
+      formData.append('imagen', blob, 'profile.jpg');
 
-    const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
+      console.log('Enviando con FormData al endpoint con imagen');
 
-    const data = await response.json();
-    console.log('Respuesta del servidor:', data);
+      const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}/update-with-image`, {
+        method: 'PUT',
+        body: formData,
+      });
 
-    if (!response.ok) {
+      const data = await response.json();
+      console.log('Respuesta del servidor (con imagen):', data);
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: data.error || 'Error al actualizar el perfil con imagen'
+        };
+      }
+
+      // Actualizar usuario en el storage
+      const updatedUser = {
+        ...currentUser,
+        ...data.usuario,
+        role: mapBackendRoleToFrontend(data.usuario.rol),
+        profileImageUrl: data.usuario.image ? `${API_BASE_URL}${data.usuario.image}` : currentUser.profileImageUrl
+      };
+
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
       return {
-        ok: false,
-        error: data.error || 'Error al actualizar el perfil'
+        ok: true,
+        user: data.usuario
+      };
+    } else {
+      // Sin imagen, usar JSON tradicional
+      const updateData = {
+        nombre: userData.nombre || currentUser.nombre,
+        apellido: userData.apellido || currentUser.apellido,
+        telefono: userData.telefono,
+        direccion: userData.direccion,
+      };
+
+      console.log('Enviando datos sin imagen:', updateData);
+
+      const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await response.json();
+      console.log('Respuesta del servidor (sin imagen):', data);
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: data.error || 'Error al actualizar el perfil'
+        };
+      }
+
+      // Actualizar usuario en el storage
+      const updatedUser = {
+        ...currentUser,
+        ...data.usuario,
+        role: mapBackendRoleToFrontend(data.usuario.rol)
+      };
+
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
+      return {
+        ok: true,
+        user: data.usuario
       };
     }
-
-    // Actualizar usuario en el storage
-    const updatedUser = {
-      ...currentUser,
-      ...data.usuario,
-      role: mapBackendRoleToFrontend(data.usuario.rol)
-    };
-
-    if (localStorage.getItem('user')) {
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-    } else {
-      sessionStorage.setItem('user', JSON.stringify(updatedUser));
-    }
-
-    return {
-      ok: true,
-      user: data.usuario
-    };
   } catch (error) {
     console.error('Error en updateUserProfile:', error);
     return {

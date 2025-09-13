@@ -84,7 +84,9 @@ export const eliminarComplejo = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     await complejoService.deleteComplejo_sol_dom(id);
-    res.status(200).json({ message: 'Complejo eliminado correctamente.' });
+    res.status(200).json({ 
+      message: 'Complejo eliminado correctamente. El usuario dueño asociado también fue eliminado.' 
+    });
   } catch (error: any) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Complejo no encontrado.' });

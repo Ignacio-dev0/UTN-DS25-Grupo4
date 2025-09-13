@@ -9,7 +9,7 @@ export interface CreateSolicitudRequest{
 
 export interface UpdateSolicitudRequest {
   estado: EstadoSolicitud,
-	evaluadorId: number;
+	evaluadorId?: number;
 }
 
 export interface SolicitudResponse {

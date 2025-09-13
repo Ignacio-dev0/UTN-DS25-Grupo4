@@ -59,7 +59,9 @@ function MisReservasPage() {
                         telefono: response.user.telefono || '',
                         direccion: response.user.direccion || '', // Campo de dirección libre
                         dni: response.user.dni,
-                        profileImageUrl: response.user.image || 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
+                        profileImageUrl: response.user.image ? 
+                            (response.user.image.startsWith('http') ? response.user.image : `${API_BASE_URL}${response.user.image}`) 
+                            : 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
                     };
                     setUsuario(userData);
                     
@@ -117,12 +119,15 @@ function MisReservasPage() {
                         // del alquiler a FINALIZADO si se requiere persistir el cambio
                     }
 
+                    // Formatear fecha a DD/MM/YYYY
+                    const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
+                    
                     return {
                         id: alquiler.id,
                         canchaId: primerTurno.cancha?.id || null, // Agregar canchaId para navegación
                         complejo: primerTurno.cancha?.complejo?.nombre || 'Complejo no especificado',
                         cancha: `Cancha N°${primerTurno.cancha?.nroCancha || 'N/A'}`,
-                        fecha: fecha.toISOString().split('T')[0], // YYYY-MM-DD
+                        fecha: fechaFormateada, // DD/MM/YYYY
                         hora: horaInicio,
                         horaFin: horaFin,
                         total: alquiler.turnos.reduce((sum, turno) => sum + turno.precio, 0),
@@ -273,17 +278,35 @@ function MisReservasPage() {
         try {
             setIsUpdatingProfile(true);
             setLoading(true);
+            
+            console.log('Guardando perfil con datos:', datosActualizados);
+            
             const response = await updateUserProfile(datosActualizados);
             
             if (response.ok) {
+                // Construir la nueva URL de imagen si existe
+                let nuevaImagenUrl = usuario.profileImageUrl; // Mantener la actual por defecto
+                
+                if (response.user.image) {
+                    // Si el servidor devolvió una nueva imagen
+                    nuevaImagenUrl = response.user.image.startsWith('http') ? 
+                        response.user.image : 
+                        `${API_BASE_URL}${response.user.image}`;
+                } else if (datosActualizados.profileImageData) {
+                    // Si se subió una nueva imagen pero aún no tenemos la URL del servidor
+                    nuevaImagenUrl = datosActualizados.profileImageUrl || datosActualizados.profileImageData;
+                }
+
                 // Actualizar el estado local con los datos actualizados
                 const updatedUserData = {
                     ...usuario,
-                    nombre: datosActualizados.nombre,
-                    telefono: datosActualizados.telefono,
-                    direccion: datosActualizados.direccion,
-                    profileImageUrl: datosActualizados.profileImageUrl
+                    nombre: datosActualizados.nombre || usuario.nombre,
+                    telefono: datosActualizados.telefono || usuario.telefono,
+                    direccion: datosActualizados.direccion || usuario.direccion,
+                    profileImageUrl: nuevaImagenUrl
                 };
+                
+                console.log('Actualizando usuario local con:', updatedUserData);
                 setUsuario(updatedUserData);
                 
                 // Mostrar mensaje de éxito
@@ -291,7 +314,6 @@ function MisReservasPage() {
                 alert('Perfil actualizado exitosamente');
             } else {
                 console.error('Error al actualizar perfil:', response.error);
-                // Aquí podrías mostrar un mensaje de error al usuario
                 alert('Error al actualizar el perfil: ' + response.error);
             }
         } catch (error) {

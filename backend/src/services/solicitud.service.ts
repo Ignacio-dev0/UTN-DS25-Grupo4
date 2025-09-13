@@ -34,7 +34,8 @@ export const createSolicitudWithComplejo = async (data: any) => {
             data: {
                 cuit: data.cuit,
                 estado: 'PENDIENTE',
-                usuarioId: data.usuarioId
+                usuarioId: data.usuarioId,
+                image: data.complejo.imagen  // Guardar imagen en la solicitud
             }
         });
 
@@ -47,11 +48,11 @@ export const createSolicitudWithComplejo = async (data: any) => {
             }
         });
 
-        // Crear el complejo asociado a la solicitud
+        // Crear el complejo asociado a la solicitud (sin imagen inicialmente)
         const nuevoComplejo = await tx.complejo.create({
             data: {
                 nombre: data.complejo.nombre,
-                image: data.complejo.imagen,
+                image: null,  // No imagen hasta que se apruebe la solicitud
                 cuit: data.cuit,
                 domicilioId: nuevoDomicilio.id,
                 usuarioId: data.usuarioId,
@@ -79,13 +80,45 @@ export const createSolicitudWithComplejo = async (data: any) => {
 };
 
 export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitudRequest) =>{
-    const soliUpdate:any={
-        estado: data.estado,
-        evaluador: data.evaluadorId,
-    }
-    return prisma.solicitud.update({
-        where:{id},
-        data:soliUpdate,
+    return prisma.$transaction(async (tx) => {
+        // Actualizar la solicitud
+        const soliUpdate:any={
+            estado: data.estado,
+        }
+        
+        // Solo agregar evaluadorId si se proporciona
+        if (data.evaluadorId) {
+            soliUpdate.evaluador = data.evaluadorId;
+        }
+        
+        const solicitudActualizada = await tx.solicitud.update({
+            where:{id},
+            data:soliUpdate,
+            include: {
+                complejo: true
+            }
+        });
+
+        // Si la solicitud fue aprobada, copiar la imagen de la solicitud al complejo
+        console.log('=== DEBUG APROBACIÓN ===');
+        console.log('Estado:', data.estado);
+        console.log('Solicitud imagen:', solicitudActualizada.image);
+        console.log('Complejo existe:', !!solicitudActualizada.complejo);
+        console.log('Complejo ID:', solicitudActualizada.complejo?.id);
+        
+        if (data.estado === 'APROBADA' && solicitudActualizada.image && solicitudActualizada.complejo) {
+            console.log('✅ Condiciones cumplidas, copiando imagen...');
+            await tx.complejo.update({
+                where: { id: solicitudActualizada.complejo.id },
+                data: { image: solicitudActualizada.image }
+            });
+            
+            console.log(`✅ Imagen copiada de solicitud ${solicitudActualizada.id} al complejo ${solicitudActualizada.complejo.id}`);
+        } else {
+            console.log('❌ Condiciones NO cumplidas para copiar imagen');
+        }
+
+        return solicitudActualizada;
     });
 };
 

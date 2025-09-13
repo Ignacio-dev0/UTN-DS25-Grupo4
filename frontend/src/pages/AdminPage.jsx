@@ -4,6 +4,7 @@ import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
 import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
 import GestionDeportes from '../components/GestionDeportes.jsx';
 import GestionLocalidades from '../components/GestionLocalidades.jsx';
+import GestionUsuarios from '../components/GestionUsuarios.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { API_BASE_URL } from '../config/api.js';
 
@@ -33,7 +34,7 @@ function AdminPage() {
             nombreComplejo: solicitud.complejo?.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
             calle: solicitud.complejo?.domicilio?.calle || 'No especificado',
             altura: solicitud.complejo?.domicilio?.altura || 'No especificado',
-            imagen: solicitud.complejo?.image || null,
+            imagen: solicitud.image || solicitud.complejo?.image || null,
             // Información adicional del usuario
             usuarioNombre: `${solicitud.usuario?.nombre || ''} ${solicitud.usuario?.apellido || ''}`.trim() || 'Usuario sin nombre',
             usuarioCorreo: solicitud.usuario?.correo || 'Sin correo',
@@ -178,6 +179,9 @@ function AdminPage() {
             <button onClick={() => setActiveTab('localidades')} className={getTabClass('localidades')}>
               Localidades
             </button>
+            <button onClick={() => setActiveTab('usuarios')} className={getTabClass('usuarios')}>
+              Usuarios
+            </button>
         </nav>
       </div>
       <div>
@@ -221,6 +225,10 @@ function AdminPage() {
 
         {activeTab === 'localidades' && (
           <GestionLocalidades />
+        )}
+
+        {activeTab === 'usuarios' && (
+          <GestionUsuarios />
         )}
         
       </div>

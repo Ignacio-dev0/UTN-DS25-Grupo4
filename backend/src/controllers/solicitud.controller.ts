@@ -91,13 +91,17 @@ export const createRequestWithImage = async (req: Request, res: Response, next: 
 export const updateReq = async(req:Request, res:Response, next:NextFunction)=>{
     try{
         const {id}=req.params;
+        console.log('=== UPDATE SOLICITUD CONTROLLER ===');
+        console.log('ID:', id);
+        console.log('Body:', req.body);
+        
         const soliup = await soliServ.updateSolicitud(parseInt(id),req.body);
         res.json({
             solicitud: soliup,
             message: ('solicitud actualizada correctamente'),
         })
     }catch(error:any){
-        console.log(error);
+        console.log('Error en updateReq:', error);
     }
 }
 
