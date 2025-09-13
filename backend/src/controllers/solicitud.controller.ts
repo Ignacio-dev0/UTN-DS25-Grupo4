@@ -39,9 +39,15 @@ export const createRequest =  async (req: Request, res:Response, next:NextFuncti
 
 export const createRequestWithImage = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { usuarioId, cuit, nombreComplejo, calle, altura, localidad } = req.body;
+        const { usuarioId, cuit, nombreComplejo, calle, altura, localidadId } = req.body;
         const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
-        
+
+        if (!usuarioId || !cuit || !nombreComplejo || !calle || !altura || !localidadId) {
+            return res.status(400).json({
+                error: 'Faltan datos obligatorios para la solicitud (usuarioId, cuit, nombreComplejo, calle, altura, localidadId)'
+            });
+        }
+
         const solicitudData = {
             usuarioId: parseInt(usuarioId),
             cuit,
@@ -51,11 +57,11 @@ export const createRequestWithImage = async (req: Request, res: Response, next: 
                 domicilio: {
                     calle,
                     altura,
-                    localidad
+                    localidad: localidadId // Pasar el ID directamente
                 }
             }
         };
-        
+
         const nuevaSolicitud = await soliServ.createSolicitudWithComplejo(solicitudData);
         res.status(201).json({
             solicitud: nuevaSolicitud,
