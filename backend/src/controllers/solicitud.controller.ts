@@ -39,13 +39,28 @@ export const createRequest =  async (req: Request, res:Response, next:NextFuncti
 
 export const createRequestWithImage = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('BODY RECIBIDO EN /admin/solicitudes/with-image:', req.body);
         const { usuarioId, cuit, nombreComplejo, calle, altura, localidadId } = req.body;
         const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
 
-        if (!usuarioId || !cuit || !nombreComplejo || !calle || !altura || !localidadId) {
-            return res.status(400).json({
-                error: 'Faltan datos obligatorios para la solicitud (usuarioId, cuit, nombreComplejo, calle, altura, localidadId)'
-            });
+        // Validaciones explícitas
+        if (!usuarioId || isNaN(parseInt(usuarioId))) {
+            return res.status(400).json({ error: 'usuarioId inválido o faltante' });
+        }
+        if (!cuit || !/^\d{2}-\d{8}-\d{1}$/.test(cuit)) {
+            return res.status(400).json({ error: 'CUIT inválido. Formato esperado: XX-XXXXXXXX-X' });
+        }
+        if (!nombreComplejo) {
+            return res.status(400).json({ error: 'nombreComplejo faltante' });
+        }
+        if (!calle) {
+            return res.status(400).json({ error: 'calle faltante' });
+        }
+        if (!altura || isNaN(parseInt(altura))) {
+            return res.status(400).json({ error: 'altura inválida o faltante' });
+        }
+        if (!localidadId || isNaN(parseInt(localidadId))) {
+            return res.status(400).json({ error: 'localidadId inválido o faltante' });
         }
 
         const solicitudData = {
@@ -68,6 +83,7 @@ export const createRequestWithImage = async (req: Request, res: Response, next: 
             message: 'Solicitud creada correctamente'
         });
     } catch (error) {
+        console.error('ERROR EN /admin/solicitudes/with-image:', error);
         next(error);
     }
 };
