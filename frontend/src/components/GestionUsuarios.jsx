@@ -240,9 +240,9 @@ function GestionUsuarios() {
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="todos">Todos los roles</option>
-              <option value="admin">Administradores</option>
-              <option value="owner">Dueños</option>
-              <option value="player">Jugadores</option>
+              <option value="ADMINISTRADOR">Administradores</option>
+              <option value="DUENIO">Dueños</option>
+              <option value="CLIENTE">Clientes</option>
             </select>
             
             <button
@@ -270,6 +270,7 @@ function GestionUsuarios() {
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Nombre</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Rol</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Complejo</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">DNI</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Teléfono</th>
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Acciones</th>
@@ -291,6 +292,18 @@ function GestionUsuarios() {
                     </td>
                     <td className="py-3 px-4 text-gray-700">{usuario.correo}</td>
                     <td className="py-3 px-4">{getRolBadge(usuario.rol)}</td>
+                    <td className="py-3 px-4 text-gray-700">
+                      {usuario.rol === 'DUENIO' && usuario.complejo ? (
+                        <div>
+                          <p className="font-medium text-gray-900">{usuario.complejo.nombre}</p>
+                          <p className="text-sm text-gray-500">{usuario.complejo.direccion}</p>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 italic">
+                          {usuario.rol === 'DUENIO' ? 'Sin complejo asignado' : 'N/A'}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-gray-700">{usuario.dni}</td>
                     <td className="py-3 px-4 text-gray-700">{usuario.telefono || 'No especificado'}</td>
                     <td className="py-3 px-4">

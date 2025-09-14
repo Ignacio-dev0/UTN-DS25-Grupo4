@@ -100,22 +100,13 @@ export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitud
         });
 
         // Si la solicitud fue aprobada, copiar la imagen de la solicitud al complejo
-        console.log('=== DEBUG APROBACIÓN ===');
-        console.log('Estado:', data.estado);
-        console.log('Solicitud imagen:', solicitudActualizada.image);
-        console.log('Complejo existe:', !!solicitudActualizada.complejo);
-        console.log('Complejo ID:', solicitudActualizada.complejo?.id);
-        
         if (data.estado === 'APROBADA' && solicitudActualizada.image && solicitudActualizada.complejo) {
-            console.log('✅ Condiciones cumplidas, copiando imagen...');
             await tx.complejo.update({
                 where: { id: solicitudActualizada.complejo.id },
                 data: { image: solicitudActualizada.image }
             });
             
-            console.log(`✅ Imagen copiada de solicitud ${solicitudActualizada.id} al complejo ${solicitudActualizada.complejo.id}`);
-        } else {
-            console.log('❌ Condiciones NO cumplidas para copiar imagen');
+            console.log(`✅ Imagen transferida de solicitud ${solicitudActualizada.id} al complejo ${solicitudActualizada.complejo.id}`);
         }
 
         return solicitudActualizada;
