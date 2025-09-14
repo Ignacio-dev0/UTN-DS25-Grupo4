@@ -41,7 +41,8 @@ function EditarCanchaPage() {
         const obtenerDiaSemana = (fecha) => {
           const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
           const fechaObj = new Date(fecha);
-          return diasSemana[fechaObj.getDay()];
+          // CORREGIR: Usar getUTCDay() en lugar de getDay() para evitar problemas de timezone
+          return diasSemana[fechaObj.getUTCDay()];
         };
 
         // Función auxiliar para formatear hora desde ISO string
