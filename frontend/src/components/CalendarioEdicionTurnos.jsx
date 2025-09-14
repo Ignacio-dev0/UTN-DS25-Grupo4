@@ -57,8 +57,10 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
           
           const formatearHora = (horaISO) => {
             const fecha = new Date(horaISO);
-            const horaFormateada = fecha.toTimeString().slice(0, 5);
-            console.log(`🕐 FORMATEO HORA: ${horaISO} -> "${horaFormateada}"`);
+            // CORREGIR: Usar getUTCHours() y getUTCMinutes() para evitar problemas de timezone
+            const horas = fecha.getUTCHours().toString().padStart(2, '0');
+            const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
+            const horaFormateada = `${horas}:${minutos}`;
             return horaFormateada;
           };
           

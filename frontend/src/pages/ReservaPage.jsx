@@ -173,7 +173,10 @@ function ReservaPage() {
         // Función auxiliar para formatear hora desde ISO string
         const formatearHora = (horaISO) => {
           const fecha = new Date(horaISO);
-          return fecha.toTimeString().slice(0, 5); // Formato HH:mm
+          // Usar UTC para evitar problemas de timezone
+          const horas = fecha.getUTCHours().toString().padStart(2, '0');
+          const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
+          return `${horas}:${minutos}`;
         };
         
         const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => ({

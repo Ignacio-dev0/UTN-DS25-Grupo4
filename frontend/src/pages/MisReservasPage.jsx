@@ -94,8 +94,11 @@ function MisReservasPage() {
                 const reservasFormateadas = (data.alquileres || []).map(alquiler => {
                     const primerTurno = alquiler.turnos[0];
                     const fecha = new Date(primerTurno.fecha);
-                    const horaInicio = new Date(primerTurno.horaInicio).toTimeString().slice(0, 5);
-                    const horaFin = new Date(primerTurno.horaFin).toTimeString().slice(0, 5);
+                    // Usar UTC para evitar problemas de timezone
+                    const fechaInicio = new Date(primerTurno.horaInicio);
+                    const horaInicio = `${fechaInicio.getUTCHours().toString().padStart(2, '0')}:${fechaInicio.getUTCMinutes().toString().padStart(2, '0')}`;
+                    const fechaFin = new Date(primerTurno.horaFin);
+                    const horaFin = `${fechaFin.getUTCHours().toString().padStart(2, '0')}:${fechaFin.getUTCMinutes().toString().padStart(2, '0')}`;
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';
