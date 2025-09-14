@@ -228,9 +228,9 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         // Normalizar la fecha a medianoche para evitar problemas de timezone
         fechaTurno.setHours(0, 0, 0, 0);
         
-        // Crear horaInicio solo con hora/minutos, sin fecha específica
+        // Crear horaInicio usando la misma fecha del turno
         const [horas, minutos] = hora.split(':');
-        const horaInicio = new Date();
+        const horaInicio = new Date(fechaTurno);  // ✅ Usar la fecha del turno
         horaInicio.setHours(parseInt(horas), parseInt(minutos), 0, 0);
 
         console.log(`📅 Creando turno para: ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);

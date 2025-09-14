@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../config/api.js';
 
-const dias = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
+// Usar el mismo orden que JavaScript getDay(): 0=Domingo, 1=Lunes, etc.
+const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+// IMPORTANTE: Para el renderizado del calendario, usar el MISMO orden que diasSemana
+// Esto asegura que los turnos aparezcan en la columna correcta
+const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
 const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 
 function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
@@ -46,12 +50,16 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
           const obtenerDiaSemana = (fechaISO) => {
             const fecha = new Date(fechaISO);
             const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-            return diasSemana[fecha.getDay()];
+            // CORREGIR: Usar getUTCDay() en lugar de getDay() para evitar problemas de timezone
+            const diaCalculado = diasSemana[fecha.getUTCDay()];
+            return diaCalculado;
           };
           
           const formatearHora = (horaISO) => {
             const fecha = new Date(horaISO);
-            return fecha.toTimeString().slice(0, 5);
+            const horaFormateada = fecha.toTimeString().slice(0, 5);
+            console.log(`🕐 FORMATEO HORA: ${horaISO} -> "${horaFormateada}"`);
+            return horaFormateada;
           };
           
           const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => ({
@@ -64,6 +72,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
             fecha: turno.fecha
           }));
           
+          console.log(`📋 TURNOS FORMATEADOS:`, turnosFormateados);
           onTurnosChange(turnosFormateados);
           console.log("✅ Turnos actualizados desde BD");
         }
@@ -237,6 +246,17 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
               <div className="py-3 px-1 text-gray-600 font-bold">{hora}</div>
               {dias.map(dia => {
                 const turno = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);
+                
+                // Debug para render
+                if (turno) {
+                  console.log(`🎯 RENDER: Turno encontrado para ${dia} ${hora}:`, {
+                    dia: turno.dia,
+                    hora: turno.hora,
+                    precio: turno.precio,
+                    reservado: turno.reservado
+                  });
+                }
+                
                 let clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 relative text-white font-bold ";
                 let esEditable = true;
 
