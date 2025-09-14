@@ -225,36 +225,32 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         }
         
         fechaTurno.setDate(hoy.getDate() + diasAgregar);
+        // Normalizar la fecha a medianoche para evitar problemas de timezone
+        fechaTurno.setHours(0, 0, 0, 0);
         
-        // Crear horaInicio
+        // Crear horaInicio solo con hora/minutos, sin fecha específica
         const [horas, minutos] = hora.split(':');
-        const horaInicio = new Date(fechaTurno);
+        const horaInicio = new Date();
         horaInicio.setHours(parseInt(horas), parseInt(minutos), 0, 0);
 
         console.log(`📅 Creando turno para: ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);
+        console.log(`🕐 Hora inicio: ${horaInicio.toTimeString()}`);
 
-        // Verificar si ya existe un turno en ese horario (usando solo fecha y hora, no timestamp exacto)
-        const fechaSoloFecha = new Date(fechaTurno);
-        fechaSoloFecha.setHours(0, 0, 0, 0); // Resetear a medianoche para comparar solo fecha
-
-        const fechaSiguienteDia = new Date(fechaSoloFecha);
-        fechaSiguienteDia.setDate(fechaSiguienteDia.getDate() + 1);
-
+        // Verificar si ya existe un turno en ese horario exacto
         const turnoExistente = await prisma.turno.findFirst({
             where: {
                 canchaId: canchaIdNum,
-                fecha: {
-                    gte: fechaSoloFecha,
-                    lt: fechaSiguienteDia
-                },
+                fecha: fechaTurno,
                 horaInicio: horaInicio
             }
         });
 
         if (turnoExistente) {
             console.log(`⚠️ Ya existe un turno para cancha ${canchaIdNum} el ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);
+            console.log(`📋 Turno existente ID: ${turnoExistente.id}, reservado: ${turnoExistente.reservado}`);
             return res.status(400).json({ 
-                error: "Ya existe un turno en ese horario" 
+                error: "Ya existe un turno en ese horario",
+                detalle: `Turno ID ${turnoExistente.id} ya existe para esta fecha y hora`
             });
         }
 

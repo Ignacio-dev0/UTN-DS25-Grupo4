@@ -251,8 +251,8 @@ function ReservaPage() {
     };
   }, [cancha, deporte, turnos, canchaId, complejo, reseñasDeLaCancha, serviciosCompleto]);
 
-  const handleConfirmarReserva = async (turnoSeleccionado) => {
-    if (!turnoSeleccionado || !cancha || !complejo) return false;
+  const handleConfirmarReserva = async (turnosSeleccionados) => {
+    if (!turnosSeleccionados || turnosSeleccionados.length === 0 || !cancha || !complejo) return false;
     
     // Verificar autenticación
     if (!isAuthenticated || !user) {
@@ -272,15 +272,69 @@ function ReservaPage() {
     }
     
     try {
-      // Buscar el turno completo con su ID
-      const turnoCompleto = turnos.find(t => 
-        t.dia === turnoSeleccionado.dia && t.hora === turnoSeleccionado.hora
-      );
+      // Para turnos consecutivos del mismo día, duplicar IDs como espera el backend
+      const turnosIds = [];
       
-      if (!turnoCompleto || !turnoCompleto.id) {
-        alert('Error: No se pudo encontrar el turno seleccionado');
-        return false;
-      }
+      // Agrupar turnos por día y ordenar por hora
+      const turnosPorDia = {};
+      turnosSeleccionados.forEach(turnoSel => {
+        const turnoCompleto = turnos.find(t => 
+          t.dia === turnoSel.dia && t.hora === turnoSel.hora
+        );
+        
+        if (!turnoCompleto || !turnoCompleto.id) {
+          throw new Error(`No se pudo encontrar el turno para ${turnoSel.dia} a las ${turnoSel.hora}`);
+        }
+        
+        if (!turnosPorDia[turnoSel.dia]) {
+          turnosPorDia[turnoSel.dia] = [];
+        }
+        turnosPorDia[turnoSel.dia].push({
+          ...turnoCompleto,
+          hora: turnoSel.hora
+        });
+      });
+      
+      // Procesar cada día
+      Object.values(turnosPorDia).forEach(turnosDia => {
+        // Ordenar por hora
+        turnosDia.sort((a, b) => {
+          const horaA = parseInt(a.hora.split(':')[0]);
+          const horaB = parseInt(b.hora.split(':')[0]);
+          return horaA - horaB;
+        });
+        
+        // Si hay más de un turno en el mismo día, duplicar IDs para turnos consecutivos
+        if (turnosDia.length > 1) {
+          // Verificar si son consecutivos
+          let sonConsecutivos = true;
+          for (let i = 1; i < turnosDia.length; i++) {
+            const horaAnterior = parseInt(turnosDia[i-1].hora.split(':')[0]);
+            const horaActual = parseInt(turnosDia[i].hora.split(':')[0]);
+            if (horaActual !== horaAnterior + 1) {
+              sonConsecutivos = false;
+              break;
+            }
+          }
+          
+          if (sonConsecutivos) {
+            // Duplicar el primer ID para indicar turnos consecutivos
+            turnosDia.forEach(() => {
+              turnosIds.push(turnosDia[0].id);
+            });
+          } else {
+            // Turnos no consecutivos, agregar IDs normalmente
+            turnosDia.forEach(turno => {
+              turnosIds.push(turno.id);
+            });
+          }
+        } else {
+          // Un solo turno
+          turnosIds.push(turnosDia[0].id);
+        }
+      });
+
+      console.log('🎯 Enviando turnosIds:', turnosIds);
 
       // Llamar al backend para crear el alquiler/reserva
       const response = await fetch(`${API_BASE_URL}/alquileres`, {
@@ -290,7 +344,7 @@ function ReservaPage() {
         },
         body: JSON.stringify({
           usuarioId: parseInt(user.id),
-          turnosIds: [turnoCompleto.id]
+          turnosIds: turnosIds
         }),
       });
 
@@ -302,27 +356,51 @@ function ReservaPage() {
       const reservaData = await response.json();
       console.log('Reserva creada exitosamente:', reservaData);
       
-      // Actualizar el estado del turno como reservado
-      const response2 = await fetch(`${API_BASE_URL}/turnos/individual/${turnoCompleto.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reservado: true }),
-      });
-
-      if (response2.ok) {
-        // Actualizar estado local
-        const nuevosTurnos = turnos.map(t => 
-          t.id === turnoCompleto.id
-            ? { ...t, reservado: true, estado: 'reservado' } 
-            : t
+      // Actualizar el estado de todos los turnos como reservados
+      const turnosActualizados = [...turnos];
+      let actualizacionesExitosas = 0;
+      
+      for (const turnoSel of turnosSeleccionados) {
+        const turnoCompleto = turnos.find(t => 
+          t.dia === turnoSel.dia && t.hora === turnoSel.hora
         );
-        setTurnos(nuevosTurnos);
+        
+        if (turnoCompleto) {
+          try {
+            const response2 = await fetch(`${API_BASE_URL}/turnos/individual/${turnoCompleto.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ reservado: true }),
+            });
+
+            if (response2.ok) {
+              // Actualizar en el array local
+              const index = turnosActualizados.findIndex(t => t.id === turnoCompleto.id);
+              if (index !== -1) {
+                turnosActualizados[index] = { 
+                  ...turnosActualizados[index], 
+                  reservado: true, 
+                  estado: 'reservado' 
+                };
+              }
+              actualizacionesExitosas++;
+            }
+          } catch (error) {
+            console.warn(`Error al actualizar turno ${turnoCompleto.id}:`, error);
+          }
+        }
+      }
+      
+      // Actualizar estado local con todos los cambios
+      setTurnos(turnosActualizados);
+      
+      if (actualizacionesExitosas === turnosSeleccionados.length) {
         return true;
       } else {
-        console.warn('Reserva creada pero no se pudo actualizar el estado del turno');
-        return true;
+        console.warn(`Solo se actualizaron ${actualizacionesExitosas} de ${turnosSeleccionados.length} turnos`);
+        return true; // La reserva se creó exitosamente aunque no todos los estados se actualizaron
       }
     } catch (error) {
       console.error('Error al confirmar reserva:', error);

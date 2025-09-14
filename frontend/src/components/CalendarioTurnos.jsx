@@ -7,7 +7,7 @@ const dias = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', '
 const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 
 function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
-  const [turnoSeleccionado, setTurnoSeleccionado] = useState(null);
+  const [turnosSeleccionados, setTurnosSeleccionados] = useState([]);
   const [reservaConfirmada, setReservaConfirmada] = useState(false);
   const { isAuthenticated } = useAuth(); 
   const navigate = useNavigate();
@@ -39,15 +39,15 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
   const handleSelectTurno = (dia, hora) => {
     const turno = getTurno(dia, hora);
     if (turno && turno.estado === 'disponible') {
-      if (turnoSeleccionado?.dia === dia && turnoSeleccionado?.hora === hora) {
-        setTurnoSeleccionado(null);
+      const turnoData = { dia, hora, precio: turno.precio, turnoId: turno.id };
+      const yaSeleccionado = turnosSeleccionados.find(t => t.dia === dia && t.hora === hora);
+      
+      if (yaSeleccionado) {
+        // Deseleccionar turno
+        setTurnosSeleccionados(prev => prev.filter(t => !(t.dia === dia && t.hora === hora)));
       } else {
-        setTurnoSeleccionado({ 
-          dia, 
-          hora, 
-          precio: turno.precio, 
-          turnoId: turno.id 
-        });
+        // Seleccionar turno - permitir múltiples para turnos consecutivos
+        setTurnosSeleccionados(prev => [...prev, turnoData]);
         setReservaConfirmada(false);
       }
     }
@@ -62,12 +62,12 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
     }
     
     // Si está logueado, continuamos con la reserva
-    const exito = onConfirmarReserva(turnoSeleccionado);
+    const exito = onConfirmarReserva(turnosSeleccionados);
     if (exito) {
       setReservaConfirmada(true);
       setTimeout(() => {
         setReservaConfirmada(false);
-        setTurnoSeleccionado(null);
+        setTurnosSeleccionados([]);
       }, 5000);
     }
   };
@@ -113,7 +113,7 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                   }
                 }
                 
-                const estaSeleccionado = turnoSeleccionado?.dia === dia && turnoSeleccionado?.hora === hora;
+                const estaSeleccionado = turnosSeleccionados.some(t => t.dia === dia && t.hora === hora);
                 
                 let clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 ";
                 if (estado === 'no-disponible') {
@@ -168,27 +168,49 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
               <CheckCircleIcon className="w-8 h-8 mr-3"/>
               <div>
                 <p className="font-bold text-lg">¡Reserva Pendiente!</p>
-                <p>Tu turno para el <strong>{turnoSeleccionado?.dia} a las {turnoSeleccionado?.hora}</strong> está pendiente de confirmación.</p>
+                <p>Tu{turnosSeleccionados.length > 1 ? 's turnos están' : ' turno está'} pendiente{turnosSeleccionados.length > 1 ? 's' : ''} de confirmación.</p>
               </div>
             </div>
           </div>
         ) : (
           <>
-            {turnoSeleccionado && (
+            {turnosSeleccionados.length > 0 && (
                 <div className="mb-4 text-lg text-primary">
-                    <p>Turno seleccionado: <strong>{turnoSeleccionado.dia} a las {turnoSeleccionado.hora} hs</strong></p>
-                    {esSiguienteSemana(turnoSeleccionado.dia, turnoSeleccionado.hora) && (
-                      <p className="text-sm text-orange-600 font-bold">Este turno es para la próxima semana</p>
+                    {turnosSeleccionados.length === 1 ? (
+                        <p>Turno seleccionado: <strong>{turnosSeleccionados[0].dia} a las {turnosSeleccionados[0].hora} hs</strong></p>
+                    ) : (
+                        <p>Turnos seleccionados ({turnosSeleccionados.length}):</p>
                     )}
+                    
+                    {turnosSeleccionados.length > 1 && (
+                        <div className="text-sm space-y-1 mt-2">
+                            {turnosSeleccionados
+                                .sort((a, b) => {
+                                    const diaA = dias.indexOf(a.dia);
+                                    const diaB = dias.indexOf(b.dia);
+                                    if (diaA !== diaB) return diaA - diaB;
+                                    return horas.indexOf(a.hora) - horas.indexOf(b.hora);
+                                })
+                                .map((turno, idx) => (
+                                    <p key={idx}>• {turno.dia} a las {turno.hora} hs</p>
+                                ))
+                            }
+                        </div>
+                    )}
+                    
+                    {turnosSeleccionados.some(turno => esSiguienteSemana(turno.dia, turno.hora)) && (
+                      <p className="text-sm text-orange-600 font-bold">Algunos turnos son para la próxima semana</p>
+                    )}
+                    
                     <p className="font-bold text-2xl text-secondary mt-1">
-                        Precio: ${turnoSeleccionado.precio?.toLocaleString('es-AR')}
+                        Precio total: ${turnosSeleccionados.reduce((total, turno) => total + (turno.precio || 0), 0).toLocaleString('es-AR')}
                     </p>
                 </div>
             )}
             <button 
                 onClick={handleConfirmarClick}
                 className="bg-secondary text-light font-bold py-3 px-16 rounded-lg hover:bg-primary transition-all duration-300 disabled:bg-accent disabled:cursor-not-allowed"
-                disabled={!turnoSeleccionado} 
+                disabled={turnosSeleccionados.length === 0} 
             >
               Confirmar Reserva
             </button>
