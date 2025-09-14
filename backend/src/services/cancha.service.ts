@@ -198,6 +198,18 @@ export async function actualizarCancha (id: number, data: UpdateCanchaRequest) {
 };
 
 export async function eliminarCancha(id: number) {
+	// Verificar que la cancha existe
+	const canchaExistente = await prisma.cancha.findUnique({
+		where: { id }
+	});
+	
+	if (!canchaExistente) {
+		const error = new Error(`La cancha con ID ${id} no existe`);
+		(error as any).statusCode = 404;
+		throw error;
+	}
+
+	// Verificar si hay alquileres pagados que referencien turnos de esta cancha
 	const alquileres = await prisma.alquiler.findMany({
 		where: {
 			estado: EstadoAlquiler.PAGADO,
@@ -206,10 +218,20 @@ export async function eliminarCancha(id: number) {
 	});
 
 	if (alquileres.length !== 0) {
-		const error = new Error(`Eliminacion fallida: ${alquileres.length} alquileres por cumplir.`);
+		const error = new Error(`No se puede eliminar la cancha porque tiene ${alquileres.length} reserva${alquileres.length > 1 ? 's' : ''} confirmada${alquileres.length > 1 ? 's' : ''} pendiente${alquileres.length > 1 ? 's' : ''} de cumplir.`);
 		(error as any).statusCode = 400;
 		throw error;
  	}
+	
+	// Eliminar turnos asociados primero
+	await prisma.turno.deleteMany({
+		where: { canchaId: id }
+	});
+	
+	// Eliminar cronogramas asociados
+	await prisma.horarioCronograma.deleteMany({
+		where: { canchaId: id }
+	});
 	
   return prisma.cancha.delete({
     where: { id },

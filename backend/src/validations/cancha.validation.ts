@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createCanchaSchema = z.object({
   
-  nroCancha: z.int(),
+  // nroCancha se genera automáticamente, no debe venir del frontend
   
   descripcion: z.string()
     .max(200, 'La descripcion no debe exceder los 200 caracteres')
