@@ -94,7 +94,7 @@ model Localidad {
 
 model Cancha {
 	id          Int    							@id @default(autoincrement())
-	nroCancha   Int    							@unique
+	nroCancha   Int    							// Removido @unique - será único por complejo
 	nombre      String?
 	descripcion String?
 	precioHora  Float?              @default(0.0)
@@ -109,6 +109,9 @@ model Cancha {
 	complejo   	Complejo 						@relation(fields: [complejoId], references: [id])
 	deporteId   Int
 	deporte    	Deporte  						@relation(fields: [deporteId], references: [id])
+	
+	// Constraint compuesto: nroCancha único por complejo
+	@@unique([complejoId, nroCancha])
 }
 
 model HorarioCronograma { //horarios CHIQUITITOS
