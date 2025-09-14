@@ -49,19 +49,6 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
       // Obtener complejoId desde la URL o props
       const complejoId = window.location.pathname.split('/')[2]; // Asumiendo /micomplejo/:id
       
-      // Extraer número de la cancha del nombre con validación
-      let nroCancha;
-      if (nuevaCancha && nuevaCancha.nombre && typeof nuevaCancha.nombre === 'string') {
-        const numerosExtraidos = nuevaCancha.nombre.replace(/\D/g, '');
-        nroCancha = parseInt(numerosExtraidos) || Math.floor(Math.random() * 9000) + 1000;
-      } else {
-        console.warn('Nombre de cancha no válido:', nuevaCancha?.nombre);
-        nroCancha = Math.floor(Math.random() * 9000) + 1000;
-      }
-
-      // Generar número único basado en timestamp para evitar duplicados
-      nroCancha = nroCancha + Date.now() % 1000;
-      
       // Procesar imágenes - convertir archivos a base64
       let imagenesBase64 = [];
       if (nuevaCancha.imagenes && Array.isArray(nuevaCancha.imagenes) && nuevaCancha.imagenes.length > 0) {
@@ -79,8 +66,8 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
       }
       
       const canchaData = {
-        nroCancha: Number(nroCancha), // Asegurar que sea número
-        nombre: nuevaCancha?.nombre || `Cancha ${nroCancha}`, // Nombre de la cancha
+        // nroCancha se genera automáticamente en el backend, no lo enviamos
+        nombre: nuevaCancha?.nombre || 'Nueva Cancha', // Nombre de la cancha
         descripcion: nuevaCancha?.descripcion || '', // Descripción opcional
         deporteId: Number(getDeporteIdByName(nuevaCancha?.deporte || 'Fútbol 5')), // Asegurar que sea número
         complejoId: Number(parseInt(complejoId) || 34), // Asegurar que sea número (34 = Megadeportivo La Plata)
@@ -88,12 +75,12 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
       };
 
       // Validar datos antes de enviar
-      if (!canchaData.nroCancha || !canchaData.deporteId || !canchaData.complejoId) {
+      if (!canchaData.deporteId || !canchaData.complejoId) {
         throw new Error('Faltan datos requeridos para crear la cancha');
       }
 
       // Validar que los IDs sean números válidos
-      if (isNaN(canchaData.nroCancha) || isNaN(canchaData.deporteId) || isNaN(canchaData.complejoId)) {
+      if (isNaN(canchaData.deporteId) || isNaN(canchaData.complejoId)) {
         throw new Error('Los IDs deben ser números válidos');
       }
 

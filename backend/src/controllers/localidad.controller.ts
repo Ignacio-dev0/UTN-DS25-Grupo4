@@ -4,9 +4,12 @@ import * as localidadService from "../services/localidad.service";
 
 export const crearLoc = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('🔍 CREAR LOCALIDAD - Datos recibidos:', JSON.stringify(req.body, null, 2));
         const nuevaLoc = await localidadService.crearLocalidad(req.body);
+        console.log('✅ CREAR LOCALIDAD - Localidad creada exitosamente:', nuevaLoc.id);
         res.status(201).json(nuevaLoc);
     } catch (error) {
+        console.error('💥 CREAR LOCALIDAD - Error:', error);
         next(error);
     }
 };

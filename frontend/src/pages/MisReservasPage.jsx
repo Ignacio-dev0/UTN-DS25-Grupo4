@@ -192,6 +192,28 @@ function MisReservasPage() {
         try {
             console.log('Guardando reseña:', datosReseña);
             
+            // Validar datos antes de enviar
+            if (!datosReseña.reservaId || !datosReseña.puntaje || !datosReseña.comentario) {
+                throw new Error('Todos los campos son requeridos');
+            }
+
+            // Asegurar que el puntaje esté entre 1 y 5
+            const puntajeNormalizado = Math.max(1, Math.min(5, Math.round(datosReseña.puntaje)));
+            
+            // Validar que la descripción tenga al menos 10 caracteres
+            const descripcionLimpia = datosReseña.comentario.trim();
+            if (descripcionLimpia.length < 10) {
+                throw new Error('La descripción debe tener al menos 10 caracteres');
+            }
+
+            const datosParaEnviar = {
+                alquilerId: Number(datosReseña.reservaId), // Asegurar que sea número
+                puntaje: puntajeNormalizado, // Puntaje normalizado entre 1-5
+                descripcion: descripcionLimpia // Descripción limpia
+            };
+
+            console.log('Datos a enviar al backend:', datosParaEnviar);
+            
             // Enviar reseña al backend
             const response = await fetch(`${API_BASE_URL}/resenas`, {
                 method: 'POST',
@@ -199,26 +221,49 @@ function MisReservasPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({
-                    alquilerId: datosReseña.reservaId, // El reservaId es el alquilerId
-                    puntaje: Math.round(datosReseña.puntaje), // Asegurar que sea un entero
-                    descripcion: datosReseña.comentario || ''
-                })
+                body: JSON.stringify(datosParaEnviar)
             });
 
+            console.log('Respuesta del servidor:', response.status, response.statusText);
+
             if (response.ok) {
+                const result = await response.json();
+                console.log('Reseña creada exitosamente:', result);
+                
                 // Actualizar estado local solo si la reseña se guardó exitosamente
                 setReservas(reservas.map(r => 
                     r.id === datosReseña.reservaId ? { ...r, reseñada: true } : r
                 ));
                 alert('¡Reseña guardada exitosamente!');
             } else {
-                const errorData = await response.json();
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (jsonError) {
+                    console.error('Error al parsear respuesta del servidor:', jsonError);
+                    errorData = { message: `Error del servidor (${response.status}): ${response.statusText}` };
+                }
+                console.error('Error del backend:', errorData);
                 throw new Error(errorData.message || 'Error al guardar la reseña');
             }
         } catch (error) {
             console.error('Error al guardar reseña:', error);
-            alert('Error al guardar la reseña: ' + error.message);
+            
+            // Mejor manejo de errores específicos
+            let mensajeError = 'Error al guardar la reseña';
+            if (error.message) {
+                if (error.message.includes('ya tiene una reseña')) {
+                    mensajeError = 'Esta reserva ya tiene una reseña.';
+                } else if (error.message.includes('no existe')) {
+                    mensajeError = 'La reserva no existe o no es válida.';
+                } else if (error.message.includes('validación')) {
+                    mensajeError = 'Error de validación: ' + error.message;
+                } else {
+                    mensajeError += ': ' + error.message;
+                }
+            }
+            
+            alert(mensajeError);
         } finally {
             setModalReseñaVisible(false);
             setReservaParaReseñar(null);

@@ -30,20 +30,29 @@ export async function generarTurnosDesdeHoy() {
             const cronogramasDelDia = cancha.cronograma.filter(c => c.diaSemana === diaSemana);
             
             for (const cronograma of cronogramasDelDia) {
-                // Verificar si el turno ya existe
+                // Verificar si el turno ya existe (usando rango de fechas para evitar problemas de timestamp)
+                const fechaSoloFecha = new Date(fecha);
+                fechaSoloFecha.setHours(0, 0, 0, 0);
+                
+                const fechaSiguienteDia = new Date(fechaSoloFecha);
+                fechaSiguienteDia.setDate(fechaSiguienteDia.getDate() + 1);
+
                 const turnoExistente = await prisma.turno.findFirst({
                     where: {
                         canchaId: cancha.id,
-                        fecha: fecha,
+                        fecha: {
+                            gte: fechaSoloFecha,
+                            lt: fechaSiguienteDia
+                        },
                         horaInicio: cronograma.horaInicio
                     }
                 });
 
                 if (!turnoExistente) {
                     turnosACrear.push({
-                        fecha: fecha,
+                        fecha: fechaSoloFecha,
                         horaInicio: cronograma.horaInicio,
-                        precio: 5000, // Precio por defecto, puede ser configurado
+                        precio: cronograma.precio || 5000, // Usar precio del cronograma o defecto
                         reservado: false,
                         canchaId: cancha.id
                     });

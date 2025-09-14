@@ -28,7 +28,12 @@ export async function obtenerAlquileresPorComplejo(complejoId: number) {
 }
 
 export async function crearAlquiler(data: CreateAlquilerRequest) {
+	console.log('🔍 CREAR ALQUILER - Datos recibidos:', JSON.stringify(data, null, 2));
+	
 	const { usuarioId, turnosIds } = data;
+	
+	console.log('📋 CREAR ALQUILER - Usuario ID:', usuarioId, 'Turnos IDs:', turnosIds);
+	
 	if (turnosIds.length < 1) {
 		throw new Error('Se debe seleccionar al menos un turno');
 	}
@@ -36,43 +41,199 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 		throw new Error('No se puede seleccionar más de tres turnos');
 	}
 	
+	// Si se envía el mismo turno múltiples veces, interpretamos que quiere bloques consecutivos
+	const turnoBase = turnosIds[0];
+	const cantidadBloques = turnosIds.length;
+	
+	console.log('🎯 TURNO BASE:', turnoBase, 'BLOQUES SOLICITADOS:', cantidadBloques);
+	
+	// Verificar que todos los turnos sean el mismo (si envían múltiples)
+	const todosIguales = turnosIds.every(id => id === turnoBase);
+	
+	if (!todosIguales) {
+		console.log('❌ TURNOS DIFERENTES ENVIADOS - Usando lógica de turnos múltiples distintos');
+		// Usar la lógica original para turnos distintos
+		return await crearAlquilerTurnosDistintos({ usuarioId, turnosIds });
+	}
+	
+	console.log('✅ MISMO TURNO REPETIDO - Creando bloques consecutivos');
+	
+	// Obtener el turno base
+	const turnoOriginal = await prisma.turno.findUnique({
+		where: { id: turnoBase },
+		include: { cancha: true },
+	});
+
+	if (!turnoOriginal) {
+		console.log('❌ TURNO BASE NO EXISTE');
+		throw new Error('El turno seleccionado no existe');
+	}
+
+	if (turnoOriginal.reservado) {
+		console.log('❌ TURNO BASE YA RESERVADO');
+		throw new Error('El turno seleccionado ya está reservado');
+	}
+
+	// Generar turnos consecutivos basados en el turno original
+	const turnosConsecutivos = [];
+	const horaBase = turnoOriginal.horaInicio.getHours();
+	const minutosBase = turnoOriginal.horaInicio.getMinutes();
+	
+	for (let i = 0; i < cantidadBloques; i++) {
+		const nuevaHora = new Date(turnoOriginal.horaInicio);
+		nuevaHora.setHours(horaBase + i, minutosBase, 0, 0);
+		
+		// Buscar si existe un turno en este horario consecutivo
+		const turnoConsecutivo = await prisma.turno.findFirst({
+			where: {
+				canchaId: turnoOriginal.canchaId,
+				fecha: turnoOriginal.fecha,
+				horaInicio: nuevaHora
+			}
+		});
+		
+		if (!turnoConsecutivo) {
+			console.log(`❌ NO EXISTE TURNO CONSECUTIVO para ${nuevaHora.getHours()}:${nuevaHora.getMinutes().toString().padStart(2, '0')}`);
+			throw new Error(`No hay disponibilidad para ${cantidadBloques} bloques consecutivos desde este horario`);
+		}
+		
+		if (turnoConsecutivo.reservado) {
+			console.log(`❌ TURNO CONSECUTIVO YA RESERVADO para ${nuevaHora.getHours()}:${nuevaHora.getMinutes().toString().padStart(2, '0')}`);
+			throw new Error(`Uno de los bloques consecutivos ya está reservado`);
+		}
+		
+		turnosConsecutivos.push(turnoConsecutivo);
+	}
+	
+	console.log('💰 CALCULANDO PRECIO TOTAL...');
+	const precioTotal = turnosConsecutivos.reduce((total, turno) => total + turno.precio, 0);
+	console.log('💰 PRECIO TOTAL:', precioTotal, 'para', turnosConsecutivos.length, 'bloques');
+
+	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
+	const nuevoAlquiler = await prisma.alquiler.create({
+		data: {
+			cliente: { connect: { id: usuarioId } },
+			turnos: { connect: turnosConsecutivos.map(t => ({ id: t.id })) },
+		},
+		include: {
+			turnos: true,
+			cliente: {
+				select: {
+					nombre: true,
+					apellido: true,
+					correo: true
+				}
+			}
+		}
+	});
+	
+	console.log('✅ ALQUILER CREADO EXITOSAMENTE:', {
+		id: nuevoAlquiler.id,
+		turnos: nuevoAlquiler.turnos.length,
+		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido
+	});
+
+	return nuevoAlquiler;
+}
+
+// Función auxiliar para manejar turnos distintos (lógica original)
+async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
+	const { usuarioId, turnosIds } = data;
+	
 	const turnos = await prisma.turno.findMany({
 		where: { id: { in: turnosIds} },
 		include: { cancha: true },
 	});
 
-	if (new Set(turnos.map(t => t.cancha)).size > 1) {
+	console.log('🎯 TURNOS ENCONTRADOS:', turnos.length, 'de', turnosIds.length);
+	
+	if (turnos.length !== turnosIds.length) {
+		console.log('❌ ALGUNOS TURNOS NO EXISTEN');
+		throw new Error('Algunos turnos no existen');
+	}
+
+	const turnosReservados = turnos.filter(t => t.reservado);
+	if (turnosReservados.length > 0) {
+		console.log('❌ TURNOS YA RESERVADOS:', turnosReservados.map(t => t.id));
+		throw new Error('Algunos turnos ya están reservados');
+	}
+
+	const canchasDistintas = new Set(turnos.map(t => t.cancha.id));
+	if (canchasDistintas.size > 1) {
+		console.log('❌ CANCHAS DIFERENTES:', Array.from(canchasDistintas));
 		throw new Error('No se puede seleccionar turnos de distintas canchas');
 	}
-	if (new Set(turnos.map(t => t.fecha)).size > 1) {
+	
+	const fechasDistintas = new Set(turnos.map(t => t.fecha.toDateString()));
+	if (fechasDistintas.size > 1) {
+		console.log('❌ FECHAS DIFERENTES:', Array.from(fechasDistintas));
 		throw new Error('No se puede seleccionar turnos de distintas fechas');
 	}
 	if (turnos.length > 1) {
-		/* Se debería validar de alguna manera que los turnos
-		sean consecutivos :/ */
+		/* Validar que los turnos sean consecutivos - permitir múltiples turnos consecutivos */
 		const horariosOrdenados = turnos
-		.map(t => t.horaInicio.getHours() * 60 + t.horaInicio.getMinutes())
-		.sort( (a, b) => a - b );
+		.map(t => ({
+			hora: t.horaInicio.getHours() * 60 + t.horaInicio.getMinutes(),
+			turnoId: t.id
+		}))
+		.sort( (a, b) => a.hora - b.hora );
+		
+		console.log('🔍 VALIDANDO TURNOS CONSECUTIVOS:', horariosOrdenados);
 		
 		let consecutivos = true;
-		for(let i=0; i<horariosOrdenados.length-1; i++) {
-			if (horariosOrdenados[i] + 60 < horariosOrdenados[i+1]) {
+		let maxGapPermitido = 60; // Máximo gap de 60 minutos entre turnos
+		
+		for(let i = 0; i < horariosOrdenados.length - 1; i++) {
+			const diferencia = horariosOrdenados[i + 1].hora - horariosOrdenados[i].hora;
+			console.log(`  Gap entre turno ${i} y ${i + 1}: ${diferencia} minutos`);
+			
+			// Permitir gaps de exactamente 60 minutos (turnos consecutivos de 1 hora)
+			if (diferencia !== 60) {
+				console.log(`  ❌ Gap no válido: ${diferencia} minutos (esperado: 60)`);
 				consecutivos = false;
+				break;
 			}
 		}
+		
 		if (!consecutivos) {
-			throw new Error('Los turnos no son consecutivos');
+			console.log('❌ TURNOS NO CONSECUTIVOS - Rechazando alquiler');
+			throw new Error('Los turnos no son consecutivos. Solo se pueden seleccionar turnos en horarios seguidos.');
 		}
+		
+		console.log('✅ TURNOS CONSECUTIVOS VÁLIDOS');
 	}
 
-	return await prisma.alquiler.create({
+	console.log('💰 CALCULANDO PRECIO TOTAL...');
+	const precioTotal = turnos.reduce((total, turno) => total + turno.precio, 0);
+	console.log('💰 PRECIO TOTAL:', precioTotal, 'para', turnos.length, 'turnos');
+
+	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
+	const nuevoAlquiler = await prisma.alquiler.create({
 		data: {
 			cliente: { connect: { id: usuarioId } },
 			turnos: { connect: turnos.map(t => {
 				return { id: t.id } }
 			)},
+		},
+		include: {
+			turnos: true,
+			cliente: {
+				select: {
+					nombre: true,
+					apellido: true,
+					correo: true
+				}
+			}
 		}
 	});
+	
+	console.log('✅ ALQUILER CREADO EXITOSAMENTE:', {
+		id: nuevoAlquiler.id,
+		turnos: nuevoAlquiler.turnos.length,
+		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido
+	});
+
+	return nuevoAlquiler;
 }
 
 export async function obtenerAlquilerPorId(id: number) {

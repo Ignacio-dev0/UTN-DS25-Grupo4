@@ -82,19 +82,23 @@ export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
                 const horariosDelDia = cronograma.filter((c: any) => c.diaSemana === diaSemana);
 
                 for (const horario of horariosDelDia) {
-                    const fechaHora = new Date(fecha);
+                    // Normalizar la fecha para evitar problemas de timestamp
+                    const fechaNormalizada = new Date(fecha);
+                    fechaNormalizada.setHours(0, 0, 0, 0);
+                    
                     const hora = horario.horaInicio.getUTCHours();
                     const minutos = horario.horaInicio.getUTCMinutes();
                     
+                    const fechaHora = new Date(fechaNormalizada);
                     fechaHora.setHours(hora, minutos, 0, 0);
 
                     // Solo crear si es futuro
                     if (fechaHora > ahora) {
                         turnosData.push({
                             canchaId: canchaIdNum,
-                            fecha: fechaHora,
+                            fecha: fechaNormalizada, // Usar fecha normalizada
                             horaInicio: horario.horaInicio,
-                            precio: horario.precio,
+                            precio: horario.precio || 5000, // Precio por defecto si no está definido
                             reservado: false
                         });
                     }
@@ -229,16 +233,26 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
 
         console.log(`📅 Creando turno para: ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);
 
-        // Verificar si ya existe un turno en ese horario
+        // Verificar si ya existe un turno en ese horario (usando solo fecha y hora, no timestamp exacto)
+        const fechaSoloFecha = new Date(fechaTurno);
+        fechaSoloFecha.setHours(0, 0, 0, 0); // Resetear a medianoche para comparar solo fecha
+
+        const fechaSiguienteDia = new Date(fechaSoloFecha);
+        fechaSiguienteDia.setDate(fechaSiguienteDia.getDate() + 1);
+
         const turnoExistente = await prisma.turno.findFirst({
             where: {
                 canchaId: canchaIdNum,
-                fecha: fechaTurno,
+                fecha: {
+                    gte: fechaSoloFecha,
+                    lt: fechaSiguienteDia
+                },
                 horaInicio: horaInicio
             }
         });
 
         if (turnoExistente) {
+            console.log(`⚠️ Ya existe un turno para cancha ${canchaIdNum} el ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);
             return res.status(400).json({ 
                 error: "Ya existe un turno en ese horario" 
             });

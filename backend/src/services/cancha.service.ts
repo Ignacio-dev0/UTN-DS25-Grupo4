@@ -38,11 +38,27 @@ export async function crearCancha(data: CreateCanchaRequest) {
 		}
 		console.log('✅ CANCHA SERVICE - Deporte encontrado:', deporteExistente.nombre);
 		
+		// Generar nroCancha automáticamente (obtener el máximo + 1 para el complejo)
+		console.log('🔢 CANCHA SERVICE - Generando número de cancha automático...');
+		const ultimaCancha = await prisma.cancha.findFirst({
+			where: { complejoId: complejoId },
+			orderBy: { nroCancha: 'desc' }
+		});
+		
+		const nuevoNroCancha = ultimaCancha ? ultimaCancha.nroCancha + 1 : 1;
+		console.log('✅ CANCHA SERVICE - Número de cancha generado:', nuevoNroCancha);
+		
+		// Crear data para la nueva cancha, sobrescribiendo nroCancha si viene en los datos
+		const canchaData = {
+			...cancha,
+			nroCancha: nuevoNroCancha, // Siempre usar el número generado automáticamente
+		};
+		
 		console.log('🚀 CANCHA SERVICE - Creando cancha en la base de datos...');
 		
 		const nuevaCancha = await prisma.cancha.create({
 			data: {
-				...cancha,
+				...canchaData,
 				deporte: { connect: { id: deporteId }},
 				complejo: { connect: { id: complejoId }},
 			},

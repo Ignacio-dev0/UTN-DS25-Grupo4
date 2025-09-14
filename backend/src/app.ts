@@ -39,7 +39,7 @@ if (process.env.FRONTEND_URL) {
 app.use(cors({
     origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -50,13 +50,23 @@ app.use('/images', express.static(path.join(__dirname, '../../frontend/public/im
 
 // Servir archivos estáticos (imágenes subidas) desde la carpeta del backend - CORREGIDO para /api/images/
 const imagesPath = process.env.STATIC_FILES_PATH || path.join(__dirname, '../public/images');
-app.use('/api/images', express.static(imagesPath));
 
-// Logging para debugging en Railway
+// Logging para debugging en Railway (debe ir ANTES del middleware estático)
 app.use('/api/images', (req, res, next) => {
     console.log(`📷 [${new Date().toISOString()}] Requesting image: ${req.url}`);
     console.log(`📂 Images path: ${imagesPath}`);
     next();
+});
+
+app.use('/api/images', express.static(imagesPath));
+
+// Middleware para manejar errores 404 de imágenes de forma más silenciosa
+app.use('/api/images', (req, res, next) => {
+    res.status(404).json({ 
+        error: 'Imagen no encontrada', 
+        path: req.url,
+        message: 'La imagen solicitada no existe en el servidor'
+    });
 });
 
 // //con esto intento manejar el tipo bigint en las respuestas json
@@ -87,6 +97,65 @@ app.use('/api/admin',             migrationRoutes);
 // app.use('/api/domicilios',        domicilioRoutes);
 // app.use('/api/pagos',             pagoRoutes);
 // app.use('/api/administradores',   administradorRoutes);
+
+// Middleware de manejo de errores global (debe ir después de todas las rutas)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('💥 ERROR GLOBAL MIDDLEWARE:', {
+        url: req.url,
+        method: req.method,
+        body: req.body,
+        error: err.message,
+        stack: err.stack
+    });
+
+    // Error de validación de Zod
+    if (err.name === 'ZodError') {
+        return res.status(400).json({
+            message: 'Error de validación',
+            errors: err.issues,
+            details: 'Los datos enviados no cumplen con el formato requerido'
+        });
+    }
+
+    // Error de Prisma (base de datos)
+    if (err.code) {
+        // Error de constraint único
+        if (err.code === 'P2002') {
+            return res.status(409).json({
+                message: 'Error de duplicación',
+                details: 'Ya existe un registro con esos datos únicos'
+            });
+        }
+        // Error de foreign key
+        if (err.code === 'P2003') {
+            return res.status(400).json({
+                message: 'Error de referencia',
+                details: 'Los datos referenciados no existen'
+            });
+        }
+        // Error de not found
+        if (err.code === 'P2025') {
+            return res.status(404).json({
+                message: 'Registro no encontrado',
+                details: 'El recurso solicitado no existe'
+            });
+        }
+    }
+
+    // Error con código de estado personalizado
+    if (err.statusCode) {
+        return res.status(err.statusCode).json({
+            message: err.message || 'Error en el servidor',
+            details: err.details || 'Se produjo un error procesando la solicitud'
+        });
+    }
+
+    // Error genérico del servidor
+    res.status(500).json({
+        message: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? err.message : 'Ocurrió un error inesperado'
+    });
+});
 
 // Health check endpoint para Render
 app.get('/api/health', (req, res) => {

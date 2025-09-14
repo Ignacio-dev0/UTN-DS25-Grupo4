@@ -1,7 +1,7 @@
 import { Cancha } from '@prisma/client';
 
 export interface CreateCanchaRequest {
-	nroCancha: number,
+	nroCancha?: number, // Ahora es opcional, se genera automáticamente
 	nombre?: string,
   descripcion?: string,
 	image?: string[],

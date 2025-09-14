@@ -4,12 +4,15 @@ import * as alquilerService from "../services/alquiler.service";
 
 export async function crearAlquiler(req: Request, res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
+		console.log('🔍 CREAR ALQUILER - Datos recibidos:', JSON.stringify(req.body, null, 2));
 		const alquiler = await alquilerService.crearAlquiler(req.body);
+		console.log('✅ CREAR ALQUILER - Alquiler creado exitosamente:', alquiler.id);
 		res.status(201).json({
 			alquiler,
 			message: 'Alquiler creado exitosamente',
 		});
 	} catch(error) {
+		console.error('💥 CREAR ALQUILER - Error:', error);
 		next(error);
 	}
 }
@@ -73,12 +76,15 @@ export async function pagarAlquiler(req: Request, res: Response<AlquilerPagadoRe
 export async function actualizarAlquiler(req: Request,  res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
 		const { id } = req.params;
+		console.log('🔍 ACTUALIZAR ALQUILER - ID:', id, 'Datos:', JSON.stringify(req.body, null, 2));
 		const alquiler = await alquilerService.actualizarAlquiler(Number(id), req.body);
+		console.log('✅ ACTUALIZAR ALQUILER - Alquiler actualizado exitosamente:', alquiler.id);
 		res.status(200).json({
 			alquiler,
 			message: 'Alquiler modificado exitosamente',
 		});
 	} catch (error) {
+		console.error('💥 ACTUALIZAR ALQUILER - Error:', error);
 		next(error);
 	}
 }
