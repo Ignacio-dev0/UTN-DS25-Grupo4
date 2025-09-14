@@ -24,7 +24,10 @@ function EditarCanchaPage() {
         // Obtener información completa de la cancha
         const canchaResponse = await fetch(`${API_BASE_URL}/canchas/${canchaId}`);
         if (!canchaResponse.ok) {
-          throw new Error('Error al cargar la cancha');
+          if (canchaResponse.status === 404) {
+            throw new Error(`La cancha con ID ${canchaId} no existe. Por favor verifica la URL.`);
+          }
+          throw new Error(`Error al cargar la cancha (${canchaResponse.status})`);
         }
         const canchaData = await canchaResponse.json();
         const canchaInfo = canchaData.cancha || canchaData;
@@ -151,8 +154,17 @@ function EditarCanchaPage() {
     return (
       <div className="text-center p-10">
         <h1 className="text-2xl font-bold text-red-600">
-          Error: {error || 'Cancha no encontrada'}
+          {error || 'Cancha no encontrada'}
         </h1>
+        <p className="mt-4 text-gray-600">
+          Por favor regresa a la página principal y selecciona una cancha válida.
+        </p>
+        <button 
+          onClick={() => navigate('/')} 
+          className="mt-4 bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
+        >
+          Volver al inicio
+        </button>
       </div>
     );
   }

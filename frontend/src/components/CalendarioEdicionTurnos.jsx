@@ -70,7 +70,15 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
         
       } catch (error) {
         console.error("❌ Error al crear turno:", error);
-        alert(`Error al crear turno: ${error.message}`);
+        
+        // Manejo específico para errores de cancha inexistente
+        if (error.message.includes('Foreign key constraint') || 
+            error.message.includes('cancha') || 
+            error.message.includes('not found')) {
+          alert(`❌ Error: La cancha con ID ${canchaId} no existe en la base de datos. Por favor, verifica que estés editando una cancha válida.`);
+        } else {
+          alert(`❌ Error al crear turno: ${error.message}`);
+        }
         return;
       }
     }
@@ -136,7 +144,13 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear turno');
+        
+        // Manejo específico para diferentes tipos de errores
+        if (response.status === 500 && errorData.error === 'Error interno del servidor') {
+          throw new Error(`La cancha con ID ${canchaId} no existe. Por favor verifica que la cancha sea válida.`);
+        }
+        
+        throw new Error(errorData.error || `Error al crear turno (${response.status})`);
       }
       
       const result = await response.json();
