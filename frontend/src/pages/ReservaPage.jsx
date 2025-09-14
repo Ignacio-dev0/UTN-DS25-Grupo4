@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom'; // 👈 Importamos Link
-import { datosDeportes } from '../data/canchas.js';
-import { datosComplejos } from '../data/complejos.js';
 import { crearReserva } from '../data/reservas.js';
 import { datosReseñas } from '../data/reseñas.js';
 import { calcularInfoReseñas } from '../utils/calculos.js';
@@ -9,6 +7,7 @@ import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
+import { API_BASE_URL } from '../config/api';
 
 function ReservaPage() {
   const { canchaId } = useParams();
@@ -16,30 +15,84 @@ function ReservaPage() {
   const [complejo, setComplejo] = useState(null);
   const [deporte, setDeporte] = useState(null);
   const [reseñasDeLaCancha, setReseñasDeLaCancha] = useState([]);
+  const [turnos, setTurnos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let canchaEncontrada = null;
-    let deporteDeLaCancha = null;
-    let complejoDeLaCancha = null;
-    
-    for (const d of datosDeportes) {
-      const encontrada = d.canchas.find(c => c.id === parseInt(canchaId));
-      if (encontrada) {
-        canchaEncontrada = encontrada;
-        deporteDeLaCancha = d.deporte;
-        break;
+    const cargarDatosCancha = async () => {
+      try {
+        setLoading(true);
+        
+        // Cargar datos de la cancha
+        const canchaResponse = await fetch(`${API_BASE_URL}/canchas/${canchaId}`);
+        if (!canchaResponse.ok) throw new Error('Error al cargar la cancha');
+        const canchaData = await canchaResponse.json();
+        
+        // Cargar datos del complejo
+        const complejoResponse = await fetch(`${API_BASE_URL}/complejos/${canchaData.cancha.complejoId}`);
+        if (!complejoResponse.ok) throw new Error('Error al cargar el complejo');
+        const complejoData = await complejoResponse.json();
+        
+        // Cargar datos del deporte
+        const deporteResponse = await fetch(`${API_BASE_URL}/deportes/${canchaData.cancha.deporteId}`);
+        if (!deporteResponse.ok) throw new Error('Error al cargar el deporte');
+        const deporteData = await deporteResponse.json();
+        
+        // Cargar turnos de la cancha para los próximos 7 días
+        const hoy = new Date();
+        const fechaStr = hoy.toISOString().split('T')[0];
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}?fecha=${fechaStr}`);
+        if (!turnosResponse.ok) throw new Error('Error al cargar los turnos');
+        const turnosData = await turnosResponse.json();
+        
+        setCancha(canchaData.cancha);
+        setComplejo(complejoData.complejo);
+        setDeporte(deporteData.deporte);
+        setTurnos(turnosData.turnos || []);
+        setReseñasDeLaCancha(datosReseñas.filter(r => r.canchaId === parseInt(canchaId)));
+        
+      } catch (err) {
+        setError(err.message);
+        console.error('Error cargando datos de la cancha:', err);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    if (canchaEncontrada) {
-      complejoDeLaCancha = datosComplejos.find(c => c.id === canchaEncontrada.complejoId);
+    if (canchaId) {
+      cargarDatosCancha();
     }
-    
-    setCancha(canchaEncontrada);
-    setComplejo(complejoDeLaCancha);
-    setDeporte(deporteDeLaCancha);
-    setReseñasDeLaCancha(datosReseñas.filter(r => r.canchaId === parseInt(canchaId)));
   }, [canchaId]);
+
+  // Convertir turnos del backend al formato que espera el calendario
+  const turnosFormateados = useMemo(() => {
+    if (!turnos.length) return [];
+    
+    return turnos.map(turno => {
+      const fecha = new Date(turno.fecha);
+      const horaInicio = new Date(turno.horaInicio);
+      
+      // Obtener día de la semana en español
+      const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+      const dia = diasSemana[fecha.getDay()];
+      
+      // Formatear hora
+      const hora = horaInicio.toLocaleTimeString('es-AR', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'UTC'
+      });
+      
+      return {
+        dia,
+        hora,
+        precio: turno.precio,
+        estado: turno.reservado ? 'reservado' : 'disponible',
+        id: turno.id
+      };
+    });
+  }, [turnos]);
 
   const canchaMostrada = useMemo(() => {
     if (!cancha) return null;
@@ -48,8 +101,9 @@ function ReservaPage() {
       ...cancha,
       puntaje: infoReseñas.promedio,
       cantidadReseñas: infoReseñas.cantidad,
+      turnos: turnosFormateados
     };
-  }, [cancha]);
+  }, [cancha, turnosFormateados]);
 
   const handleConfirmarReserva = (turnoSeleccionado) => {
     if (!turnoSeleccionado || !cancha || !complejo) return false;
@@ -62,6 +116,25 @@ function ReservaPage() {
     setCancha({ ...cancha, turnos: nuevosTurnos });
     return true;
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white max-w-5xl mx-auto p-8 rounded-lg shadow-2xl -mt-20 relative z-10">
+        <div className="flex justify-center items-center h-40">
+          <div className="text-lg text-gray-600">Cargando datos de la cancha...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white max-w-5xl mx-auto p-8 rounded-lg shadow-2xl -mt-20 relative z-10">
+        <h1 className="text-2xl font-bold text-red-600">Error: {error}</h1>
+        <p className="text-gray-600 mt-2">Por favor, intenta recargar la página.</p>
+      </div>
+    );
+  }
 
   if (!canchaMostrada || !complejo) {
     return (

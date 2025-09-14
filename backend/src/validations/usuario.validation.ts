@@ -16,6 +16,18 @@ export const crearUsuarioSchema = z.object({
 
 export const actualizarUsuarioSchema = crearUsuarioSchema.partial();
 
+export const usuarioIdSchema = z.object({
+  params: z.object({
+    id: z.string().regex(/^\d+$/, 'ID debe ser un número')
+  })
+});
+
+export const usuarioEmailSchema = z.object({
+  params: z.object({
+    email: z.string().email('Debe ser un email válido')
+  })
+});
+
 // ID puede pasarse como dato para crear ni actualizar un Usuario
 
 // export const usuarioIdSchema = z.object({
