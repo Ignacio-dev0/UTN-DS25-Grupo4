@@ -116,10 +116,20 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
 
       <div className="relative bg-accent h-64 rounded-lg flex items-center justify-center mb-6">
         <img 
-          src={complejo.image || "/images/placeholder.png"} 
+          src={
+            complejo.image 
+              ? (complejo.image.startsWith('http') 
+                  ? `${complejo.image}?t=${Date.now()}` 
+                  : `${API_BASE_URL}${complejo.image}?t=${Date.now()}`)
+              : "/images/placeholder.png"
+          } 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
           onClick={handleImageClick}
+          onError={(e) => {
+            console.log('Error cargando imagen:', complejo.image);
+            e.target.src = "/images/placeholder.png";
+          }}
         />
         {isEditing && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-light rounded-lg pointer-events-none">
