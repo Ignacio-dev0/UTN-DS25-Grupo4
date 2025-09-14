@@ -78,6 +78,11 @@ function ComplejoDetallePage() {
           <FaArrowLeft /> Volver al inicio
         </Link>
         <h1 className="text-4xl font-bold font-lora text-primary">{complejo.nombre}</h1>
+        {complejo.descripcion && (
+          <p className="text-base text-gray-700 mt-3 mb-2">
+            {complejo.descripcion}
+          </p>
+        )}
         <p className="text-lg text-secondary mt-2">
           {complejo.domicilio?.calle} {complejo.domicilio?.altura}, {complejo.domicilio?.localidad?.nombre}
         </p>
