@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getCurrentUser, logout as authLogout } from '../services/auth'; 
+import { API_BASE_URL } from '../config/constants';
 
 const AuthContext = createContext(null);
 
@@ -16,6 +17,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (userData) => {
+    setUser(userData);
+  };
+
+  const updateUser = (userData) => {
     setUser(userData);
   };
 
@@ -46,6 +51,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     loading,
     login,
+    updateUser,
     logout,
     isApprovedOwner,
   };

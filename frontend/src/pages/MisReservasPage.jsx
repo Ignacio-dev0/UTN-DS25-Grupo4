@@ -11,7 +11,7 @@ import { API_BASE_URL } from '../config/api.js';
 
 function MisReservasPage() {
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, updateUser } = useAuth();
     
     const [usuario, setUsuario] = useState({
         id: 1,
@@ -356,6 +356,14 @@ function MisReservasPage() {
                 
                 console.log('Actualizando usuario local con:', updatedUserData);
                 setUsuario(updatedUserData);
+                
+                // Actualizar también el contexto de autenticación
+                updateUser({
+                    ...response.user,
+                    role: response.user.rol,
+                    email: response.user.correo,
+                    profileImageUrl: nuevaImagenUrl
+                });
                 
                 // Mostrar mensaje de éxito
                 console.log('Perfil actualizado exitosamente');
