@@ -15,25 +15,42 @@ function CanchaCard({ cancha }) {
       setLoadingTurnos(true);
       try {
         const now = new Date();
-        const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
         
-        // Get today's date in YYYY-MM-DD format
-        const todayStr = now.toISOString().split('T')[0];
+        // Asegurar que usamos la hora local argentina para la comparación
+        const nowInArgentina = new Date(now.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"}));
+        const currentHour = nowInArgentina.getHours();
+        const currentMinute = nowInArgentina.getMinutes();
+        
+        // Get today's date in YYYY-MM-DD format (Argentina timezone)
+        const todayStr = nowInArgentina.toISOString().split('T')[0];
         
         // Eliminamos log repetitivo - solo para debug si es necesario
-        // console.log(`Cargando turnos para cancha ${cancha.id} del día ${todayStr} desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
+        console.log(`[DEBUG] Cargando turnos para cancha ${cancha.id} del día ${todayStr} desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')} (Argentina timezone)`);
         
         let response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}`);
         let data = await response.json();
         
-        // Eliminamos log repetitivo de respuesta
-        // console.log('Respuesta de turnos:', data);
+        // Log para debug en Railway
+        console.log(`[DEBUG] Respuesta turnos cancha ${cancha.id}:`, data.turnos?.length || 0, 'turnos totales');
         
         // Filter for today's date and available turns (not reserved) and only future times
         let turnosDisponibles = (data.turnos || []).filter(turno => {
-          // Check if turn is for today
-          const turnoFecha = turno.fecha?.split('T')[0] || new Date(turno.fecha).toISOString().split('T')[0];
+          // Check if turn is for today - mejorar manejo de fechas
+          let turnoFecha;
+          try {
+            // Si la fecha viene con formato ISO, extraer solo la fecha
+            if (turno.fecha.includes('T')) {
+              turnoFecha = turno.fecha.split('T')[0];
+            } else {
+              // Si es solo una fecha, usarla directamente
+              const fechaObj = new Date(turno.fecha);
+              turnoFecha = fechaObj.toISOString().split('T')[0];
+            }
+          } catch (error) {
+            console.warn('Error procesando fecha del turno:', turno.fecha, error);
+            return false;
+          }
+          
           if (turnoFecha !== todayStr) return false;
           
           // Check if turn is not reserved
@@ -67,7 +84,7 @@ function CanchaCard({ cancha }) {
         });
         
         // Solo mostrar log si hay debug habilitado
-        // console.log(`Turnos disponibles hoy desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, turnosDisponibles);
+        console.log(`[DEBUG] Turnos disponibles cancha ${cancha.id} hoy desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, turnosDisponibles.length, 'turnos filtrados');
         
         setTurnosHoy(turnosDisponibles);
       } catch (error) {
@@ -84,7 +101,9 @@ function CanchaCard({ cancha }) {
   // Generate available hours from today's turns (only future times)
   const generarHorariosDelDia = () => {
     const now = new Date();
-    const currentHour = now.getHours();
+    // Usar hora argentina para consistencia
+    const nowInArgentina = new Date(now.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"}));
+    const currentHour = nowInArgentina.getHours();
     const currentMinute = now.getMinutes();
 
     if (turnosHoy.length === 0) {
@@ -156,8 +175,8 @@ function CanchaCard({ cancha }) {
       }
     }
     
-    // Eliminamos log repetitivo - solo mostrar en debug si es necesario
-    // console.log('Horarios únicos generados desde turnos disponibles:', horariosArray);
+    // Debug para Railway - mostrar horarios generados
+    console.log(`[DEBUG] Cancha ${cancha.id} - Horarios únicos generados:`, horariosArray.length, horariosArray);
     return horariosArray;
   };
 

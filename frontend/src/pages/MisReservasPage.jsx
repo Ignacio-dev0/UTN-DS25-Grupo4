@@ -358,12 +358,21 @@ function MisReservasPage() {
                 setUsuario(updatedUserData);
                 
                 // Actualizar también el contexto de autenticación
-                updateUser({
+                const contextUserData = {
                     ...response.user,
                     role: response.user.rol,
                     email: response.user.correo,
-                    profileImageUrl: nuevaImagenUrl
-                });
+                    profileImageUrl: nuevaImagenUrl,
+                    // Mantener los campos necesarios del contexto
+                    id: response.user.id || usuario.id,
+                    nombre: response.user.nombre || datosActualizados.nombre,
+                    apellido: response.user.apellido || usuario.apellido,
+                    dni: response.user.dni || usuario.dni,
+                    telefono: response.user.telefono || datosActualizados.telefono,
+                    direccion: response.user.direccion || datosActualizados.direccion
+                };
+                
+                updateUser(contextUserData);
                 
                 // Mostrar mensaje de éxito
                 console.log('Perfil actualizado exitosamente');

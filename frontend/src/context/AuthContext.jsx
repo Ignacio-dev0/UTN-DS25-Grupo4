@@ -22,6 +22,12 @@ export function AuthProvider({ children }) {
 
   const updateUser = (userData) => {
     setUser(userData);
+    // También actualizar el storage
+    if (localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(userData));
+    } else if (sessionStorage.getItem('user')) {
+      sessionStorage.setItem('user', JSON.stringify(userData));
+    }
   };
 
   const logout = () => {
