@@ -57,10 +57,14 @@ export const validate = (schema: ZodObject<any>) =>
       // Nos aseguramos de que el error sea de Zod
       // y devolvemos un JSON más informativo.
       if (error instanceof ZodError) {
+        // Extraer el primer mensaje de error para mostrarlo al usuario
+        const firstError = error.issues[0];
+        const errorMessage = firstError ? firstError.message : 'Error de validación';
+        
         return res.status(400).json({
-          message: 'Error de validación',
-          // CORRECCIÓN: En versiones más antiguas de Zod, el array de errores está en 'error.issues'.
-          errors: error.issues,
+          ok: false,
+          error: errorMessage,
+          details: error.issues
         });
       }
       // Si es otro tipo de error, lo pasamos al siguiente manejador

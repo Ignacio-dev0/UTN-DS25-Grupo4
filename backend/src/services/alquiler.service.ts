@@ -61,7 +61,13 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 	// Obtener el turno base
 	const turnoOriginal = await prisma.turno.findUnique({
 		where: { id: turnoBase },
-		include: { cancha: true },
+		include: { 
+			cancha: {
+				include: {
+					cronograma: true
+				}
+			}
+		},
 	});
 
 	if (!turnoOriginal) {
@@ -74,14 +80,39 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 		throw new Error('El turno seleccionado ya está reservado');
 	}
 
+	// Buscar la duración del turno en el cronograma
+	const horarioCronograma = turnoOriginal.cancha.cronograma.find(c => {
+		const horaInicioTurno = turnoOriginal.horaInicio;
+		const horaInicioCronograma = c.horaInicio;
+		
+		return horaInicioTurno.getUTCHours() === horaInicioCronograma.getUTCHours() &&
+		       horaInicioTurno.getUTCMinutes() === horaInicioCronograma.getUTCMinutes();
+	});
+
+	if (!horarioCronograma) {
+		console.log('❌ NO SE ENCONTRÓ HORARIO EN CRONOGRAMA');
+		throw new Error('No se pudo determinar la duración del turno');
+	}
+
+	// Calcular duración del turno en minutos
+	const horaInicio = horarioCronograma.horaInicio;
+	const horaFin = horarioCronograma.horaFin;
+	const duracionMinutos = (horaFin.getUTCHours() * 60 + horaFin.getUTCMinutes()) - 
+	                       (horaInicio.getUTCHours() * 60 + horaInicio.getUTCMinutes());
+	
+	console.log(`⏱️ DURACIÓN DEL TURNO: ${duracionMinutos} minutos`);
+
 	// Generar turnos consecutivos basados en el turno original
 	const turnosConsecutivos = [];
-	const horaBase = turnoOriginal.horaInicio.getHours();
-	const minutosBase = turnoOriginal.horaInicio.getMinutes();
 	
 	for (let i = 0; i < cantidadBloques; i++) {
 		const nuevaHora = new Date(turnoOriginal.horaInicio);
-		nuevaHora.setHours(horaBase + i, minutosBase, 0, 0);
+		const minutosOffset = i * duracionMinutos;
+		
+		// Sumar los minutos de offset
+		nuevaHora.setUTCMinutes(nuevaHora.getUTCMinutes() + minutosOffset);
+		
+		console.log(`🔍 BUSCANDO TURNO CONSECUTIVO ${i + 1}: ${nuevaHora.getUTCHours()}:${nuevaHora.getUTCMinutes().toString().padStart(2, '0')}`);
 		
 		// Buscar si existe un turno en este horario consecutivo
 		const turnoConsecutivo = await prisma.turno.findFirst({
@@ -93,12 +124,12 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 		});
 		
 		if (!turnoConsecutivo) {
-			console.log(`❌ NO EXISTE TURNO CONSECUTIVO para ${nuevaHora.getHours()}:${nuevaHora.getMinutes().toString().padStart(2, '0')}`);
+			console.log(`❌ NO EXISTE TURNO CONSECUTIVO para ${nuevaHora.getUTCHours()}:${nuevaHora.getUTCMinutes().toString().padStart(2, '0')}`);
 			throw new Error(`No hay disponibilidad para ${cantidadBloques} bloques consecutivos desde este horario`);
 		}
 		
 		if (turnoConsecutivo.reservado) {
-			console.log(`❌ TURNO CONSECUTIVO YA RESERVADO para ${nuevaHora.getHours()}:${nuevaHora.getMinutes().toString().padStart(2, '0')}`);
+			console.log(`❌ TURNO CONSECUTIVO YA RESERVADO para ${nuevaHora.getUTCHours()}:${nuevaHora.getUTCMinutes().toString().padStart(2, '0')}`);
 			throw new Error(`Uno de los bloques consecutivos ya está reservado`);
 		}
 		

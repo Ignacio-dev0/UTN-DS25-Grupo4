@@ -9,7 +9,7 @@ const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '1
 function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
   const [turnosSeleccionados, setTurnosSeleccionados] = useState([]);
   const [reservaConfirmada, setReservaConfirmada] = useState(false);
-  const { isAuthenticated } = useAuth(); 
+  const { isAuthenticated, user } = useAuth(); 
   const navigate = useNavigate();
 
   // Obtener el día y hora actual
@@ -94,8 +94,12 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
         <div className="grid grid-cols-8 gap-1 text-center font-semibold min-w-[800px]">
           <div></div>
           {dias.map(dia => (
-            <div key={dia} className="py-2 text-sm md:text-base text-gray-700">
+            <div key={dia} className="py-2 text-sm md:text-base text-gray-700 relative">
               {dia}
+              {/* Indicador visual para el día actual - círculo arriba del día */}
+              {dia === diaActual && (
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary rounded-full"></div>
+              )}
             </div>
           ))}
           {horas.map(hora => (
@@ -207,13 +211,33 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                     </p>
                 </div>
             )}
-            <button 
-                onClick={handleConfirmarClick}
-                className="bg-secondary text-light font-bold py-3 px-16 rounded-lg hover:bg-primary transition-all duration-300 disabled:bg-accent disabled:cursor-not-allowed"
-                disabled={turnosSeleccionados.length === 0} 
-            >
-              Confirmar Reserva
-            </button>
+            {/* Solo mostrar botón de reserva para usuarios autenticados de tipo cliente */}
+            {isAuthenticated && user && (user.rol === 'player' || user.rol === 'normal') ? (
+              <button 
+                  onClick={handleConfirmarClick}
+                  className="bg-secondary text-light font-bold py-3 px-16 rounded-lg hover:bg-primary transition-all duration-300 disabled:bg-accent disabled:cursor-not-allowed"
+                  disabled={turnosSeleccionados.length === 0} 
+              >
+                Confirmar Reserva
+              </button>
+            ) : isAuthenticated && user && (user.rol === 'admin' || user.rol === 'owner') ? (
+              <div className="text-center">
+                <p className="text-gray-600 mb-2">
+                  {user.rol === 'admin' ? 'Los administradores' : 'Los dueños de complejo'} no pueden realizar reservas
+                </p>
+                <p className="text-sm text-gray-500">Esta funcionalidad está disponible solo para jugadores</p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-gray-600 mb-2">Debes iniciar sesión para reservar</p>
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="bg-primary text-white font-bold py-3 px-16 rounded-lg hover:bg-secondary transition-all duration-300"
+                >
+                  Iniciar Sesión
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

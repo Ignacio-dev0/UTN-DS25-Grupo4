@@ -79,7 +79,13 @@ export async function crearCancha(data: CreateCanchaRequest) {
 
 export async function obtenerCanchas(incluirInactivas: boolean = false) {
     return prisma.cancha.findMany({
-        where: incluirInactivas ? {} : { activa: true },
+        where: {
+            ...(incluirInactivas ? {} : { activa: true }),
+            // Solo incluir canchas que tienen al menos un cronograma definido
+            cronograma: {
+                some: {}
+            }
+        },
         include: {
             deporte: true, // Para saber qué deporte se juega en la cancha
             complejo: {
@@ -165,6 +171,12 @@ export async function obtenerCanchasPorComplejoId(complejoId: number, incluirIna
             }
           }
         }
+      },
+      cronograma: {
+        orderBy: {
+          precio: 'asc'
+        },
+        take: 10 // Obtener varios horarios para calcular precio mínimo
       },
       turnos: {
         where: {

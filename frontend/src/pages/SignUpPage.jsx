@@ -142,7 +142,8 @@ function SignUpPage() {
           nombre: firstName,
           apellido: lastName,
           dni,
-          telefono: phone
+          telefono: phone,
+          tipoUsuario: 'CLIENTE'
         };
         
         const response = await register(userData);

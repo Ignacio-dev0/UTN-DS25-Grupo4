@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+// TEMPORALMENTE usando mock en lugar del servicio real
 import * as usuarioService from "../services/usuario.service";
 import { CreateUsuarioRequest, UsuarioListResponse, UpdateUsuarioRequest, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';

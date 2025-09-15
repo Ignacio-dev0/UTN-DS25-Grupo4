@@ -28,6 +28,7 @@ const PORT = process.env.PORT || 3000;
 // Configuración CORS más específica
 const allowedOrigins = [
     'http://localhost:5173',           // Desarrollo local
+    'http://localhost:5174',           // Desarrollo local (puerto alternativo de Vite)
     'http://localhost:3000',           // Desarrollo local alternativo
     'https://canchaya.onrender.com',   // Frontend en producción
 ];
@@ -44,6 +45,15 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' })); // Aumentar límite para imágenes base64
+
+// Middleware de logging para debugging
+app.use((req, res, next) => {
+    console.log(`🌐 [${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
+    if (req.method === 'POST' && req.url.includes('register')) {
+        console.log('📝 Body:', JSON.stringify(req.body, null, 2));
+    }
+    next();
+});
 
 // Servir archivos estáticos (imágenes) desde la carpeta del frontend
 app.use('/images', express.static(path.join(__dirname, '../../frontend/public/images')));

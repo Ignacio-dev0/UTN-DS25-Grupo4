@@ -110,7 +110,6 @@ function CanchaCard({ cancha }) {
           // Only show future times from current hour onwards
           return cronogramaHour > currentHour || (cronogramaHour === currentHour && cronogramaMinute > currentMinute);
         })
-        .slice(0, 5)
         .map(cronograma => {
           const horaInicio = new Date(cronograma.horaInicio);
           return horaInicio.toLocaleTimeString('es-AR', { 
@@ -154,9 +153,6 @@ function CanchaCard({ cancha }) {
       if (!horariosUnicos.has(horaFormateada)) {
         horariosUnicos.add(horaFormateada);
         horariosArray.push(horaFormateada);
-        
-        // Limitar a 5 horarios únicos
-        if (horariosArray.length >= 5) break;
       }
     }
     
