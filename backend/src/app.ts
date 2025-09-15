@@ -31,6 +31,7 @@ const allowedOrigins = [
     'http://localhost:5174',           // Desarrollo local (puerto alternativo de Vite)
     'http://localhost:3000',           // Desarrollo local alternativo
     'https://canchaya.onrender.com',   // Frontend en producción
+    'https://front-canchaya.up.railway.app', // Frontend en Railway
 ];
 
 if (process.env.FRONTEND_URL) {
