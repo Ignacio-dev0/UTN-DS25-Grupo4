@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración optimizada para Railway con Transaction Pooler (pgbouncer)
+    // Configuración optimizada para Railway con mejor rendimiento
     prisma = new PrismaClient({
         log: ['error'],
         errorFormat: 'minimal',
@@ -11,6 +11,10 @@ if (process.env.NODE_ENV === 'production') {
             db: {
                 url: process.env.DATABASE_URL,
             },
+        },
+        // Configuración para mejor rendimiento
+        transactionOptions: {
+            timeout: 10000, // 10 segundos timeout
         },
     });
 } else {
