@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración optimizada para Railway con pooling limitado
+    // Configuración optimizada para Railway con Transaction Pooler (pgbouncer)
     prisma = new PrismaClient({
         log: ['error'],
         errorFormat: 'minimal',
@@ -13,14 +13,10 @@ if (process.env.NODE_ENV === 'production') {
             },
         },
     });
-    
-    // Configurar timeouts más estrictos para Railway
-    prisma.$queryRaw`SET statement_timeout = '30s'`;
-    prisma.$queryRaw`SET lock_timeout = '10s'`;
 } else {
     // Configuración para desarrollo
     prisma = new PrismaClient({
-        log: ["error", "warn", "query"],
+        log: ["error", "warn"],
         datasources: {
             db: {
                 url: process.env.DATABASE_URL,
