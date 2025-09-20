@@ -1,13 +1,16 @@
-import { PrismaClient } from '@prisma/client';
-import * as dotenv from 'dotenv';
+import { PrismaClient } from "@prisma/client";
 
-// Cargar variables de entorno explícitamente
-dotenv.config();
+// Configuración estable de Prisma Client
+let prisma: PrismaClient;
 
-// Configuración de Prisma Client para conexión directa a base de datos
-const prisma = new PrismaClient({
+prisma = new PrismaClient({
     log: process.env.NODE_ENV === 'production' ? ['error'] : ["error", "warn"],
     errorFormat: 'minimal',
+    datasources: {
+        db: {
+            url: process.env.DATABASE_URL,
+        },
+    },
     transactionOptions: {
         timeout: 10000,
     },
