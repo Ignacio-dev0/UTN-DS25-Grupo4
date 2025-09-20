@@ -1,29 +1,17 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client/edge';
+import { withAccelerate } from '@prisma/extension-accelerate';
+import * as dotenv from 'dotenv';
 
-// Temporalmente deshabilitado Prisma Optimize hasta configurar recording session
-let prisma: PrismaClient;
+// Cargar variables de entorno explícitamente
+dotenv.config();
 
-prisma = new PrismaClient({
+// Configuración de Prisma Client con Accelerate para máximo rendimiento
+const prisma = new PrismaClient({
     log: process.env.NODE_ENV === 'production' ? ['error'] : ["error", "warn"],
     errorFormat: 'minimal',
-    datasources: {
-        db: {
-            url: process.env.DATABASE_URL,
-        },
-    },
     transactionOptions: {
         timeout: 10000,
     },
-});
-
-// TODO: Habilitar Optimize una vez configurada la recording session
-// if (process.env.NODE_ENV === 'production' && process.env.OPTIMIZE_API_KEY) {
-//     try {
-//         const { withOptimize } = require("@prisma/extension-optimize");
-//         prisma = basePrisma.$extends(withOptimize({ apiKey: process.env.OPTIMIZE_API_KEY })) as any;
-//     } catch (error) {
-//         console.warn('⚠️ Prisma Optimize no disponible');
-//     }
-// }
+}).$extends(withAccelerate());
 
 export default prisma;
