@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración optimizada para Railway con Transaction Pooler (pgbouncer)
+    // Configuración para Railway (se usará DATABASE_URL de Accelerate)
     prisma = new PrismaClient({
         log: ['error'],
         errorFormat: 'minimal',
