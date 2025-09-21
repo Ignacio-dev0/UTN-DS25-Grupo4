@@ -5,14 +5,16 @@ import { withAccelerate } from '@prisma/extension-accelerate'
 let prisma: any;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración para Railway con Prisma Accelerate  
+    // Configuración para Railway PostgreSQL (producción)
     prisma = new PrismaClient({
+        log: ['error'],
+        errorFormat: 'minimal',
         datasources: {
             db: {
                 url: process.env.DATABASE_URL,
             },
         },
-    }).$extends(withAccelerate());
+    });
 } else {
     // Configuración para desarrollo (Supabase directo)
     prisma = new PrismaClient({
