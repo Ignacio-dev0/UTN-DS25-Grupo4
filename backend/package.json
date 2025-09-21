@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "build": "tsc",
-    "start": "echo 'Starting server with migrations and seed...' && echo 'Waiting for database to be ready...' && sleep 30 && npx prisma migrate deploy && npx prisma generate && npx prisma db seed && node dist/app.js",
+    "start": "echo 'Starting CanchaYa Backend...' && node dist/app.js",
     "start:dev": "node dist/app.js",
     "postbuild": "npx prisma generate",
     "migrate": "npx prisma migrate deploy",
