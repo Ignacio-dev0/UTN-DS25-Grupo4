@@ -1,22 +1,16 @@
-import { PrismaClient } from "@prisma/client";
 
-let prisma: PrismaClient;
+import { PrismaClient } from '@prisma/client'
+
+let prisma: any;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración optimizada para Railway con Transaction Pooler (pgbouncer)
+    // Configuración para Railway PostgreSQL (producción)
     prisma = new PrismaClient({
         log: ['error'],
         errorFormat: 'minimal',
         datasources: {
             db: {
                 url: process.env.DATABASE_URL,
-            },
-        },
-        // Optimizaciones de rendimiento
-        __internal: {
-            engine: {
-                enableRequestBatching: true,
-                requestBatchingLimit: 10,
             },
         },
     });
@@ -28,13 +22,6 @@ if (process.env.NODE_ENV === 'production') {
         datasources: {
             db: {
                 url: process.env.DATABASE_URL,
-            },
-        },
-        // Optimizaciones de rendimiento para desarrollo
-        __internal: {
-            engine: {
-                enableRequestBatching: true,
-                requestBatchingLimit: 10,
             },
         },
     });

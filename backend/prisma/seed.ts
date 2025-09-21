@@ -1,5 +1,5 @@
 // backend/prisma/seed_nuevo_esquema.ts
-import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago } from '../src/generated/prisma/client';
+import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();

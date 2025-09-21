@@ -165,7 +165,7 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
 
         console.log(`📊 [${new Date().toISOString()}] User relationships:`, {
             hasComplejo: !!usuario.complejo,
-            solicitudesCount: usuario.solicitudes.length,
+            solicitudesCount: Array.isArray(usuario.solicitudes) ? usuario.solicitudes.length : 0,
             reservasCount: usuario.reservas.length
         });
 
@@ -212,7 +212,7 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
             }
 
             // Eliminar solicitudes (si las hay y no están asociadas a complejos)
-            if (usuario.solicitudes.length > 0) {
+            if (Array.isArray(usuario.solicitudes) && usuario.solicitudes.length > 0) {
                 console.log(`🗑️ [${new Date().toISOString()}] Deleting ${usuario.solicitudes.length} solicitudes`);
                 for (const solicitud of usuario.solicitudes) {
                     // Solo eliminar solicitudes que no estén asociadas a complejos

@@ -40,7 +40,7 @@ export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
 
         console.log(`🔄 Regenerando turnos para cancha ${canchaIdNum} desde ${inicioSemana.toISOString().split('T')[0]} hasta ${finSemana.toISOString().split('T')[0]}`);
 
-        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        await prisma.$transaction(async (tx) => {
             // 1. RESETEAR turnos pasados a "disponible" (no borrar, solo resetear estado)
             const ahora = new Date();
             await tx.turno.updateMany({
