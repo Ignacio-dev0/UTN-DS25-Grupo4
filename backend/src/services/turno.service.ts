@@ -3,6 +3,25 @@ import prisma from '../config/prisma';
 import { Turno} from '@prisma/client';
 import { CreateTurno } from '../types/turno.types';
 
+// Cache simple en memoria para turnos por cancha
+interface CacheEntry {
+    data: Turno[];
+    timestamp: number;
+}
+
+const turnosCache = new Map<number, CacheEntry>();
+const CACHE_DURATION = 30000; // 30 segundos
+
+// Función para limpiar cache expirado
+function cleanExpiredCache() {
+    const now = Date.now();
+    for (const [key, entry] of turnosCache.entries()) {
+        if (now - entry.timestamp > CACHE_DURATION) {
+            turnosCache.delete(key);
+        }
+    }
+}
+
 // Función para generar turnos basados en el cronograma
 export async function generarTurnosDesdeHoy() {
     const hoy = new Date();
@@ -122,66 +141,62 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
     try {
         console.log(`🔍 Servicio: Buscando turnos para cancha ${canchaId}`);
         
-        // Primero verificar que la cancha existe
-        const cancha = await prisma.cancha.findUnique({
-            where: { id: canchaId }
-        });
+        // Limpiar cache expirado
+        cleanExpiredCache();
         
-        if (!cancha) {
-            console.log(`❌ Servicio: Cancha ${canchaId} no encontrada`);
-            throw new Error(`Cancha ${canchaId} no encontrada`);
+        // Verificar si existe en cache y no ha expirado
+        const cached = turnosCache.get(canchaId);
+        if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+            console.log(`⚡ Cache hit: Devolviendo ${cached.data.length} turnos desde cache para cancha ${canchaId}`);
+            return cached.data;
         }
         
-        console.log(`✅ Servicio: Cancha ${canchaId} existe, buscando turnos...`);
+        console.log(`💾 Cache miss: Consultando base de datos para cancha ${canchaId}`);
         
-        // Primero intentar sin include para ver si el problema está en las relaciones
-        try {
-            console.log(`🔍 Intentando consulta simple sin include...`);
-            const turnosSimple = await prisma.turno.findMany({
-                where: { canchaId },
-                orderBy: [
-                    { fecha: 'asc' },
-                    { horaInicio: 'asc' }
-                ]
-            });
-            console.log(`✅ Consulta simple exitosa: ${turnosSimple.length} turnos`);
-            
-            // Si la consulta simple funciona, intentar con include
-            console.log(`🔍 Intentando consulta con include...`);
-            const turnos = await prisma.turno.findMany({
-                where: { canchaId },
-                include: {
-                    cancha: {
-                        include: {
-                            complejo: true
+        // Consulta optimizada con select específico en lugar de include
+        const turnos = await prisma.turno.findMany({
+            where: { canchaId },
+            select: {
+                id: true,
+                fecha: true,
+                horaInicio: true,
+                precio: true,
+                reservado: true,
+                alquilerId: true,
+                canchaId: true,
+                cancha: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        nroCancha: true,
+                        complejo: {
+                            select: {
+                                id: true,
+                                nombre: true
+                            }
                         }
                     }
-                },
-                orderBy: [
-                    { fecha: 'asc' },
-                    { horaInicio: 'asc' }
-                ]
-            });
-            
-            console.log(`✅ Servicio: Encontrados ${turnos.length} turnos para cancha ${canchaId}`);
-            if (turnos.length > 0) {
-                console.log(`📅 Primer turno: ${turnos[0].fecha} a las ${turnos[0].horaInicio}`);
-                console.log(`📅 Último turno: ${turnos[turnos.length - 1].fecha} a las ${turnos[turnos.length - 1].horaInicio}`);
-            }
-            
-            return turnos;
-        } catch (includeError) {
-            console.log(`⚠️ Error con include, devolviendo consulta simple`);
-            const turnosSimple = await prisma.turno.findMany({
-                where: { canchaId },
-                orderBy: [
-                    { fecha: 'asc' },
-                    { horaInicio: 'asc' }
-                ]
-            });
-            // Convertir a formato esperado sin las relaciones
-            return turnosSimple as Turno[];
+                }
+            },
+            orderBy: [
+                { fecha: 'asc' },
+                { horaInicio: 'asc' }
+            ]
+        });
+        
+        // Guardar en cache
+        turnosCache.set(canchaId, {
+            data: turnos as Turno[],
+            timestamp: Date.now()
+        });
+        
+        console.log(`✅ Servicio: Encontrados ${turnos.length} turnos para cancha ${canchaId} (guardado en cache)`);
+        if (turnos.length > 0) {
+            console.log(`📅 Primer turno: ${turnos[0].fecha} a las ${turnos[0].horaInicio}`);
+            console.log(`📅 Último turno: ${turnos[turnos.length - 1].fecha} a las ${turnos[turnos.length - 1].horaInicio}`);
         }
+        
+        return turnos as Turno[];
         
     } catch (error) {
         console.error(`❌ Servicio: Error buscando turnos para cancha ${canchaId}:`, error);
