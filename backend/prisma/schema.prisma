@@ -1,236 +1,211 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-// FALTA agregar foto en cancha,complejo,usuario,duenio --corte Dato String para que sea un url
-
 generator client {
-	provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-	provider = "postgresql"
-	url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DATABASE_DIRECT_URL")
 }
+
+
 
 model Usuario {
-    id              Int      @id @default(autoincrement())
-    apellido        String
-    nombre          String
-    dni             String   @unique
-    correo          String   @unique
-    password        String
-    telefono        String?
-    direccion       String?
-    rol             Rol      @default(CLIENTE)
-    image           String?
-
-	// Relaciones
-	complejo Complejo? 
-	reservas  Alquiler[]
-	solicitudes Solicitud[]
+  id          Int        @id @default(autoincrement())
+  apellido    String
+  nombre      String
+  dni         String     @unique
+  correo      String     @unique
+  password    String
+  telefono    String?
+  rol         Rol        @default(CLIENTE)
+  image       String?
+  direccion   String?
+  reservas    Alquiler[]
+  complejo    Complejo?
+  solicitudes Solicitud?
 }
 
-
 model Administrador {
-	id       	Int			@id @default(autoincrement())
-	email   	String 	@unique
-	password 	String 
-	rol 			Rol 		@default(ADMINISTRADOR)
-
-	solicitudesEvaluadas Solicitud[]
+  id                   Int         @id @default(autoincrement())
+  password             String
+  rol                  Rol         @default(ADMINISTRADOR)
+  email                String      @unique
+  solicitudesEvaluadas Solicitud[]
 }
 
 model Solicitud {
-	id          Int             @id @default(autoincrement())
-	cuit        String          @unique
-	estado      EstadoSolicitud @default(PENDIENTE)
-	image       String?         // Imagen de la solicitud del complejo
-	
-	complejo    Complejo?
-	usuarioId   Int 						@unique
-	usuario   	Usuario 				@relation(fields: [usuarioId],references: [id])    
-	adminId  	  Int?
-	admin    	  Administrador? 	@relation(fields: [adminId], references: [id])
+  id        Int             @id @default(autoincrement())
+  cuit      String          @unique
+  estado    EstadoSolicitud @default(PENDIENTE)
+  usuarioId Int             @unique
+  adminId   Int?
+  image     String?
+  complejo  Complejo?
+  admin     Administrador?  @relation(fields: [adminId], references: [id])
+  usuario   Usuario         @relation(fields: [usuarioId], references: [id])
 }
 
 model Complejo {
-	id                  Int    		@id @default(autoincrement())
-	nombre              String
-	descripcion         String?
-	puntaje             Float     @default(0.0)
-	cuit 								String		@unique
-	image 							String?
-	horarios            String?   // Horarios de atención del complejo
-
-	domicilioId         Int				@unique
-	domicilio   				Domicilio @relation(fields: [domicilioId], references: [id], name: "ComplejoDomicilio")
-	canchas 						Cancha[]
-	servicios           ComplejoServicio[]
-	usuarioId 					Int		 		@unique
-	usuario 						Usuario 	@relation(fields: [usuarioId],references: [id])
-	solicitudId 				Int       @unique
-	solicitud   				Solicitud @relation(fields: [solicitudId], references: [id])
+  id          Int                @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  puntaje     Float              @default(0.0)
+  image       String?
+  domicilioId Int                @unique
+  usuarioId   Int                @unique
+  solicitudId Int                @unique
+  cuit        String             @unique
+  horarios    String?
+  canchas     Cancha[]
+  domicilio   Domicilio          @relation("ComplejoDomicilio", fields: [domicilioId], references: [id])
+  solicitud   Solicitud          @relation(fields: [solicitudId], references: [id])
+  usuario     Usuario            @relation(fields: [usuarioId], references: [id])
+  servicios   ComplejoServicio[]
 }
 
 model Domicilio {
-	id          Int       @id @default(autoincrement())
-	calle       String
-	altura      Int
-	localidadId Int
-	localidad   Localidad @relation(fields: [localidadId], references: [id])
-
-	complejo 		Complejo? @relation(name: "ComplejoDomicilio")
+  id          Int       @id @default(autoincrement())
+  calle       String
+  altura      Int
+  localidadId Int
+  complejo    Complejo? @relation("ComplejoDomicilio")
+  localidad   Localidad @relation(fields: [localidadId], references: [id])
 }
 
 model Localidad {
-	id     			Int    			@id @default(autoincrement())
-	nombre			String
-
-	domicilios 	Domicilio[]
+  id         Int         @id @default(autoincrement())
+  nombre     String
+  domicilios Domicilio[]
 }
 
 model Cancha {
-	id          Int    							@id @default(autoincrement())
-	nroCancha   Int    							// Removido @unique - será único por complejo
-	nombre      String?
-	descripcion String?
-	precioHora  Float?              @default(0.0)
-	puntaje     Float               @default(0.0)
-	activa      Boolean             @default(true)
-	image 			String[]
+  id          Int                 @id @default(autoincrement())
+  nroCancha   Int
+  descripcion String?
+  puntaje     Float               @default(0.0)
+  image       String[]
+  complejoId  Int
+  deporteId   Int
+  nombre      String?
+  precioHora  Float?              @default(0.0)
+  activa      Boolean             @default(true)
+  complejo    Complejo            @relation(fields: [complejoId], references: [id])
+  deporte     Deporte             @relation(fields: [deporteId], references: [id])
+  cronograma  HorarioCronograma[]
+  turnos      Turno[]
 
-	cronograma 	HorarioCronograma[] // COMPOSICION DE HORARIOS CHIQUITITOS CONFORMAN UN CRONOGRAMA
-	turnos   		Turno[]
-
-	complejoId 	Int
-	complejo   	Complejo 						@relation(fields: [complejoId], references: [id])
-	deporteId   Int
-	deporte    	Deporte  						@relation(fields: [deporteId], references: [id])
-	
-	// Constraint compuesto: nroCancha único por complejo
-	@@unique([complejoId, nroCancha])
+  @@unique([complejoId, nroCancha])
 }
 
-model HorarioCronograma { //horarios CHIQUITITOS
-	id        	Int       @id @default(autoincrement())
-	horaInicio  DateTime  @db.Time
-	horaFin 		DateTime  @db.Time
-	diaSemana 	DiaSemana
-	precio			Float			@default(0.0)
-
-	canchaId 		Int
-	cancha   		Cancha 		@relation(fields: [canchaId], references: [id])
+model HorarioCronograma {
+  id         Int       @id @default(autoincrement())
+  horaInicio DateTime  @db.Time(6)
+  horaFin    DateTime  @db.Time(6)
+  diaSemana  DiaSemana
+  canchaId   Int
+  precio     Float     @default(0.0)
+  cancha     Cancha    @relation(fields: [canchaId], references: [id])
 }
 
 model Turno {
-	id        	Int      	@id @default(autoincrement())
-	fecha   		DateTime 	@db.Date
-	horaInicio 	DateTime  @db.Time 
-	precio    	Float
-	reservado 	Boolean 	@default(false)
-
-	alquilerId 	Int?
-	alquiler   	Alquiler? @relation(fields: [alquilerId], references: [id])
-
-	canchaId 		Int
-	cancha   		Cancha 		@relation(fields: [canchaId], references: [id])
+  id         Int       @id @default(autoincrement())
+  fecha      DateTime  @db.Date
+  horaInicio DateTime  @db.Time(6)
+  precio     Float
+  reservado  Boolean   @default(false)
+  alquilerId Int?
+  canchaId   Int
+  alquiler   Alquiler? @relation(fields: [alquilerId], references: [id])
+  cancha     Cancha    @relation(fields: [canchaId], references: [id])
 }
 
 model Deporte {
-	id     	Int    	@id @default(autoincrement())
-	nombre 	String 	@unique
-	icono  	String? 	@default("⚽")
-
-	canchas Cancha[]
+  id      Int      @id @default(autoincrement())
+  nombre  String   @unique
+  icono   String?  @default("⚽")
+  canchas Cancha[]
 }
 
 model Resenia {
-	id          Int    		@id @default(autoincrement())
-	descripcion String
-	puntaje     Int //entre 1 y 5 corte estrellitas
-
-	alquilerId 	Int 			@unique
-	alquiler  	Alquiler	@relation(fields: [alquilerId], references: [id])
+  id          Int      @id @default(autoincrement())
+  descripcion String
+  puntaje     Int
+  alquilerId  Int      @unique
+  alquiler    Alquiler @relation(fields: [alquilerId], references: [id])
 }
 
 model Alquiler {
-	id        	Int            	@id @default(autoincrement())
-	createdAt 	DateTime       	@default(now())
-	estado    	EstadoAlquiler 	@default(PROGRAMADO)
-	pago   			Pago?
-	turnos 			Turno[]
-	resenia 		Resenia?
-
-	clienteId 	Int
-	cliente   	Usuario 				@relation(fields: [clienteId], references: [id])
+  id        Int            @id @default(autoincrement())
+  createdAt DateTime       @default(now())
+  estado    EstadoAlquiler @default(PROGRAMADO)
+  clienteId Int
+  cliente   Usuario        @relation(fields: [clienteId], references: [id])
+  pago      Pago?
+  resenia   Resenia?
+  turnos    Turno[]
 }
 
 model Pago {
-	id                Int        	@id @default(autoincrement())
-	codigoTransaccion String?
-	metodoPago        MetodoPago
-	monto             Float
-	fechaHora         DateTime   	@default(now())
-
-	alquilerId 				Int      		@unique
-	alquiler   				Alquiler 		@relation(fields: [alquilerId], references: [id])
-}
-
-enum MetodoPago {
-	DEBITO
-	CREDITO
-	TRANSFERENCIA
-}
-
-enum EstadoAlquiler {
-	PROGRAMADO
-	PAGADO
-	CANCELADO
-	FINALIZADO
-}
-
-enum DiaSemana {
-	LUNES
-	MARTES
-	MIERCOLES
-	JUEVES
-	VIERNES
-	SABADO
-	DOMINGO
-}
-
-enum EstadoSolicitud {
-	PENDIENTE
-	APROBADA
-	RECHAZADA
-}
-
-enum Rol {
-	CLIENTE
-	DUENIO
-	ADMINISTRADOR
+  id                Int        @id @default(autoincrement())
+  codigoTransaccion String?
+  metodoPago        MetodoPago
+  monto             Float
+  fechaHora         DateTime   @default(now())
+  alquilerId        Int        @unique
+  alquiler          Alquiler   @relation(fields: [alquilerId], references: [id])
 }
 
 model Servicio {
-	id          Int      @id @default(autoincrement())
-	nombre      String   @unique
-	descripcion String?
-	icono       String?  // URL del icono o clase CSS
-	
-	complejos   ComplejoServicio[]
+  id          Int                @id @default(autoincrement())
+  nombre      String             @unique
+  descripcion String?
+  icono       String?
+  complejos   ComplejoServicio[]
 }
 
 model ComplejoServicio {
-	id         Int      @id @default(autoincrement())
-	disponible Boolean  @default(true)
-	
-	complejoId Int
-	complejo   Complejo @relation(fields: [complejoId], references: [id])
-	servicioId Int
-	servicio   Servicio @relation(fields: [servicioId], references: [id])
-	
-	@@unique([complejoId, servicioId])
+  id         Int      @id @default(autoincrement())
+  disponible Boolean  @default(true)
+  complejoId Int
+  servicioId Int
+  complejo   Complejo @relation(fields: [complejoId], references: [id])
+  servicio   Servicio @relation(fields: [servicioId], references: [id])
+
+  @@unique([complejoId, servicioId])
+}
+
+enum MetodoPago {
+  DEBITO
+  CREDITO
+  TRANSFERENCIA
+}
+
+enum EstadoAlquiler {
+  PROGRAMADO
+  PAGADO
+  CANCELADO
+  FINALIZADO
+}
+
+enum DiaSemana {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+enum EstadoSolicitud {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+}
+
+enum Rol {
+  CLIENTE
+  DUENIO
+  ADMINISTRADOR
 }

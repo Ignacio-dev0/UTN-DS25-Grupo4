@@ -86,22 +86,52 @@ export async function obtenerCanchas(incluirInactivas: boolean = false) {
                 some: {}
             }
         },
-        include: {
-            deporte: true, // Para saber qué deporte se juega en la cancha
+        select: {
+            id: true,
+            nombre: true,
+            nroCancha: true,
+            descripcion: true,
+            puntaje: true,
+            image: true,
+            activa: true,
+            precioHora: true,
+            deporte: {
+                select: {
+                    id: true,
+                    nombre: true
+                }
+            },
             complejo: {
-                include: {
+                select: {
+                    id: true,
+                    nombre: true,
                     domicilio: {
-                        include: {
-                            localidad: true
+                        select: {
+                            id: true,
+                            calle: true,
+                            altura: true,
+                            localidad: {
+                                select: {
+                                    id: true,
+                                    nombre: true
+                                }
+                            }
                         }
                     }
                 }
-            }, // Para obtener datos del complejo con localidad
+            },
             cronograma: {
+                select: {
+                    id: true,
+                    diaSemana: true,
+                    horaInicio: true,
+                    horaFin: true,
+                    precio: true
+                },
                 orderBy: {
                     precio: 'asc'
                 },
-                take: 10 // Obtener varios horarios para calcular precio mínimo
+                take: 5 // Reducir la cantidad de cronogramas
             }
         },
     });
@@ -158,36 +188,55 @@ export async function obtenerCanchaPorId(id: number, permitirInactiva: boolean =
 export async function obtenerCanchasPorComplejoId(complejoId: number, incluirInactivas: boolean = false) {
   return prisma.cancha.findMany({
     where: {
-      complejoId: complejoId, // Corregir: debe filtrar por complejoId, no por id
+      complejoId: complejoId,
       ...(incluirInactivas ? {} : { activa: true })
     },
-    include: {
-      deporte: true,
+    select: {
+      id: true,
+      nombre: true,
+      nroCancha: true,
+      descripcion: true,
+      puntaje: true,
+      image: true,
+      activa: true,
+      precioHora: true,
+      deporte: {
+        select: {
+          id: true,
+          nombre: true
+        }
+      },
       complejo: {
-        include: {
+        select: {
+          id: true,
+          nombre: true,
           domicilio: {
-            include: {
-              localidad: true
+            select: {
+              id: true,
+              calle: true,
+              altura: true,
+              localidad: {
+                select: {
+                  id: true,
+                  nombre: true
+                }
+              }
             }
           }
         }
       },
       cronograma: {
+        select: {
+          id: true,
+          diaSemana: true,
+          horaInicio: true,
+          horaFin: true,
+          precio: true
+        },
         orderBy: {
           precio: 'asc'
         },
-        take: 10 // Obtener varios horarios para calcular precio mínimo
-      },
-      turnos: {
-        where: {
-          fecha: {
-            gte: new Date(),
-          }
-        },
-        take: 5,
-        orderBy: {
-          fecha: 'asc'
-        }
+        take: 5
       }
     },
   });
