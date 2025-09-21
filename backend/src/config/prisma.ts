@@ -1,20 +1,20 @@
-import { PrismaClient } from "@prisma/client";
 
-let prisma: PrismaClient;
+import { PrismaClient } from '@prisma/client'
+import { withAccelerate } from '@prisma/extension-accelerate'
+
+let prisma: any;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración para Railway (se usará DATABASE_URL de Accelerate)
+    // Configuración para Railway con Prisma Accelerate
     prisma = new PrismaClient({
-        log: ['error'],
-        errorFormat: 'minimal',
         datasources: {
             db: {
                 url: process.env.DATABASE_URL,
             },
         },
-    });
+    }).$extends(withAccelerate());
 } else {
-    // Configuración para desarrollo
+    // Configuración para desarrollo (sin Accelerate)
     prisma = new PrismaClient({
         log: ["error", "warn"],
         datasources: {
