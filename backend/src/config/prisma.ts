@@ -5,7 +5,7 @@ import { withAccelerate } from '@prisma/extension-accelerate'
 let prisma: any;
 
 if (process.env.NODE_ENV === 'production') {
-    // Configuración para Railway con Prisma Accelerate
+    // Configuración para Railway con Prisma Accelerate  
     prisma = new PrismaClient({
         datasources: {
             db: {
@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'production') {
         },
     }).$extends(withAccelerate());
 } else {
-    // Configuración para desarrollo (sin Accelerate)
+    // Configuración para desarrollo (Supabase directo)
     prisma = new PrismaClient({
         log: ["error", "warn"],
         datasources: {
