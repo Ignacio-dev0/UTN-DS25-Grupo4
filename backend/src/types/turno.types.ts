@@ -11,3 +11,4 @@ export interface UpdateTurno {
     precio?: number;
     canchaId?: number;
 }
+

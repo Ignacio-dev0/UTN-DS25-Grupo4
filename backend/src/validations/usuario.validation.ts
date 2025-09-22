@@ -132,3 +132,4 @@ export const usuarioEmailSchema = z.object({
     email: z.string().email("Debe ser un email válido")
   })
 });
+
