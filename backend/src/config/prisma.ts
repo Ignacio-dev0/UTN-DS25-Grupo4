@@ -1,7 +1,7 @@
 
 import { PrismaClient } from '@prisma/client'
 
-// Optimización de conexión global
+// Optimización de conexión global con manejo de errores mejorado
 const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined
 }
