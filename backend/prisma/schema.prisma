@@ -118,7 +118,6 @@ model Turno {
   canchaId   Int
   alquiler   Alquiler? @relation(fields: [alquilerId], references: [id])
   cancha     Cancha    @relation(fields: [canchaId], references: [id])
-
   @@index([canchaId, fecha, horaInicio], name: "idx_turno_cancha_fecha_hora")
   @@index([canchaId, reservado], name: "idx_turno_cancha_reservado")
 }

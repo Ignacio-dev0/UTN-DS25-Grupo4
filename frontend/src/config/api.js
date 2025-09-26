@@ -121,3 +121,4 @@ export const getCanchaImage = (canchaId, deporteNombre, nroCancha = null) => {
   
   return `/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
 };
+

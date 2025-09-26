@@ -5,7 +5,7 @@ export const estadoSolicitudSchema = z.enum([
     EstadoSolicitud.APROBADA,
     EstadoSolicitud.PENDIENTE,
     EstadoSolicitud.RECHAZADA
-])
+]);
 
 export const updateSolicitudSchema = z.object({
     params: z.object({
@@ -15,4 +15,4 @@ export const updateSolicitudSchema = z.object({
         estado: estadoSolicitudSchema.optional(),
         adminId: z.int().positive('El id del Administrador eber ser un numero positivo').optional()
     })
-})
+});

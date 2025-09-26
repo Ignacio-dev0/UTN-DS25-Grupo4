@@ -29,3 +29,4 @@ export const turnosCanchaSchema = z.object({
     canchaId: z.string().min(1, "ID de cancha es requerido")
   })
 });
+
