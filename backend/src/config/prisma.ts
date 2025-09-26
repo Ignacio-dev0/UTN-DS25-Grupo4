@@ -1,14 +1,10 @@
 
 import { PrismaClient } from '@prisma/client'
 
-// Optimización de conexión global con manejo de errores mejorado
-const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClient | undefined
-}
-
-const prisma = globalForPrisma.prisma ??
-    new PrismaClient({
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
+// Configuración específica para evitar prepared statement conflicts
+function createPrismaClient() {
+    const client = new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['error'] : ['error'],
         errorFormat: 'minimal',
         datasources: {
             db: {
@@ -16,7 +12,25 @@ const prisma = globalForPrisma.prisma ??
             },
         },
     })
+    
+    // Manejo de desconexión automática
+    process.on('beforeExit', async () => {
+        await client.$disconnect()
+    })
+    
+    return client
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Cliente Prisma global con reconexión automática
+let prismaClient: PrismaClient | null = null
+
+function getPrismaClient(): PrismaClient {
+    if (!prismaClient) {
+        prismaClient = createPrismaClient()
+    }
+    return prismaClient
+}
+
+const prisma = getPrismaClient()
 
 export default prisma;

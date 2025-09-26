@@ -474,14 +474,4 @@ app.listen(PORT, () => {
         }
     }, 24 * 60 * 60 * 1000); // 24 horas en milisegundos
     
-    // Ejecutar una vez al iniciar el servidor - DESHABILITADO TEMPORALMENTE PARA RAILWAY
-    // setTimeout(async () => {
-    //     try {
-    //         console.log('🔄 Ejecutando reseteo inicial de turnos...');
-    //         await resetearTurnosDiarios();
-    //         console.log('✅ Reseteo inicial completado');
-    //     } catch (error) {
-    //         console.error('❌ Error en reseteo inicial:', error);
-    //     }
-    // }, 5000); // Esperar 5 segundos después del inicio
-});// Force rebuild Fri Sep 12 21:45:00 -03 2025
+});
