@@ -1,34 +1,19 @@
-// Configuración de la API// Configuración de la API
+// Configuración de la API
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-
-
-// Función helper para construir URLs de imágenes// Función helper para construir URLs de imágenes
-
-export const getImageUrl = (imagePath) => {export const getImageUrl = (imagePath) => {
-
-  if (!imagePath) return null;  if (!imagePath) return null;
-
-  if (imagePath.startsWith('http') || imagePath.startsWith('data:')) return imagePath;  if (imagePath.startsWith('http') || imagePath.startsWith('data:')) return imagePath;
-
-    
-
-  // Si la ruta ya incluye /images/, construir la URL completa con la API  // Si la ruta ya incluye /images/, construir la URL completa con la API
-
-  if (imagePath.startsWith('/images/')) {  if (imagePath.startsWith('/images/')) {
-
-    return `${API_BASE_URL.replace('/api', '')}${imagePath}`;    return `${API_BASE_URL}${imagePath}`;
-
-  }  }
-
-    
-
-  // Si es solo el nombre del archivo, añadir el prefijo /images/  // Si viene de la base de datos, las imágenes están en /images/canchas/
-
-  return `${API_BASE_URL.replace('/api', '')}/images/${imagePath}`;  if (imagePath.includes('.jpg') || imagePath.includes('.png') || imagePath.includes('.jpeg')) {
-
-};    // Manejar nombres de archivo con leading zeros que necesitan ser convertidos
+// Función helper para construir URLs de imágenes
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:')) return imagePath;
+  
+  // Si la ruta ya incluye /images/, construir la URL completa con la API
+  if (imagePath.startsWith('/images/')) {
+    return `${API_BASE_URL}${imagePath}`;
+  }
+  
+  // Si viene de la base de datos, las imágenes están en /images/canchas/
+  if (imagePath.includes('.jpg') || imagePath.includes('.png') || imagePath.includes('.jpeg')) {
+    // Manejar nombres de archivo con leading zeros que necesitan ser convertidos
     // Por ejemplo: futbol5_03.jpg -> futbol5_3.jpg
     let normalizedPath = imagePath;
     
@@ -136,3 +121,4 @@ export const getCanchaImage = (canchaId, deporteNombre, nroCancha = null) => {
   
   return `/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
 };
+

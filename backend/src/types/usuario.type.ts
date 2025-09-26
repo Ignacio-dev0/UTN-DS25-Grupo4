@@ -1,4 +1,4 @@
-import { Rol, Usuario } from "../generated/prisma";
+import { Rol, Usuario } from "@prisma/client";
 
 export interface CreateUsuarioRequest {
     name: string;
@@ -18,6 +18,7 @@ export interface UpdateUsuarioRequest {
     correo?: string;
     password?: string;
     telefono?: string;
+    direccion?: string;
     rol?: Rol;
     image?: string;
 }

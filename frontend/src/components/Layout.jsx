@@ -27,17 +27,19 @@ function Layout() {
       );
     }
     
-    switch (user.role) {
+    switch (user.rol) {
       case 'admin':
         return (
-          <Link to="/admin" className="flex items-center space-x-2 hover:text-accent">
-            <UserCircleIcon className="h-8 w-8" />
-            <span className="font-semibold">Panel Administrador</span>
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Link to="/admin" className="flex items-center space-x-2 hover:text-accent">
+              <UserCircleIcon className="h-8 w-8" />
+              <span className="font-semibold">Panel Admin</span>
+            </Link>
+          </div>
         );
       case 'owner':
         return (
-          <Link to={`/micomplejo/${user.id}`} className="flex items-center space-x-2 hover:text-accent">
+          <Link to="/estado-solicitud" className="flex items-center space-x-2 hover:text-accent">
             <UserCircleIcon className="h-8 w-8" />
             <span className="font-semibold">Mi Complejo</span>
           </Link>

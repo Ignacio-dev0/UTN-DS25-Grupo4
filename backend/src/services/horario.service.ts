@@ -1,43 +1,10 @@
 import prisma from "../config/prisma";
-import { Prisma, HorarioCronograma, DiaSemana } from "../generated/prisma";
-import { CreateHorario, UpdateCronograma } from "../types/horarioCronograma.types";
+import * as horarioInterface from "../types/horarioCronograma.types"
 
-export async function getAllHorariosCronograma(): Promise<HorarioCronograma[]> {
-    const horarios = await prisma.horarioCronograma.findMany({
-        orderBy: [ { diaSemana: 'asc' }, { horaInicio: 'asc' } ],
-        include: {
-            cancha: true
-        }
-    });
-    return horarios;
-}
-
-export async function getHorarioCronogramaById(id: number): Promise<HorarioCronograma | null> {
-    const horario = await prisma.horarioCronograma.findUnique({
-        where: { id },
-        include: {
-            cancha: true
-        }
-    });
-    return horario;
-}
-
-export async function getHorariosCronogramaByCanchaId(canchaId: number, diaSemana?:DiaSemana): Promise<HorarioCronograma[]> {
-    return prisma.horarioCronograma.findMany({
-        where: {
-            canchaId: canchaId,
-            ...(diaSemana && { diaSemana: diaSemana })
-        },
-        orderBy: {
-            horaInicio: 'asc'
-        },
-    });
-}
-
-export async function createHorarioCronograma (data: CreateHorario): Promise<HorarioCronograma>{
+export const createHorario = async(data: horarioInterface.CreateHorario) => {
     return prisma.horarioCronograma.create({
         data: {
-            horaInicio: data.horaInicio,
+            horaInicio: data.horaInicio ,
             horaFin: data.horaFin,
             diaSemana: data.diaSemana,
             cancha: {
@@ -45,41 +12,84 @@ export async function createHorarioCronograma (data: CreateHorario): Promise<Hor
                     id: data.canchaId
                 }
             }
+        },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
         }
     });
 };
 
-export async function updateHorarioCronograma(id: number, data: UpdateCronograma): Promise<HorarioCronograma>{
-    try {
-        const updated = await prisma.horarioCronograma.update({
-            where: { id },
-            data: {
-                ...(data.horaInicio !== undefined ? { horaInicio: data.horaInicio } : {}),
-                ...(data.horaFin !== undefined ? { horaFin: data.horaFin } : {}),
-                ...(data.diaSemana !== undefined ? { diaSemana: data.diaSemana } : {})
+export async function getAllHorarios() {
+    return prisma.horarioCronograma.findMany({
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
             }
-        });
-        return updated;
-    } catch (e: any) {
-        if (e.code === 'P2025') {
-            const error = new Error('Horario no encontrado');
-            (error as any).statusCode = 404;
-            throw error;
         }
-        throw e;
-    }
-};
+    });
+}
 
-export async function deleteHorarioCronograma(id: number): Promise<HorarioCronograma> {
-    try {
-        const deleted = await prisma.horarioCronograma.delete({ where: { id } });
-        return deleted;
-    } catch (e: any) {
-        if (e.code === 'P2025') {
-            const error = new Error('Horario no encontrado');
-            (error as any).statusCode = 404;
-            throw error;
+export async function getHorarioById(id: number) {
+    return prisma.horarioCronograma.findUnique({
+        where: { id },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
         }
-        throw e;
-    }
-};
+    });
+}
+
+export async function getHorariosByCanchaId(canchaId: number) {
+    return prisma.horarioCronograma.findMany({
+        where: {
+            canchaId: canchaId,
+        },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
+        }
+    });
+}
+
+export async function updateHorario(id: number, data: horarioInterface.UpdateCronograma) {
+    return prisma.horarioCronograma.update({
+        where: { id },
+        data: {
+            ...(data.horaInicio && { horaInicio: data.horaInicio }),
+            ...(data.horaFin && { horaFin: data.horaFin }),
+            ...(data.diaSemana && { diaSemana: data.diaSemana })
+        },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
+        }
+    });
+}
+
+export async function deleteHorario(id: number) {
+    return prisma.horarioCronograma.delete({
+        where: { id },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
+        }
+    });
+}

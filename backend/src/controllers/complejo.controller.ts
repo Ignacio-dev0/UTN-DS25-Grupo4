@@ -25,6 +25,19 @@ export const obtenerComplejos = async (req: Request, res: Response, next:NextFun
   }
 };
 
+export const obtenerComplejosAprobados = async (req: Request, res: Response, next:NextFunction) => {
+  try {
+    const complejos = await complejoService.getComplejosAprobados();
+    res.status(200).json({
+      complejos,
+      total: complejos.length,
+    });
+  } catch (error) {
+    next(error);
+    console.log(error);
+  }
+};
+
 export const obtenerComplejoPorId = async (req: Request, res: Response, next:NextFunction) => {
   try {
     const id = parseInt(req.params.id);
@@ -43,6 +56,14 @@ export const obtenerComplejoPorId = async (req: Request, res: Response, next:Nex
 
 export const actualizarComplejo = async (req: Request, res: Response, next:NextFunction) => {
   try {
+    console.log('=== ACTUALIZANDO COMPLEJO ===');
+    console.log('ID del complejo:', req.params.id);
+    console.log('Datos recibidos en req.body:', JSON.stringify(req.body, null, 2));
+    console.log('Tipo de datos:');
+    Object.keys(req.body).forEach(key => {
+      console.log(`  ${key}: ${typeof req.body[key]} = ${req.body[key]}`);
+    });
+    
     const id = parseInt(req.params.id);
     const complejoActualizado = await complejoService.updateComplejo(id, req.body);
     res.status(200).json({
@@ -50,6 +71,7 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
       message:('complejo actualizado')
     });
   } catch (error: any) {
+    console.error('Error en actualizarComplejo:', error);
     // Prisma tira un error específico si el registro a actualizar no existe
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Complejo no encontrado.' });
@@ -61,12 +83,29 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
 export const eliminarComplejo = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
+    console.log(`🗑️ [${new Date().toISOString()}] Attempting to delete complejo with ID: ${id}`);
+    
     await complejoService.deleteComplejo_sol_dom(id);
-    res.status(200).json({ message: 'Complejo eliminado correctamente.' });
+    console.log(`✅ [${new Date().toISOString()}] Complejo deleted successfully with ID: ${id}`);
+    
+    res.status(200).json({ 
+      message: 'Complejo eliminado correctamente. El usuario dueño asociado también fue eliminado.' 
+    });
   } catch (error: any) {
+    console.error(`❌ [${new Date().toISOString()}] Error deleting complejo:`, {
+      id: req.params.id,
+      error: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Complejo no encontrado.' });
     }
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ 
+      error: 'Error interno del servidor',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };

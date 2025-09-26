@@ -1,21 +1,37 @@
-import React, { useState } from 'react';
-import { FaPlus, FaPencilAlt, FaTrash, FaFutbol, FaHockeyPuck } from 'react-icons/fa';
-import { GiTennisRacket } from "react-icons/gi";
+import React, { useState, useEffect } from 'react';
+import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
 import ModalDeporte from './ModalDeporte';
 import ModalConfirmacion from './ModalConfirmacion';
 
-const deportesMock = [
-  { id: 1, nombre: 'Fútbol', icon: <FaFutbol size={32}/> },
-  { id: 2, nombre: 'Pádel', icon: <GiTennisRacket size={32}/> },
-  { id: 3, nombre: 'Hockey', icon: <FaHockeyPuck size={32}/> },
-];
+import { API_BASE_URL } from '../config/api.js';
 
 function GestionDeportes() {
-  const [deportes, setDeportes] = useState(deportesMock);
+  const [deportes, setDeportes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalDeporteOpen, setIsModalDeporteOpen] = useState(false);
   const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
   const [deporteSeleccionado, setDeporteSeleccionado] = useState(null);
 
+  // Cargar deportes desde el backend
+  useEffect(() => {
+    const cargarDeportes = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/deportes`);
+        if (response.ok) {
+          const data = await response.json();
+          setDeportes(data.deportes || data || []);
+        } else {
+          console.error('Error al cargar deportes');
+        }
+      } catch (error) {
+        console.error('Error cargando deportes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDeportes();
+  }, []);
 
   const handleOpenModalDeporte = (deporte = null) => {
     setDeporteSeleccionado(deporte);
@@ -27,28 +43,102 @@ function GestionDeportes() {
     setDeporteSeleccionado(null);
   };
 
-  const handleSaveDeporte = (deporteGuardado) => {
-    if (deporteGuardado.id) {
-      setDeportes(deportes.map(d => d.id === deporteGuardado.id ? { ...d, nombre: deporteGuardado.nombre } : d));
-    } else {
-      setDeportes([...deportes, { ...deporteGuardado, id: Date.now(), icon: <FaFutbol size={32}/> }]);
-    }
-    handleCloseModalDeporte();
-  };
+  const handleSaveDeporte = async (deporteGuardado) => {
+    try {
+      let response;
+      
+      if (deporteGuardado.id) {
+        // Actualizar deporte existente
+        response = await fetch(`${API_BASE_URL}/deportes/${deporteGuardado.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            name: deporteGuardado.nombre,
+            icono: deporteGuardado.icono 
+          }),
+        });
+      } else {
+        // Crear nuevo deporte
+        response = await fetch(`${API_BASE_URL}/deportes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            name: deporteGuardado.nombre,
+            icono: deporteGuardado.icono 
+          }),
+        });
+      }
 
+      if (response.ok) {
+        const result = await response.json();
+        const deporteActualizado = result.deporte || result;
+
+        if (deporteGuardado.id) {
+          // Actualizar en la lista
+          setDeportes(deportes.map(d => 
+            d.id === deporteGuardado.id ? deporteActualizado : d
+          ));
+        } else {
+          // Agregar a la lista
+          setDeportes([...deportes, deporteActualizado]);
+        }
+        
+        handleCloseModalDeporte();
+        alert('Deporte guardado exitosamente');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al guardar el deporte');
+      }
+    } catch (error) {
+      console.error('Error guardando deporte:', error);
+      alert('Error al guardar el deporte: ' + error.message);
+    }
+  };
 
   const handleOpenModalEliminar = (deporte) => {
     setDeporteSeleccionado(deporte);
     setIsModalEliminarOpen(true);
   };
   
-  const handleConfirmDelete = () => {
-    if (deporteSeleccionado) {
-      setDeportes(deportes.filter(d => d.id !== deporteSeleccionado.id));
+  const handleConfirmDelete = async () => {
+    if (!deporteSeleccionado) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/deportes/${deporteSeleccionado.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setDeportes(deportes.filter(d => d.id !== deporteSeleccionado.id));
+        alert('Deporte eliminado exitosamente');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al eliminar el deporte');
+      }
+    } catch (error) {
+      console.error('Error eliminando deporte:', error);
+      alert('Error al eliminar el deporte: ' + error.message);
+    } finally {
+      setIsModalEliminarOpen(false);
+      setDeporteSeleccionado(null);
     }
-    setIsModalEliminarOpen(false);
-    setDeporteSeleccionado(null);
   };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <h2 className="text-2xl font-bold text-secondary mb-6">Gestión de Deportes</h2>
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-2">Cargando deportes...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -64,7 +154,7 @@ function GestionDeportes() {
           
           {deportes.map(deporte => (
               <div key={deporte.id} className="group relative aspect-square bg-white shadow-lg rounded-full flex flex-col items-center justify-center cursor-pointer overflow-hidden">
-                  <div className="text-primary">{deporte.icon}</div>
+                  <div className="text-primary text-4xl">{deporte.icono || '⚽'}</div>
                   <span className="mt-2 text-xl font-bold text-gray-800 transition-transform duration-300 group-hover:scale-110">{deporte.nombre}</span>
                   
                   <div className="absolute inset-0 bg-primary bg-opacity-70 rounded-full flex items-center justify-center space-x-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

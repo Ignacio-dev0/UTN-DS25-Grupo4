@@ -1,76 +1,326 @@
-// --- USUARIOS DE PRUEBA ---
-const mockUsers = [
-  {
-    id: 999, // Un ID único para el administrador
-    email: 'admin@canchaya.com',
-    password: 'admin',
-    role: 'admin',
-    nombre: 'Thiago',
-    apellido: 'Perez'
-  },
-  {
-    id: 1, 
-    email: 'complejo@canchaya.com',
-    password: 'complejo',
-    role: 'owner', // 'owner' para dueño de complejo
-    nombre: 'Dueño de',
-    apellido: 'El Potrero'
-  },
-  {
-    id: 101,
-    email: 'cliente@canchaya.com',
-    password: 'cliente',
-    role: 'normal', // 'normal' para un cliente/jugador
-    nombre: 'Juan',
-    apellido: 'Cliente'
-  }
-];
-
+import { API_BASE_URL } from '../config/api.js';
 
 /**
- * Simula el inicio de sesión de un usuario.
- * @param {string} email 
- * @param {string} password 
- * @param {boolean} rememberMe 
- * @returns {Promise<{ok: boolean, user?: object, error?: string}>}
+ * Convierte el rol del backend al rol del frontend
+ */
+const mapBackendRoleToFrontend = (backendRole) => {
+  const roleMap = {
+    'ADMINISTRADOR': 'admin',
+    'DUENIO': 'owner',
+    'CLIENTE': 'normal'
+  };
+  return roleMap[backendRole] || 'normal';
+};
+
+/**
+ * Función de login que conecta con el backend
  */
 export const login = async (email, password, rememberMe = false) => {
-  console.log("Intentando iniciar sesión con:", email);
-
-  const foundUser = mockUsers.find(user => user.email === email && user.password === password);
-
-  if (foundUser) {
-    const userToStore = { ...foundUser };
-    delete userToStore.password; 
-
-    const storage = rememberMe ? localStorage : sessionStorage;
-    storage.setItem('currentUser', JSON.stringify(userToStore));
-    
-    console.log("Usuario encontrado y sesión guardada:", userToStore);
-    return { ok: true, user: userToStore };
-  }
-
-  return { ok: false, error: 'Credenciales incorrectas' };
-};
-
-/**
- * Obtiene el usuario actual desde el storage.
- * @returns {object|null}
- */
-export const getCurrentUser = () => {
   try {
-    const user = JSON.parse(localStorage.getItem('currentUser')) || JSON.parse(sessionStorage.getItem('currentUser'));
-    return user;
-  } catch {
-    return null;
+    console.log('Intentando login con:', { email, password });
+    const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('Response data:', data);
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.error || 'Error de conexión'
+      };
+    }
+
+    if (data.ok) {
+      // Mapear el rol del backend al frontend
+      const user = {
+        ...data.user,
+        rol: mapBackendRoleToFrontend(data.user.rol || data.user.role)
+      };
+
+      // Guardar en localStorage si rememberMe está activado
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(user));
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(user));
+      }
+
+      return {
+        ok: true,
+        user
+      };
+    }
+
+    return {
+      ok: false,
+      error: data.error || 'Credenciales inválidas'
+    };
+
+  } catch (error) {
+    console.error('Error en login:', error);
+    return {
+      ok: false,
+      error: 'Error de conexión con el servidor'
+    };
   }
 };
 
 /**
- * Cierra la sesión del usuario actual.
+ * Función de registro que conecta con el backend
+ */
+export const register = async (userData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/usuarios/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.error || 'Error de conexión'
+      };
+    }
+
+    if (data.ok) {
+      // Mapear el rol del backend al frontend
+      const user = {
+        ...data.user,
+        rol: mapBackendRoleToFrontend(data.user.rol)
+      };
+
+      // Guardar usuario automáticamente después del registro
+      sessionStorage.setItem('user', JSON.stringify(user));
+
+      return {
+        ok: true,
+        user
+      };
+    }
+
+    return {
+      ok: false,
+      error: data.error || 'Error en el registro'
+    };
+
+  } catch (error) {
+    console.error('Error en registro:', error);
+    return {
+      ok: false,
+      error: 'Error de conexión con el servidor'
+    };
+  }
+};
+
+/**
+ * Función para obtener el perfil completo del usuario logueado
+ */
+export const getUserProfile = async () => {
+  try {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+      return {
+        ok: false,
+        error: 'No hay usuario logueado'
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.error || 'Error al obtener el perfil'
+      };
+    }
+
+    return {
+      ok: true,
+      user: data.usuario
+    };
+  } catch (error) {
+    console.error('Error en getUserProfile:', error);
+    return {
+      ok: false,
+      error: 'Error de conexión'
+    };
+  }
+};
+
+/**
+ * Función para actualizar el perfil del usuario logueado
+ */
+export const updateUserProfile = async (userData) => {
+  try {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+      return {
+        ok: false,
+        error: 'No hay usuario logueado'
+      };
+    }
+
+    console.log('Datos recibidos para actualizar:', userData);
+
+    // Si hay imagen, usar FormData y el endpoint con imagen
+    if (userData.profileImageData && userData.profileImageData.startsWith('data:')) {
+      // Convertir base64 a blob
+      const base64Data = userData.profileImageData.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      // Crear FormData
+      const formData = new FormData();
+      formData.append('nombre', userData.nombre || currentUser.nombre);
+      formData.append('apellido', userData.apellido || currentUser.apellido);
+      formData.append('correo', currentUser.correo || currentUser.email);
+      formData.append('dni', currentUser.dni);
+      formData.append('telefono', userData.telefono || '');
+      formData.append('direccion', userData.direccion || '');
+      formData.append('rol', currentUser.rol || currentUser.role);
+      formData.append('imagen', blob, 'profile.jpg');
+
+      console.log('Enviando con FormData al endpoint con imagen');
+
+      const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}/update-with-image`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log('Respuesta del servidor (con imagen):', data);
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: data.error || 'Error al actualizar el perfil con imagen'
+        };
+      }
+
+      // Actualizar usuario en el storage
+      const updatedUser = {
+        ...currentUser,
+        ...data.usuario,
+        role: mapBackendRoleToFrontend(data.usuario.rol),
+        profileImageUrl: data.usuario.image ? `${API_BASE_URL}${data.usuario.image}` : currentUser.profileImageUrl
+      };
+
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
+      return {
+        ok: true,
+        user: data.usuario
+      };
+    } else {
+      // Sin imagen, usar JSON tradicional
+      const updateData = {
+        nombre: userData.nombre || currentUser.nombre,
+        apellido: userData.apellido || currentUser.apellido,
+        telefono: userData.telefono,
+        direccion: userData.direccion,
+      };
+
+      console.log('Enviando datos sin imagen:', updateData);
+
+      const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await response.json();
+      console.log('Respuesta del servidor (sin imagen):', data);
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: data.error || 'Error al actualizar el perfil'
+        };
+      }
+
+      // Actualizar usuario en el storage
+      const updatedUser = {
+        ...currentUser,
+        ...data.usuario,
+        role: mapBackendRoleToFrontend(data.usuario.rol)
+      };
+
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
+      return {
+        ok: true,
+        user: data.usuario
+      };
+    }
+  } catch (error) {
+    console.error('Error en updateUserProfile:', error);
+    return {
+      ok: false,
+      error: 'Error de conexión'
+    };
+  }
+};
+
+/**
+ * Función de logout
  */
 export const logout = () => {
-  localStorage.removeItem('currentUser');
-  sessionStorage.removeItem('currentUser');
-  console.log("Sesión cerrada.");
+  localStorage.removeItem('user');
+  sessionStorage.removeItem('user');
+};
+
+/**
+ * Obtener usuario actual del storage
+ */
+export const getCurrentUser = () => {
+  const user = localStorage.getItem('user') || sessionStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
+};
+
+/**
+ * Verificar si el usuario está autenticado
+ */
+export const isAuthenticated = () => {
+  return getCurrentUser() !== null;
+};
+
+/**
+ * Verificar si el usuario tiene un rol específico
+ */
+export const hasRole = (requiredRole) => {
+  const user = getCurrentUser();
+  return user && user.rol === requiredRole;
 };

@@ -1,2114 +1,610 @@
-// // backend/prisma/seed.ts
-// import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago, Turno } from '../src/generated/prisma/client';
-// import bcrypt from 'bcrypt';
-
-// const prisma = new PrismaClient();
-
-// async function main() {
-//   console.log('🌱 Iniciando seed de la base de datos...');
-
-//   try {
-//     // Limpiar base de datos en orden correcto (solo si las tablas existen)
-//     console.log('🧹 Limpiando base de datos...');
-//     try {
-//       await prisma.pago.deleteMany();
-//       await prisma.resenia.deleteMany();
-//       await prisma.alquiler.deleteMany();
-//       await prisma.turno.deleteMany();
-//       await prisma.horarioCronograma.deleteMany();
-//       await prisma.cancha.deleteMany();
-//       await prisma.complejo.deleteMany();
-//       await prisma.solicitud.deleteMany();
-//       await prisma.administrador.deleteMany();
-//       await prisma.usuario.deleteMany();
-//       await prisma.domicilio.deleteMany();
-//       await prisma.localidad.deleteMany();
-//       await prisma.deporte.deleteMany();
-//     } catch (cleanupError) {
-//       console.log('⚠️  Base de datos ya está limpia o tablas no existen.');
-//     }
-
-//     // 1. Crear Localidades
-//     console.log('📍 Creando localidades...');
-//     const localidades = await Promise.all([
-//       prisma.localidad.create({ data: { nombre: 'La Plata' } }),
-//       prisma.localidad.create({ data: { nombre: 'City Bell' } }),
-//       prisma.localidad.create({ data: { nombre: 'Gonnet' } }),
-//       prisma.localidad.create({ data: { nombre: 'Ensenada' } }),
-//       prisma.localidad.create({ data: { nombre: 'Los Hornos' } }),
-//     ]);
-
-//     const localidadMap = new Map(localidades.map(l => [l.nombre, l.id]));
-
-//     // 2. Crear Deportes
-//     console.log('⚽ Creando deportes...');
-//     const deportes = await Promise.all([
-//       prisma.deporte.create({ data: { nombre: 'Fútbol 5' } }),
-//       prisma.deporte.create({ data: { nombre: 'Fútbol 11' } }),
-//       prisma.deporte.create({ data: { nombre: 'Vóley' } }),
-//       prisma.deporte.create({ data: { nombre: 'Básquet' } }),
-//       prisma.deporte.create({ data: { nombre: 'Handball' } }),
-//       prisma.deporte.create({ data: { nombre: 'Tenis' } }),
-//       prisma.deporte.create({ data: { nombre: 'Pádel' } }),
-//       prisma.deporte.create({ data: { nombre: 'Hockey' } }),
-//     ]);
-
-//     const deporteMap = new Map(deportes.map(d => [d.nombre, d.id]));
-
-//     // 3. Crear Administrador
-//     console.log('👤 Creando administrador...');
-//     const hashedAdminPassword = await bcrypt.hash('admin123', 10);
-//     const admin = await prisma.administrador.create({
-//       data: {
-//         correo: 'admin@sistema.com',
-//         password: hashedAdminPassword,
-//       }
-//     });
-
-//     // 4. Crear Usuarios (Clientes y Dueños)
-//     console.log('👥 Creando usuarios...');
-//     const hashedPassword = await bcrypt.hash('password123', 10);
-    
-//     // Usuario cliente de prueba
-//     const cliente = await prisma.usuario.create({
-//       data: {
-//         nombre: 'Nacho',
-//         apellido: 'Benitez',
-//         dni: 40123456,
-//         correo: 'nacho.benitez@email.com',
-//         password: hashedPassword,
-//         telefono: '221-5555555',
-//         rol: Rol.CLIENTE,
-//       }
-//     });
-
-//     // Usuarios dueños de complejos - Expandido para más complejos
-//     const duenios = await Promise.all([
-//       // Grupo 1 - Originales
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Juan',
-//           apellido: 'Pérez',
-//           dni: 30123456,
-//           correo: 'juan.perez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-6666666',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'María',
-//           apellido: 'González',
-//           dni: 31123456,
-//           correo: 'maria.gonzalez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-7777777',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Carlos',
-//           apellido: 'Rodríguez',
-//           dni: 32123456,
-//           correo: 'carlos.rodriguez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-8888888',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Ana',
-//           apellido: 'Martínez',
-//           dni: 33123456,
-//           correo: 'ana.martinez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-9999999',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Luis',
-//           apellido: 'Fernández',
-//           dni: 34123456,
-//           correo: 'luis.fernandez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1111111',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       // Grupo 2 - Expansión
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Carmen',
-//           apellido: 'López',
-//           dni: 35123456,
-//           correo: 'carmen.lopez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2222222',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Roberto',
-//           apellido: 'Silva',
-//           dni: 36123456,
-//           correo: 'roberto.silva@email.com',
-//           password: hashedPassword,
-//           telefono: '221-3333333',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Elena',
-//           apellido: 'Torres',
-//           dni: 37123456,
-//           correo: 'elena.torres@email.com',
-//           password: hashedPassword,
-//           telefono: '221-4444444',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Diego',
-//           apellido: 'Morales',
-//           dni: 38123456,
-//           correo: 'diego.morales@email.com',
-//           password: hashedPassword,
-//           telefono: '221-5555555',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Patricia',
-//           apellido: 'Herrera',
-//           dni: 39123456,
-//           correo: 'patricia.herrera@email.com',
-//           password: hashedPassword,
-//           telefono: '221-6666666',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       // Grupo 3 - Más dueños para más complejos
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Miguel',
-//           apellido: 'Ramírez',
-//           dni: 40123457,
-//           correo: 'miguel.ramirez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-7777777',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Sofía',
-//           apellido: 'Vargas',
-//           dni: 41123457,
-//           correo: 'sofia.vargas@email.com',
-//           password: hashedPassword,
-//           telefono: '221-8888888',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Alejandro',
-//           apellido: 'Mendoza',
-//           dni: 42123457,
-//           correo: 'alejandro.mendoza@email.com',
-//           password: hashedPassword,
-//           telefono: '221-9999999',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Valeria',
-//           apellido: 'Castro',
-//           dni: 43123457,
-//           correo: 'valeria.castro@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1010101',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Ricardo',
-//           apellido: 'Flores',
-//           dni: 44123457,
-//           correo: 'ricardo.flores@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1111112',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       // Grupo 4 - Aún más dueños
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Claudia',
-//           apellido: 'Jiménez',
-//           dni: 45123457,
-//           correo: 'claudia.jimenez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1212121',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Fernando',
-//           apellido: 'Gutiérrez',
-//           dni: 46123457,
-//           correo: 'fernando.gutierrez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1313131',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Lucía',
-//           apellido: 'Romero',
-//           dni: 47123457,
-//           correo: 'lucia.romero@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1414141',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Andrés',
-//           apellido: 'Moreno',
-//           dni: 48123457,
-//           correo: 'andres.moreno@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1515151',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Natalia',
-//           apellido: 'Ramos',
-//           dni: 49123457,
-//           correo: 'natalia.ramos@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1616161',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       // Grupo 5 - Completar hasta 50 complejos
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Sebastián',
-//           apellido: 'Ortega',
-//           dni: 50123457,
-//           correo: 'sebastian.ortega@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1717171',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Gabriela',
-//           apellido: 'Delgado',
-//           dni: 51123457,
-//           correo: 'gabriela.delgado@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1818181',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Martín',
-//           apellido: 'Aguilar',
-//           dni: 52123457,
-//           correo: 'martin.aguilar@email.com',
-//           password: hashedPassword,
-//           telefono: '221-1919191',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Camila',
-//           apellido: 'Vega',
-//           dni: 53123457,
-//           correo: 'camila.vega@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2020202',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Joaquín',
-//           apellido: 'Cruz',
-//           dni: 54123457,
-//           correo: 'joaquin.cruz@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2121212',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       // Más usuarios hasta completar una buena cantidad
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Isabella',
-//           apellido: 'Paredes',
-//           dni: 55123457,
-//           correo: 'isabella.paredes@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2222223',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Emilio',
-//           apellido: 'Santana',
-//           dni: 56123457,
-//           correo: 'emilio.santana@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2323232',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Valentina',
-//           apellido: 'Navarro',
-//           dni: 57123457,
-//           correo: 'valentina.navarro@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2424242',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Tomás',
-//           apellido: 'Hernández',
-//           dni: 58123457,
-//           correo: 'tomas.hernandez@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2525252',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Agustina',
-//           apellido: 'Reyes',
-//           dni: 59123457,
-//           correo: 'agustina.reyes@email.com',
-//           password: hashedPassword,
-//           telefono: '221-2626262',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//     ]);
-
-//     // 5. Crear Complejos con sus solicitudes aprobadas
-//     console.log('🏢 Creando complejos...');
-    
-//     const complejosData = [
-//       // Originales
-//       { nombre: 'Complejo El Potrero', ubicacion: 'La Plata', cuit: 30123456781, usuarioIdx: 0, calle: '13', altura: 456 },
-//       { nombre: 'Fútbol City', ubicacion: 'City Bell', cuit: 30123456782, usuarioIdx: 1, calle: '14', altura: 2345 },
-//       { nombre: 'La Redonda FC', ubicacion: 'Ensenada', cuit: 30123456783, usuarioIdx: 2, calle: 'Av. Bossinga', altura: 567 },
-//       { nombre: 'Pase a la Red', ubicacion: 'La Plata', cuit: 30123456784, usuarioIdx: 3, calle: '50', altura: 1234 },
-//       { nombre: 'Estación Fútbol', ubicacion: 'City Bell', cuit: 30123456785, usuarioIdx: 4, calle: '476', altura: 890 },
-//       { nombre: 'Club San Luis', ubicacion: 'La Plata', cuit: 30123456788, usuarioIdx: 5, calle: '70', altura: 234 },
-//       { nombre: 'Club Atenas', ubicacion: 'La Plata', cuit: 30123456780, usuarioIdx: 6, calle: '13', altura: 1259 },
-//       { nombre: 'Club de Tenis La Plata', ubicacion: 'La Plata', cuit: 30123456786, usuarioIdx: 7, calle: '4', altura: 1700 },
-//       { nombre: 'Crystal Padel', ubicacion: 'La Plata', cuit: 30123456787, usuarioIdx: 8, calle: '19', altura: 456 },
-//       { nombre: 'Club Santa Bárbara', ubicacion: 'Gonnet', cuit: 30123456789, usuarioIdx: 9, calle: 'Camino Gral. Belgrano', altura: 3456 },
-      
-//       // Expansión - Más complejos para soportar 64+ canchas
-//       { nombre: 'Arena Deportiva Central', ubicacion: 'La Plata', cuit: 30123456790, usuarioIdx: 10, calle: '7', altura: 890 },
-//       { nombre: 'Sporting Club La Plata', ubicacion: 'La Plata', cuit: 30123456791, usuarioIdx: 11, calle: 'Diagonal 74', altura: 567 },
-//       { nombre: 'Complejo Deportivo Meridiano', ubicacion: 'City Bell', cuit: 30123456792, usuarioIdx: 12, calle: '60', altura: 1200 },
-//       { nombre: 'Centro Atlético Tolosa', ubicacion: 'Tolosa', cuit: 30123456793, usuarioIdx: 13, calle: 'Av. 1', altura: 526 },
-//       { nombre: 'Polideportivo City Bell', ubicacion: 'City Bell', cuit: 30123456794, usuarioIdx: 14, calle: '11', altura: 460 },
-//       { nombre: 'Club Deportivo Gonnet', ubicacion: 'Gonnet', cuit: 30123456795, usuarioIdx: 15, calle: 'Camino Centenario', altura: 489 },
-//       { nombre: 'Arena Futsal Premium', ubicacion: 'La Plata', cuit: 30123456796, usuarioIdx: 16, calle: '13', altura: 666 },
-//       { nombre: 'Complejo Deportivo Ringuelet', ubicacion: 'La Plata', cuit: 30123456797, usuarioIdx: 17, calle: '514', altura: 678 },
-//       { nombre: 'Centro de Alto Rendimiento', ubicacion: 'La Plata', cuit: 30123456798, usuarioIdx: 18, calle: '122', altura: 600 },
-//       { nombre: 'Sports Center Villa Elvira', ubicacion: 'Ensenada', cuit: 30123456799, usuarioIdx: 19, calle: '7', altura: 610 },
-//       { nombre: 'Megadeportivo La Plata', ubicacion: 'La Plata', cuit: 30123456800, usuarioIdx: 20, calle: '25 de Mayo', altura: 2500 },
-//       { nombre: 'Club Atlético Boca Unidos', ubicacion: 'La Plata', cuit: 30123456801, usuarioIdx: 21, calle: '115', altura: 490 },
-//       { nombre: 'Deportivo San Carlos', ubicacion: 'La Plata', cuit: 30123456802, usuarioIdx: 22, calle: '137', altura: 440 },
-//       { nombre: 'Arena Multideporte', ubicacion: 'La Plata', cuit: 30123456803, usuarioIdx: 23, calle: '20', altura: 470 },
-//       { nombre: 'Complejo Olímpico', ubicacion: 'La Plata', cuit: 30123456804, usuarioIdx: 24, calle: '60', altura: 250 },
-//       { nombre: 'Centro Deportivo Hipódromo', ubicacion: 'City Bell', cuit: 30123456805, usuarioIdx: 25, calle: '38', altura: 1200 },
-//       { nombre: 'Polideportivo República de los Niños', ubicacion: 'Gonnet', cuit: 30123456806, usuarioIdx: 26, calle: 'Camino Gral. Belgrano', altura: 1200 },
-//       { nombre: 'Club Deportivo Almagro', ubicacion: 'La Plata', cuit: 30123456807, usuarioIdx: 27, calle: '2', altura: 720 },
-//       { nombre: 'Arena Sport Complex', ubicacion: 'La Plata', cuit: 30123456808, usuarioIdx: 28, calle: '13', altura: 320 },
-//       { nombre: 'Complejo Deportivo El Trébol', ubicacion: 'La Plata', cuit: 30123456809, usuarioIdx: 29, calle: '64', altura: 170 },
-//     ];
-
-//     const complejos = await Promise.all(
-//       complejosData.map(async (data) => {
-//         // Crear domicilio
-//         const domicilio = await prisma.domicilio.create({
-//           data: {
-//             calle: data.calle,
-//             altura: data.altura,
-//             localidadId: localidadMap.get(data.ubicacion) || localidades[0].id,
-//           }
-//         });
-
-//         // Crear solicitud aprobada
-//         const solicitud = await prisma.solicitud.create({
-//           data: {
-//             cuit: data.cuit,
-//             estado: EstadoSolicitud.APROBADA,
-//             usuarioId: duenios[data.usuarioIdx].id,
-//             adminId: admin.id,
-//           }
-//         });
-
-//         // Crear complejo
-//         return prisma.complejo.create({
-//           data: {
-//             nombre: data.nombre,
-//             descripcion: `${data.nombre} - Complejo deportivo de primera categoría`,
-//             puntaje: 4.5 + Math.random() * 0.5,
-//             domicilioId: domicilio.id,
-//             usuarioId: duenios[data.usuarioIdx].id,
-//             solicitudId: solicitud.id,
-//           }
-//         });
-//       })
-//     );
-
-//     const complejoMap = new Map(complejos.map(c => [c.nombre, c.id]));
-
-//     // 6. Crear Canchas
-//     console.log('🏟️ Creando canchas...');
-    
-//     const canchasData = [
-//       // Fútbol 5 - 16 canchas
-//       { complejoNombre: 'Complejo El Potrero', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de última generación.', puntaje: 4.8 },
-//       { complejoNombre: 'Fútbol City', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha de 5 techada con caucho de alta densidad.', puntaje: 4.7 },
-//       { complejoNombre: 'La Redonda FC', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'No se suspende por lluvia. Excelente iluminación.', puntaje: 4.2 },
-//       { complejoNombre: 'Pase a la Red', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Iluminación LED profesional.', puntaje: 4.6 },
-//       { complejoNombre: 'Estación Fútbol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'La clásica de Estación. Siempre impecable.', puntaje: 4.9 },
-//       { complejoNombre: 'Arena Deportiva Central', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha principal con tribunas.', puntaje: 4.8 },
-//       { complejoNombre: 'Sporting Club La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético profesional.', puntaje: 4.5 },
-//       { complejoNombre: 'Complejo Deportivo Meridiano', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha techada anti lluvia.', puntaje: 4.7 },
-//       { complejoNombre: 'Arena Futsal Premium', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Piso de futsal profesional.', puntaje: 4.9 },
-//       { complejoNombre: 'Megadeportivo La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Instalaciones de primer nivel.', puntaje: 5.0 },
-//       { complejoNombre: 'Arena Multideporte', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha multiuso adaptable.', puntaje: 4.6 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Estándares olímpicos.', puntaje: 4.8 },
-//       { complejoNombre: 'Arena Sport Complex', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Tecnología de última generación.', puntaje: 4.7 },
-//       { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Ambiente familiar y acogedor.', puntaje: 4.4 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Entrenamiento de alto nivel.', puntaje: 4.9 },
-//       { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de calidad.', puntaje: 4.3 },
-
-//       // Fútbol 11 - 12 canchas
-//       { complejoNombre: 'Estación Fútbol', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural con medidas reglamentarias.', puntaje: 4.9 },
-//       { complejoNombre: 'Club San Luis', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha de entrenamiento San Luis.', puntaje: 4.5 },
-//       { complejoNombre: 'Megadeportivo La Plata', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo reglamentario FIFA.', puntaje: 5.0 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Estadio con capacidad 5000 personas.', puntaje: 4.8 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped híbrido profesional.', puntaje: 4.9 },
-//       { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha histórica del club.', puntaje: 4.6 },
-//       { complejoNombre: 'Deportivo San Carlos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo de entrenamiento principal.', puntaje: 4.4 },
-//       { complejoNombre: 'Club Deportivo Almagro', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural tradicional.', puntaje: 4.5 },
-//       { complejoNombre: 'Club Santa Bárbara', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo secundario del club.', puntaje: 4.3 },
-//       { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo educativo y recreativo.', puntaje: 4.2 },
-//       { complejoNombre: 'Centro Deportivo Hipódromo', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Ubicación privilegiada.', puntaje: 4.7 },
-//       { complejoNombre: 'Complejo Deportivo Ringuelet', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo comunitario.', puntaje: 4.1 },
-
-//       // Vóley - 8 canchas
-//       { complejoNombre: 'Club Atenas', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso de parquet flotante profesional.', puntaje: 4.8 },
-//       { complejoNombre: 'Polideportivo City Bell', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Cancha cubierta con gradas.', puntaje: 4.6 },
-//       { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso sintético de alta calidad.', puntaje: 4.7 },
-//       { complejoNombre: 'Arena Multideporte', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha adaptable multi-deporte.', puntaje: 4.5 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Instalaciones olímpicas.', puntaje: 4.9 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Entrenamiento de selecciones.', puntaje: 5.0 },
-//       { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Ambiente familiar.', puntaje: 4.3 },
-//       { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha techada moderna.', puntaje: 4.4 },
-
-//       // Básquet - 8 canchas
-//       { complejoNombre: 'Club Atenas', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tablero reglamentario FIBA.', puntaje: 4.7 },
-//       { complejoNombre: 'Polideportivo City Bell', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha principal del polideportivo.', puntaje: 4.8 },
-//       { complejoNombre: 'Arena Multideporte', nroCancha: 3, deporteNombre: 'Básquet', descripcion: 'Piso de maple canadiense.', puntaje: 4.9 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Arena principal con 3000 butacas.', puntaje: 5.0 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Entrenamiento profesional.', puntaje: 4.9 },
-//       { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha histórica del club.', puntaje: 4.5 },
-//       { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Instalaciones renovadas.', puntaje: 4.6 },
-//       { complejoNombre: 'Club Deportivo Almagro', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tradición en básquet.', puntaje: 4.4 },
-
-//       // Handball - 6 canchas
-//       { complejoNombre: 'Arena Multideporte', nroCancha: 4, deporteNombre: 'Handball', descripcion: 'Cancha reglamentaria IHF.', puntaje: 4.8 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Instalaciones de elite.', puntaje: 4.9 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Centro de entrenamiento nacional.', puntaje: 5.0 },
-//       { complejoNombre: 'Polideportivo City Bell', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Piso antideslizante.', puntaje: 4.6 },
-//       { complejoNombre: 'Club Atenas', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Tradición en handball.', puntaje: 4.5 },
-//       { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Cancha recién inaugurada.', puntaje: 4.7 },
-
-//       // Tenis - 10 canchas
-//       { complejoNombre: 'Club de Tenis La Plata', nroCancha: 1, deporteNombre: 'Tenis', descripcion: 'Polvo de ladrillo profesional.', puntaje: 4.9 },
-//       { complejoNombre: 'Club de Tenis La Plata', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Excelente drenaje.', puntaje: 4.8 },
-//       { complejoNombre: 'Club Santa Bárbara', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Cancha central con gradas.', puntaje: 4.7 },
-//       { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Superficie de césped sintético.', puntaje: 4.6 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Entrenamiento de tenistas profesionales.', puntaje: 5.0 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Superficie hard court.', puntaje: 4.8 },
-//       { complejoNombre: 'Club San Luis', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Canchas tradicionales de arcilla.', puntaje: 4.5 },
-//       { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Canchas al aire libre.', puntaje: 4.3 },
-//       { complejoNombre: 'Arena Sport Complex', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Tecnología de punta.', puntaje: 4.7 },
-//       { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Ambiente tranquilo.', puntaje: 4.4 },
-
-//       // Pádel - 12 canchas
-//       { complejoNombre: 'Crystal Padel', nroCancha: 1, deporteNombre: 'Pádel', descripcion: 'Paredes de blindex.', puntaje: 4.9 },
-//       { complejoNombre: 'Crystal Padel', nroCancha: 2, deporteNombre: 'Pádel', descripcion: 'Cancha central.', puntaje: 5.0 },
-//       { complejoNombre: 'Club de Tenis La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas techadas.', puntaje: 4.8 },
-//       { complejoNombre: 'Arena Sport Complex', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Cristales panorámicos.', puntaje: 4.7 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Instalaciones premium.', puntaje: 4.9 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Entrenamiento profesional.', puntaje: 4.8 },
-//       { complejoNombre: 'Club Santa Bárbara', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Ambiente exclusivo.', puntaje: 4.6 },
-//       { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas al aire libre cubiertas.', puntaje: 4.4 },
-//       { complejoNombre: 'Megadeportivo La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Complejo de pádel más grande.', puntaje: 4.7 },
-//       { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas familiares.', puntaje: 4.3 },
-//       { complejoNombre: 'Arena Multideporte', nroCancha: 5, deporteNombre: 'Pádel', descripcion: 'Diseño moderno.', puntaje: 4.5 },
-//       { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas económicas.', puntaje: 4.2 },
-
-//       // Hockey - 8 canchas
-//       { complejoNombre: 'Club San Luis', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Césped sintético de agua.', puntaje: 5.0 },
-//       { complejoNombre: 'Club Santa Bárbara', nroCancha: 5, deporteNombre: 'Hockey', descripcion: 'Instalaciones de primer nivel.', puntaje: 4.9 },
-//       { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo reglamentario FIH.', puntaje: 5.0 },
-//       { complejoNombre: 'Complejo Olímpico', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo principal con tribunas.', puntaje: 4.8 },
-//       { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Tradición en hockey femenino.', puntaje: 4.6 },
-//       { complejoNombre: 'Club Deportivo Almagro', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Campo histórico.', puntaje: 4.4 },
-//       { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 4, deporteNombre: 'Hockey', descripcion: 'Césped sintético nuevo.', puntaje: 4.7 },
-//       { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Campo educativo.', puntaje: 4.2 },
-//     ];
-
-//     const canchas = await Promise.all(
-//       canchasData.map(async (data, index) => {
-//         const complejoId = complejoMap.get(data.complejoNombre);
-//         const deporteId = deporteMap.get(data.deporteNombre);
-        
-//         if (!complejoId || !deporteId) {
-//           console.error(`No se encontró complejo o deporte para: ${data.complejoNombre} - ${data.deporteNombre}`);
-//           return null;
-//         }
-
-//         return prisma.cancha.create({
-//           data: {
-//             nroCancha: 1000 + index, // Número único para evitar conflictos
-//             descripcion: data.descripcion,
-//             puntaje: data.puntaje,
-//             complejoId: complejoId,
-//             deporteId: deporteId,
-//             image: [`/images/canchas/${data.deporteNombre.toLowerCase().replace(' ', '')}-${index + 1}.jpg`],
-//           }
-//         });
-//       })
-//     );
-
-//     const canchasCreadas = canchas.filter(c => c !== null);
-
-//     // 7. Crear Horarios de Cronograma para cada cancha
-//     console.log('📅 Creando horarios de cronograma...');
-    
-//     const diasSemana = [DiaSemana.LUNES, DiaSemana.MARTES, DiaSemana.MIERCOLES, DiaSemana.JUEVES, DiaSemana.VIERNES, DiaSemana.SABADO, DiaSemana.DOMINGO];
-    
-//     for (const cancha of canchasCreadas) {
-//       if (!cancha) continue;
-      
-//       // Crear horarios para cada día de la semana
-//       for (const dia of diasSemana) {
-//         // Horario matutino (si es fin de semana)
-//         if (dia === DiaSemana.SABADO || dia === DiaSemana.DOMINGO) {
-//           await prisma.horarioCronograma.create({
-//             data: {
-//               horaInicio: new Date('1970-01-01T10:00:00'),
-//               horaFin: new Date('1970-01-01T12:00:00'),
-//               diaSemana: dia,
-//               canchaId: cancha.id,
-//             }
-//           });
-//         }
-        
-//         // Horario tarde
-//         await prisma.horarioCronograma.create({
-//           data: {
-//             horaInicio: new Date('1970-01-01T16:00:00'),
-//             horaFin: new Date('1970-01-01T20:00:00'),
-//             diaSemana: dia,
-//             canchaId: cancha.id,
-//           }
-//         });
-        
-//         // Horario noche
-//         await prisma.horarioCronograma.create({
-//           data: {
-//             horaInicio: new Date('1970-01-01T20:00:00'),
-//             horaFin: new Date('1970-01-01T23:00:00'),
-//             diaSemana: dia,
-//             canchaId: cancha.id,
-//           }
-//         });
-//       }
-//     }
-
-//     // 8. Crear Turnos para las próximas 2 semanas
-//     console.log('🕐 Creando turnos...');
-    
-//     const hoy = new Date();
-//     const turnos: Turno[] = [];
-    
-//     for (const cancha of canchasCreadas) {
-//       if (!cancha) continue;
-      
-//       // Crear turnos para los próximos 14 días
-//       for (let dia = 0; dia < 14; dia++) {
-//         const fecha = new Date(hoy);
-//         fecha.setDate(fecha.getDate() + dia);
-        
-//         // Crear turnos cada hora desde las 10:00 hasta las 22:00
-//         for (let hora = 10; hora <= 22; hora++) {
-//           const precio = 15000 + Math.random() * 20000; // Precio entre 15000 y 35000
-//           const reservado = Math.random() > 0.6; // 40% de probabilidad de estar reservado
-          
-//           const turno = await prisma.turno.create({
-//             data: {
-//               fecha: fecha,
-//               horaInicio: new Date(`1970-01-01T${hora.toString().padStart(2, '0')}:00:00`),
-//               precio: Math.round(precio / 500) * 500, // Redondear a múltiplos de 500
-//               reservado: reservado,
-//               canchaId: cancha.id,
-//             }
-//           });
-//           turnos.push(turno);
-//         }
-//       }
-//     }
-
-//     // 9. Crear algunas reservas/alquileres de ejemplo
-//     console.log('📝 Creando alquileres de ejemplo...');
-    
-//     // Seleccionar algunos turnos reservados para crear alquileres
-//     const turnosReservados = turnos.filter(t => t.reservado).slice(0, 5);
-    
-//     for (const turno of turnosReservados) {
-//       const alquiler = await prisma.alquiler.create({
-//         data: {
-//           estado: EstadoAlquiler.PAGADO,
-//           horaInicio: turno.horaInicio,
-//           horaFin: new Date(`1970-01-01T${(parseInt(turno.horaInicio.toISOString().slice(11, 13)) + 1).toString().padStart(2, '0')}:00:00`),
-//           clienteId: cliente.id,
-//         }
-//       });
-
-//       // Actualizar el turno con el alquilerId
-//       await prisma.turno.update({
-//         where: { id: turno.id },
-//         data: { alquilerId: alquiler.id }
-//       });
-
-//       // Crear pago para el alquiler
-//       await prisma.pago.create({
-//         data: {
-//           codigoTransaccion: `TRX-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-//           metodoPago: MetodoPago.CREDITO,
-//           monto: turno.precio,
-//           alquilerId: alquiler.id,
-//         }
-//       });
-
-//       // Crear reseña para algunos alquileres
-//       if (Math.random() > 0.5) {
-//         await prisma.resenia.create({
-//           data: {
-//             descripcion: 'Excelente cancha, muy bien mantenida. Volveremos!',
-//             puntaje: 4 + Math.floor(Math.random() * 2), // Entre 4 y 5
-//             alquilerId: alquiler.id,
-//           }
-//         });
-//       }
-//     }
-
-//     // 10. Crear solicitudes pendientes
-//     console.log('📋 Creando solicitudes pendientes...');
-    
-//     // Crear usuarios adicionales para solicitudes pendientes
-//     const usuariosSolicitudesPendientes = await Promise.all([
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Fernando',
-//           apellido: 'Castro',
-//           dni: 50123456,
-//           correo: 'fernando.castro@email.com',
-//           password: hashedPassword,
-//           telefono: '221-7777777',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Silvia',
-//           apellido: 'Ruiz',
-//           dni: 51123456,
-//           correo: 'silvia.ruiz@email.com',
-//           password: hashedPassword,
-//           telefono: '221-8888888',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//       prisma.usuario.create({
-//         data: {
-//           nombre: 'Gabriel',
-//           apellido: 'Vega',
-//           dni: 52123456,
-//           correo: 'gabriel.vega@email.com',
-//           password: hashedPassword,
-//           telefono: '221-9999999',
-//           rol: Rol.DUENIO,
-//         }
-//       }),
-//     ]);
-    
-//     const solicitudesPendientesData = [
-//       { nombre: 'Distrito Pádel Center', cuit: 30900000001, usuarioId: usuariosSolicitudesPendientes[0].id },
-//       { nombre: 'El Muro Padel', cuit: 30900000002, usuarioId: usuariosSolicitudesPendientes[1].id },
-//       { nombre: 'Club Hípico', cuit: 30900000003, usuarioId: usuariosSolicitudesPendientes[2].id },
-//     ];
-
-//     for (const data of solicitudesPendientesData) {
-//       await prisma.solicitud.create({
-//         data: {
-//           cuit: data.cuit,
-//           estado: EstadoSolicitud.PENDIENTE,
-//           usuarioId: data.usuarioId,
-//         }
-//       });
-//     }
-
-//     console.log('✅ Seed completado exitosamente!');
-//     console.log(`📊 Resumen:
-//       - Localidades creadas: ${localidades.length}
-//       - Deportes creados: ${deportes.length}
-//       - Usuarios creados: ${duenios.length + usuariosSolicitudesPendientes.length + 1} (${duenios.length} dueños de complejos + ${usuariosSolicitudesPendientes.length} con solicitudes pendientes + 1 cliente)
-//       - Complejos creados: ${complejos.length}
-//       - Canchas creadas: ${canchasCreadas.length}
-//       - Turnos creados: ${turnos.length}
-//       - Alquileres creados: ${turnosReservados.length}
-//     `);
-
-//   } catch (error) {
-//     console.error('❌ Error durante el seed:', error);
-//     throw error;
-//   }
-// }
-
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
-// import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago, Usuario, Complejo, Cancha, Turno } from '../src/generated/prisma/client';
-// import bcrypt from 'bcrypt';
-
-// const prisma = new PrismaClient();
-
-// async function main() {
-//   console.log('🌱 Iniciando seed de la base de datos...');
-
-//   try {
-//     // Limpiar base de datos en orden correcto para evitar errores de constraints
-//     console.log('🧹 Limpiando base de datos...');
-//     await prisma.pago.deleteMany();
-//     await prisma.resenia.deleteMany();
-//     await prisma.alquiler.deleteMany();
-//     await prisma.turno.deleteMany();
-//     await prisma.horarioCronograma.deleteMany();
-//     await prisma.cancha.deleteMany();
-//     await prisma.complejo.deleteMany();
-//     await prisma.solicitud.deleteMany();
-//     await prisma.administrador.deleteMany();
-//     await prisma.usuario.deleteMany();
-//     await prisma.domicilio.deleteMany();
-//     await prisma.localidad.deleteMany();
-//     await prisma.deporte.deleteMany();
-//     console.log('✅ Base de datos limpia.');
-
-
-//     // 1. Crear Localidades
-//     console.log('📍 Creando localidades...');
-//     const localidadesData = [
-//       { nombre: 'La Plata' }, { nombre: 'City Bell' }, { nombre: 'Gonnet' },
-//       { nombre: 'Ensenada' }, { nombre: 'Los Hornos' }, { nombre: 'Tolosa' }
-//     ];
-//     const localidades = await prisma.localidad.createManyAndReturn({ data: localidadesData });
-//     const localidadMap = new Map(localidades.map(l => [l.nombre, l.id]));
-
-//     // 2. Crear Deportes
-//     console.log('⚽ Creando deportes...');
-//     const deportesData = [
-//       { nombre: 'Fútbol 5' }, { nombre: 'Fútbol 11' }, { nombre: 'Vóley' },
-//       { nombre: 'Básquet' }, { nombre: 'Handball' }, { nombre: 'Tenis' },
-//       { nombre: 'Pádel' }, { nombre: 'Hockey' }
-//     ];
-//     const deportes = await prisma.deporte.createManyAndReturn({ data: deportesData });
-//     const deporteMap = new Map(deportes.map(d => [d.nombre, d.id]));
-
-//     // 3. Crear Administrador
-//     console.log('👤 Creando administrador...');
-//     const hashedAdminPassword = await bcrypt.hash('admin123', 10);
-//     const admin = await prisma.administrador.create({
-//       data: {
-//         correo: 'admin@sistema.com',
-//         password: hashedAdminPassword,
-//       }
-//     });
-
-//     // 4. Crear Usuarios (Clientes y Dueños)
-//     console.log('👥 Creando usuarios...');
-//     const hashedPassword = await bcrypt.hash('password123', 10);
-    
-//     // Usuario cliente de prueba
-//     const cliente = await prisma.usuario.create({
-//       data: {
-//         nombre: 'Nacho', apellido: 'Benitez', dni: 40123456, correo: 'nacho.benitez@email.com',
-//         password: hashedPassword, telefono: '221-5555555', rol: Rol.CLIENTE,
-//       }
-//     });
-
-//     // Datos de los dueños
-//     const dueniosData = [
-//         { nombre: 'Juan', apellido: 'Pérez', dni: 30123456, correo: 'juan.perez@email.com', telefono: '221-6666666' },
-//         { nombre: 'María', apellido: 'González', dni: 31123456, correo: 'maria.gonzalez@email.com', telefono: '221-7777777' },
-//         { nombre: 'Carlos', apellido: 'Rodríguez', dni: 32123456, correo: 'carlos.rodriguez@email.com', telefono: '221-8888888' },
-//         { nombre: 'Ana', apellido: 'Martínez', dni: 33123456, correo: 'ana.martinez@email.com', telefono: '221-9999999' },
-//         { nombre: 'Luis', apellido: 'Fernández', dni: 34123456, correo: 'luis.fernandez@email.com', telefono: '221-1111111' },
-//         { nombre: 'Carmen', apellido: 'López', dni: 35123456, correo: 'carmen.lopez@email.com', telefono: '221-2222222' },
-//         { nombre: 'Roberto', apellido: 'Silva', dni: 36123456, correo: 'roberto.silva@email.com', telefono: '221-3333333' },
-//         { nombre: 'Elena', apellido: 'Torres', dni: 37123456, correo: 'elena.torres@email.com', telefono: '221-4444444' },
-//         { nombre: 'Diego', apellido: 'Morales', dni: 38123456, correo: 'diego.morales@email.com', telefono: '221-5555555' },
-//         { nombre: 'Patricia', apellido: 'Herrera', dni: 39123456, correo: 'patricia.herrera@email.com', telefono: '221-6666666' },
-//         { nombre: 'Miguel', apellido: 'Ramírez', dni: 40123457, correo: 'miguel.ramirez@email.com', telefono: '221-7777777' },
-//         { nombre: 'Sofía', apellido: 'Vargas', dni: 41123457, correo: 'sofia.vargas@email.com', telefono: '221-8888888' },
-//         { nombre: 'Alejandro', apellido: 'Mendoza', dni: 42123457, correo: 'alejandro.mendoza@email.com', telefono: '221-9999999' },
-//         { nombre: 'Valeria', apellido: 'Castro', dni: 43123457, correo: 'valeria.castro@email.com', telefono: '221-1010101' },
-//         { nombre: 'Ricardo', apellido: 'Flores', dni: 44123457, correo: 'ricardo.flores@email.com', telefono: '221-1111112' },
-//         { nombre: 'Claudia', apellido: 'Jiménez', dni: 45123457, correo: 'claudia.jimenez@email.com', telefono: '221-1212121' },
-//         { nombre: 'Fernando', apellido: 'Gutiérrez', dni: 46123457, correo: 'fernando.gutierrez@email.com', telefono: '221-1313131' },
-//         { nombre: 'Lucía', apellido: 'Romero', dni: 47123457, correo: 'lucia.romero@email.com', telefono: '221-1414141' },
-//         { nombre: 'Andrés', apellido: 'Moreno', dni: 48123457, correo: 'andres.moreno@email.com', telefono: '221-1515151' },
-//         { nombre: 'Natalia', apellido: 'Ramos', dni: 49123457, correo: 'natalia.ramos@email.com', telefono: '221-1616161' },
-//         { nombre: 'Sebastián', apellido: 'Ortega', dni: 50123457, correo: 'sebastian.ortega@email.com', telefono: '221-1717171' },
-//         { nombre: 'Gabriela', apellido: 'Delgado', dni: 51123457, correo: 'gabriela.delgado@email.com', telefono: '221-1818181' },
-//         { nombre: 'Martín', apellido: 'Aguilar', dni: 52123457, correo: 'martin.aguilar@email.com', telefono: '221-1919191' },
-//         { nombre: 'Camila', apellido: 'Vega', dni: 53123457, correo: 'camila.vega@email.com', telefono: '221-2020202' },
-//         { nombre: 'Joaquín', apellido: 'Cruz', dni: 54123457, correo: 'joaquin.cruz@email.com', telefono: '221-2121212' },
-//         { nombre: 'Isabella', apellido: 'Paredes', dni: 55123457, correo: 'isabella.paredes@email.com', telefono: '221-2222223' },
-//         { nombre: 'Emilio', apellido: 'Santana', dni: 56123457, correo: 'emilio.santana@email.com', telefono: '221-2323232' },
-//         { nombre: 'Valentina', apellido: 'Navarro', dni: 57123457, correo: 'valentina.navarro@email.com', telefono: '221-2424242' },
-//         { nombre: 'Tomás', apellido: 'Hernández', dni: 58123457, correo: 'tomas.hernandez@email.com', telefono: '221-2525252' },
-//         { nombre: 'Agustina', apellido: 'Reyes', dni: 59123457, correo: 'agustina.reyes@email.com', telefono: '221-2626262' },
-//     ];
-    
-//     const duenios: Usuario[] = [];
-//     // SOLUCIÓN: Usar un bucle 'for...of' en lugar de 'Promise.all' para evitar sobrecargar la base de datos.
-//     for (const data of dueniosData) {
-//       const duenio = await prisma.usuario.create({
-//         data: {
-//           ...data,
-//           password: hashedPassword,
-//           rol: Rol.DUENIO,
-//         }
-//       });
-//       duenios.push(duenio);
-//     }
-
-//     // 5. Crear Complejos con sus solicitudes aprobadas
-//     console.log('🏢 Creando complejos...');
-//     const complejosData = [
-//         // SOLUCIÓN: Se agrega 'n' al final de cada CUIT para que sea un BigInt
-//         { nombre: 'Complejo El Potrero', ubicacion: 'La Plata', cuit: 30123456781n, usuarioIdx: 0, calle: '13', altura: 456 },
-//         { nombre: 'Fútbol City', ubicacion: 'City Bell', cuit: 30123456782n, usuarioIdx: 1, calle: '14', altura: 2345 },
-//         { nombre: 'La Redonda FC', ubicacion: 'Ensenada', cuit: 30123456783n, usuarioIdx: 2, calle: 'Av. Bossinga', altura: 567 },
-//         { nombre: 'Pase a la Red', ubicacion: 'La Plata', cuit: 30123456784n, usuarioIdx: 3, calle: '50', altura: 1234 },
-//         { nombre: 'Estación Fútbol', ubicacion: 'City Bell', cuit: 30123456785n, usuarioIdx: 4, calle: '476', altura: 890 },
-//         { nombre: 'Club San Luis', ubicacion: 'La Plata', cuit: 30123456788n, usuarioIdx: 5, calle: '70', altura: 234 },
-//         { nombre: 'Club Atenas', ubicacion: 'La Plata', cuit: 30123456780n, usuarioIdx: 6, calle: '13', altura: 1259 },
-//         { nombre: 'Club de Tenis La Plata', ubicacion: 'La Plata', cuit: 30123456786n, usuarioIdx: 7, calle: '4', altura: 1700 },
-//         { nombre: 'Crystal Padel', ubicacion: 'La Plata', cuit: 30123456787n, usuarioIdx: 8, calle: '19', altura: 456 },
-//         { nombre: 'Club Santa Bárbara', ubicacion: 'Gonnet', cuit: 30123456789n, usuarioIdx: 9, calle: 'Camino Gral. Belgrano', altura: 3456 },
-//         { nombre: 'Arena Deportiva Central', ubicacion: 'La Plata', cuit: 30123456790n, usuarioIdx: 10, calle: '7', altura: 890 },
-//         { nombre: 'Sporting Club La Plata', ubicacion: 'La Plata', cuit: 30123456791n, usuarioIdx: 11, calle: 'Diagonal 74', altura: 567 },
-//         { nombre: 'Complejo Deportivo Meridiano', ubicacion: 'City Bell', cuit: 30123456792n, usuarioIdx: 12, calle: '60', altura: 1200 },
-//         { nombre: 'Centro Atlético Tolosa', ubicacion: 'Tolosa', cuit: 30123456793n, usuarioIdx: 13, calle: 'Av. 1', altura: 526 },
-//         { nombre: 'Polideportivo City Bell', ubicacion: 'City Bell', cuit: 30123456794n, usuarioIdx: 14, calle: '11', altura: 460 },
-//         { nombre: 'Club Deportivo Gonnet', ubicacion: 'Gonnet', cuit: 30123456795n, usuarioIdx: 15, calle: 'Camino Centenario', altura: 489 },
-//         { nombre: 'Arena Futsal Premium', ubicacion: 'La Plata', cuit: 30123456796n, usuarioIdx: 16, calle: '13', altura: 666 },
-//         { nombre: 'Complejo Deportivo Ringuelet', ubicacion: 'La Plata', cuit: 30123456797n, usuarioIdx: 17, calle: '514', altura: 678 },
-//         { nombre: 'Centro de Alto Rendimiento', ubicacion: 'La Plata', cuit: 30123456798n, usuarioIdx: 18, calle: '122', altura: 600 },
-//         { nombre: 'Sports Center Villa Elvira', ubicacion: 'Ensenada', cuit: 30123456799n, usuarioIdx: 19, calle: '7', altura: 610 },
-//         { nombre: 'Megadeportivo La Plata', ubicacion: 'La Plata', cuit: 30123456800n, usuarioIdx: 20, calle: '25 de Mayo', altura: 2500 },
-//         { nombre: 'Club Atlético Boca Unidos', ubicacion: 'La Plata', cuit: 30123456801n, usuarioIdx: 21, calle: '115', altura: 490 },
-//         { nombre: 'Deportivo San Carlos', ubicacion: 'La Plata', cuit: 30123456802n, usuarioIdx: 22, calle: '137', altura: 440 },
-//         { nombre: 'Arena Multideporte', ubicacion: 'La Plata', cuit: 30123456803n, usuarioIdx: 23, calle: '20', altura: 470 },
-//         { nombre: 'Complejo Olímpico', ubicacion: 'La Plata', cuit: 30123456804n, usuarioIdx: 24, calle: '60', altura: 250 },
-//         { nombre: 'Centro Deportivo Hipódromo', ubicacion: 'City Bell', cuit: 30123456805n, usuarioIdx: 25, calle: '38', altura: 1200 },
-//         { nombre: 'Polideportivo República de los Niños', ubicacion: 'Gonnet', cuit: 30123456806n, usuarioIdx: 26, calle: 'Camino Gral. Belgrano', altura: 1200 },
-//         { nombre: 'Club Deportivo Almagro', ubicacion: 'La Plata', cuit: 30123456807n, usuarioIdx: 27, calle: '2', altura: 720 },
-//         { nombre: 'Arena Sport Complex', ubicacion: 'La Plata', cuit: 30123456808n, usuarioIdx: 28, calle: '13', altura: 320 },
-//         { nombre: 'Complejo Deportivo El Trébol', ubicacion: 'La Plata', cuit: 30123456809n, usuarioIdx: 29, calle: '64', altura: 170 },
-//     ];
-    
-//     const complejos: Complejo[] = [];
-//     // SOLUCIÓN: Usar un bucle 'for...of' para crear complejos secuencialmente.
-//     for (const data of complejosData) {
-//       const domicilio = await prisma.domicilio.create({
-//         data: {
-//           calle: data.calle,
-//           altura: data.altura,
-//           localidadId: localidadMap.get(data.ubicacion) || localidades[0].id,
-//         }
-//       });
-
-//       const solicitud = await prisma.solicitud.create({
-//         data: {
-//           cuit: data.cuit,
-//           estado: EstadoSolicitud.APROBADA,
-//           usuarioId: duenios[data.usuarioIdx].id,
-//           adminId: admin.id,
-//         }
-//       });
-
-//       const complejo = await prisma.complejo.create({
-//         data: {
-//           nombre: data.nombre,
-//           descripcion: `${data.nombre} - Complejo deportivo de primera categoría`,
-//           puntaje: 4.5 + Math.random() * 0.5,
-//           domicilioId: domicilio.id,
-//           usuarioId: duenios[data.usuarioIdx].id,
-//           solicitudId: solicitud.id,
-//         }
-//       });
-//       complejos.push(complejo);
-//     }
-//     const complejoMap = new Map(complejos.map(c => [c.nombre, c.id]));
-
-//     // 6. Crear Canchas
-//     console.log('🏟️ Creando canchas...');
-//     const canchasData = [
-//       // ... (la data de las canchas es muy larga, la omito por brevedad pero se mantiene igual)
-//        { complejoNombre: 'Complejo El Potrero', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de última generación.', puntaje: 4.8 },
-//        { complejoNombre: 'Fútbol City', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha de 5 techada con caucho de alta densidad.', puntaje: 4.7 },
-//        { complejoNombre: 'La Redonda FC', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'No se suspende por lluvia. Excelente iluminación.', puntaje: 4.2 },
-//        { complejoNombre: 'Pase a la Red', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Iluminación LED profesional.', puntaje: 4.6 },
-//        { complejoNombre: 'Estación Fútbol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'La clásica de Estación. Siempre impecable.', puntaje: 4.9 },
-//        { complejoNombre: 'Arena Deportiva Central', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha principal con tribunas.', puntaje: 4.8 },
-//        { complejoNombre: 'Sporting Club La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético profesional.', puntaje: 4.5 },
-//        { complejoNombre: 'Complejo Deportivo Meridiano', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha techada anti lluvia.', puntaje: 4.7 },
-//        { complejoNombre: 'Arena Futsal Premium', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Piso de futsal profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Megadeportivo La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Instalaciones de primer nivel.', puntaje: 5.0 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha multiuso adaptable.', puntaje: 4.6 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Estándares olímpicos.', puntaje: 4.8 },
-//        { complejoNombre: 'Arena Sport Complex', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Tecnología de última generación.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Ambiente familiar y acogedor.', puntaje: 4.4 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Entrenamiento de alto nivel.', puntaje: 4.9 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de calidad.', puntaje: 4.3 },
-//        { complejoNombre: 'Estación Fútbol', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural con medidas reglamentarias.', puntaje: 4.9 },
-//        { complejoNombre: 'Club San Luis', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha de entrenamiento San Luis.', puntaje: 4.5 },
-//        { complejoNombre: 'Megadeportivo La Plata', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo reglamentario FIFA.', puntaje: 5.0 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Estadio con capacidad 5000 personas.', puntaje: 4.8 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped híbrido profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha histórica del club.', puntaje: 4.6 },
-//        { complejoNombre: 'Deportivo San Carlos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo de entrenamiento principal.', puntaje: 4.4 },
-//        { complejoNombre: 'Club Deportivo Almagro', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural tradicional.', puntaje: 4.5 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo secundario del club.', puntaje: 4.3 },
-//        { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo educativo y recreativo.', puntaje: 4.2 },
-//        { complejoNombre: 'Centro Deportivo Hipódromo', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Ubicación privilegiada.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Deportivo Ringuelet', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo comunitario.', puntaje: 4.1 },
-//        { complejoNombre: 'Club Atenas', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso de parquet flotante profesional.', puntaje: 4.8 },
-//        { complejoNombre: 'Polideportivo City Bell', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Cancha cubierta con gradas.', puntaje: 4.6 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso sintético de alta calidad.', puntaje: 4.7 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha adaptable multi-deporte.', puntaje: 4.5 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Instalaciones olímpicas.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Entrenamiento de selecciones.', puntaje: 5.0 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Ambiente familiar.', puntaje: 4.3 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha techada moderna.', puntaje: 4.4 },
-//        { complejoNombre: 'Club Atenas', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tablero reglamentario FIBA.', puntaje: 4.7 },
-//        { complejoNombre: 'Polideportivo City Bell', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha principal del polideportivo.', puntaje: 4.8 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 3, deporteNombre: 'Básquet', descripcion: 'Piso de maple canadiense.', puntaje: 4.9 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Arena principal con 3000 butacas.', puntaje: 5.0 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Entrenamiento profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha histórica del club.', puntaje: 4.5 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Instalaciones renovadas.', puntaje: 4.6 },
-//        { complejoNombre: 'Club Deportivo Almagro', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tradición en básquet.', puntaje: 4.4 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 4, deporteNombre: 'Handball', descripcion: 'Cancha reglamentaria IHF.', puntaje: 4.8 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Instalaciones de elite.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Centro de entrenamiento nacional.', puntaje: 5.0 },
-//        { complejoNombre: 'Polideportivo City Bell', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Piso antideslizante.', puntaje: 4.6 },
-//        { complejoNombre: 'Club Atenas', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Tradición en handball.', puntaje: 4.5 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Cancha recién inaugurada.', puntaje: 4.7 },
-//        { complejoNombre: 'Club de Tenis La Plata', nroCancha: 1, deporteNombre: 'Tenis', descripcion: 'Polvo de ladrillo profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Club de Tenis La Plata', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Excelente drenaje.', puntaje: 4.8 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Cancha central con gradas.', puntaje: 4.7 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Superficie de césped sintético.', puntaje: 4.6 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Entrenamiento de tenistas profesionales.', puntaje: 5.0 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Superficie hard court.', puntaje: 4.8 },
-//        { complejoNombre: 'Club San Luis', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Canchas tradicionales de arcilla.', puntaje: 4.5 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Canchas al aire libre.', puntaje: 4.3 },
-//        { complejoNombre: 'Arena Sport Complex', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Tecnología de punta.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Ambiente tranquilo.', puntaje: 4.4 },
-//        { complejoNombre: 'Crystal Padel', nroCancha: 1, deporteNombre: 'Pádel', descripcion: 'Paredes de blindex.', puntaje: 4.9 },
-//        { complejoNombre: 'Crystal Padel', nroCancha: 2, deporteNombre: 'Pádel', descripcion: 'Cancha central.', puntaje: 5.0 },
-//        { complejoNombre: 'Club de Tenis La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas techadas.', puntaje: 4.8 },
-//        { complejoNombre: 'Arena Sport Complex', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Cristales panorámicos.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Instalaciones premium.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Entrenamiento profesional.', puntaje: 4.8 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Ambiente exclusivo.', puntaje: 4.6 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas al aire libre cubiertas.', puntaje: 4.4 },
-//        { complejoNombre: 'Megadeportivo La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Complejo de pádel más grande.', puntaje: 4.7 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas familiares.', puntaje: 4.3 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 5, deporteNombre: 'Pádel', descripcion: 'Diseño moderno.', puntaje: 4.5 },
-//        { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas económicas.', puntaje: 4.2 },
-//        { complejoNombre: 'Club San Luis', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Césped sintético de agua.', puntaje: 5.0 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 5, deporteNombre: 'Hockey', descripcion: 'Instalaciones de primer nivel.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo reglamentario FIH.', puntaje: 5.0 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo principal con tribunas.', puntaje: 4.8 },
-//        { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Tradición en hockey femenino.', puntaje: 4.6 },
-//        { complejoNombre: 'Club Deportivo Almagro', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Campo histórico.', puntaje: 4.4 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 4, deporteNombre: 'Hockey', descripcion: 'Césped sintético nuevo.', puntaje: 4.7 },
-//        { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Campo educativo.', puntaje: 4.2 },
-//     ];
-    
-//     const canchasCreadas: Cancha[] = [];
-//     // SOLUCIÓN: Bucle secuencial para no sobrecargar la BD
-//     for (let i = 0; i < canchasData.length; i++) {
-//       const data = canchasData[i];
-//       const complejoId = complejoMap.get(data.complejoNombre);
-//       const deporteId = deporteMap.get(data.deporteNombre);
-      
-//       if (!complejoId || !deporteId) {
-//         console.error(`No se encontró complejo o deporte para: ${data.complejoNombre} - ${data.deporteNombre}`);
-//         continue;
-//       }
-      
-//       const cancha = await prisma.cancha.create({
-//         data: {
-//           nroCancha: 1000 + i, // Número único para evitar conflictos
-//           descripcion: data.descripcion,
-//           puntaje: data.puntaje,
-//           complejoId: complejoId,
-//           deporteId: deporteId,
-//           image: [`/images/canchas/${data.deporteNombre.toLowerCase().replace(' ', '')}-${i + 1}.jpg`],
-//         }
-//       });
-//       canchasCreadas.push(cancha);
-//     }
-
-//     // El resto del script ya usa bucles secuenciales, lo cual es correcto.
-//     // 7. Crear Horarios de Cronograma para cada cancha
-//     console.log('📅 Creando horarios de cronograma...');
-//     const diasSemana = [DiaSemana.LUNES, DiaSemana.MARTES, DiaSemana.MIERCOLES, DiaSemana.JUEVES, DiaSemana.VIERNES, DiaSemana.SABADO, DiaSemana.DOMINGO];
-//     for (const cancha of canchasCreadas) {
-//       for (const dia of diasSemana) {
-//         if (dia === DiaSemana.SABADO || dia === DiaSemana.DOMINGO) {
-//           await prisma.horarioCronograma.create({
-//             data: { horaInicio: new Date('1970-01-01T10:00:00Z'), horaFin: new Date('1970-01-01T12:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-//           });
-//         }
-//         await prisma.horarioCronograma.create({
-//           data: { horaInicio: new Date('1970-01-01T16:00:00Z'), horaFin: new Date('1970-01-01T20:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-//         });
-//         await prisma.horarioCronograma.create({
-//           data: { horaInicio: new Date('1970-01-01T20:00:00Z'), horaFin: new Date('1970-01-01T23:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-//         });
-//       }
-//     }
-
-//     // 8. Crear Turnos para las próximas 2 semanas
-//     console.log('🕐 Creando turnos...');
-//     const hoy = new Date();
-//     const turnos: Turno[] = [];
-//     for (const cancha of canchasCreadas) {
-//       for (let dia = 0; dia < 14; dia++) {
-//         const fecha = new Date(hoy);
-//         fecha.setDate(fecha.getDate() + dia);
-//         fecha.setUTCHours(0, 0, 0, 0); // Normalizar fecha a UTC medianoche
-        
-//         for (let hora = 10; hora <= 22; hora++) {
-//           const precio = 15000 + Math.random() * 20000;
-//           const reservado = Math.random() > 0.6;
-          
-//           const turno = await prisma.turno.create({
-//             data: {
-//               fecha: fecha,
-//               horaInicio: new Date(`1970-01-01T${hora.toString().padStart(2, '0')}:00:00Z`),
-//               precio: Math.round(precio / 500) * 500,
-//               reservado: reservado,
-//               canchaId: cancha.id,
-//             }
-//           });
-//           turnos.push(turno);
-//         }
-//       }
-//     }
-
-//     // 9. Crear algunas reservas/alquileres de ejemplo
-//     console.log('📝 Creando alquileres de ejemplo...');
-//     const turnosReservados = turnos.filter(t => t.reservado).slice(0, 20); // Aumentado a 20 alquileres
-//     for (const turno of turnosReservados) {
-//       const horaFin = new Date(turno.horaInicio);
-//       horaFin.setUTCHours(horaFin.getUTCHours() + 1);
-
-//       const alquiler = await prisma.alquiler.create({
-//         data: {
-//           estado: EstadoAlquiler.PAGADO,
-//           horaInicio: turno.horaInicio,
-//           horaFin: horaFin,
-//           clienteId: cliente.id,
-//         }
-//       });
-//       await prisma.turno.update({ where: { id: turno.id }, data: { alquilerId: alquiler.id } });
-//       await prisma.pago.create({
-//         data: {
-//           codigoTransaccion: `TRX-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-//           metodoPago: MetodoPago.CREDITO,
-//           monto: turno.precio,
-//           alquilerId: alquiler.id,
-//         }
-//       });
-//       if (Math.random() > 0.5) {
-//         await prisma.resenia.create({
-//           data: {
-//             descripcion: 'Excelente cancha, muy bien mantenida. Volveremos!',
-//             puntaje: 4 + Math.floor(Math.random() * 2), // Entre 4 y 5
-//             alquilerId: alquiler.id,
-//           }
-//         });
-//       }
-//     }
-
-//     // 10. Crear solicitudes pendientes
-//     console.log('📋 Creando solicitudes pendientes...');
-//     const usuariosPendientesData = [
-//         { nombre: 'Fernando', apellido: 'Castro', dni: 50123456, correo: 'fernando.castro@email.com', telefono: '221-7777777' },
-//         { nombre: 'Silvia', apellido: 'Ruiz', dni: 51123456, correo: 'silvia.ruiz@email.com', telefono: '221-8888888' },
-//         { nombre: 'Gabriel', apellido: 'Vega', dni: 52123456, correo: 'gabriel.vega@email.com', telefono: '221-9999999' },
-//     ];
-//     const usuariosSolicitudesPendientes: Usuario[] = [];
-//     for(const data of usuariosPendientesData) {
-//         const usuario = await prisma.usuario.create({
-//             data: {
-//                 ...data,
-//                 password: hashedPassword,
-//                 rol: Rol.DUENIO,
-//             }
-//         });
-//         usuariosSolicitudesPendientes.push(usuario);
-//     }
-    
-//     const solicitudesPendientesData = [
-//       { nombre: 'Distrito Pádel Center', cuit: 30900000001n, usuarioId: usuariosSolicitudesPendientes[0].id },
-//       { nombre: 'El Muro Padel', cuit: 30900000002n, usuarioId: usuariosSolicitudesPendientes[1].id },
-//       { nombre: 'Club Hípico', cuit: 30900000003n, usuarioId: usuariosSolicitudesPendientes[2].id },
-//     ];
-//     for (const data of solicitudesPendientesData) {
-//       await prisma.solicitud.create({ data });
-//     }
-
-//     console.log('✅ Seed completado exitosamente!');
-//     // ... (resumen final)
-
-//   } catch (error) {
-//     console.error('❌ Error durante el seed:', error);
-//     process.exit(1);
-//   }
-// }
-
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
-
-// import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago, Usuario, Complejo, Cancha, Turno } from '../src/generated/prisma/client';
-// import bcrypt from 'bcrypt';
-
-// const prisma = new PrismaClient();
-
-// async function main() {
-//   console.log('🌱 Iniciando seed de la base de datos...');
-
-//   try {
-//     // Limpiar base de datos en orden correcto para evitar errores de constraints
-//     console.log('🧹 Limpiando base de datos...');
-//     await prisma.pago.deleteMany();
-//     await prisma.resenia.deleteMany();
-//     await prisma.alquiler.deleteMany();
-//     await prisma.turno.deleteMany();
-//     await prisma.horarioCronograma.deleteMany();
-//     await prisma.cancha.deleteMany();
-//     await prisma.complejo.deleteMany();
-//     await prisma.solicitud.deleteMany();
-//     await prisma.administrador.deleteMany();
-//     await prisma.usuario.deleteMany();
-//     await prisma.domicilio.deleteMany();
-//     await prisma.localidad.deleteMany();
-//     await prisma.deporte.deleteMany();
-//     console.log('✅ Base de datos limpia.');
-
-
-//     // 1. Crear Localidades
-//     console.log('📍 Creando localidades...');
-//     const localidadesData = [
-//       { nombre: 'La Plata' }, { nombre: 'City Bell' }, { nombre: 'Gonnet' },
-//       { nombre: 'Ensenada' }, { nombre: 'Los Hornos' }, { nombre: 'Tolosa' }
-//     ];
-//     const localidades = await prisma.localidad.createManyAndReturn({ data: localidadesData });
-//     const localidadMap = new Map(localidades.map(l => [l.nombre, l.id]));
-
-//     // 2. Crear Deportes
-//     console.log('⚽ Creando deportes...');
-//     const deportesData = [
-//       { nombre: 'Fútbol 5' }, { nombre: 'Fútbol 11' }, { nombre: 'Vóley' },
-//       { nombre: 'Básquet' }, { nombre: 'Handball' }, { nombre: 'Tenis' },
-//       { nombre: 'Pádel' }, { nombre: 'Hockey' }
-//     ];
-//     const deportes = await prisma.deporte.createManyAndReturn({ data: deportesData });
-//     const deporteMap = new Map(deportes.map(d => [d.nombre, d.id]));
-
-//     // 3. Crear Administrador
-//     console.log('👤 Creando administrador...');
-//     const hashedAdminPassword = await bcrypt.hash('admin123', 10);
-//     const admin = await prisma.administrador.create({
-//       data: {
-//         correo: 'admin@sistema.com',
-//         password: hashedAdminPassword,
-//       }
-//     });
-
-//     // 4. Crear Usuarios (Clientes y Dueños)
-//     console.log('👥 Creando usuarios...');
-//     const hashedPassword = await bcrypt.hash('password123', 10);
-    
-//     // Usuario cliente de prueba
-//     const cliente = await prisma.usuario.create({
-//       data: {
-//         nombre: 'Nacho', apellido: 'Benitez', dni: 40123456, correo: 'nacho.benitez@email.com',
-//         password: hashedPassword, telefono: '221-5555555', rol: Rol.CLIENTE,
-//       }
-//     });
-
-//     // Datos de los dueños
-//     const dueniosData = [
-//         { nombre: 'Juan', apellido: 'Pérez', dni: 30123456, correo: 'juan.perez@email.com', telefono: '221-6666666' },
-//         { nombre: 'María', apellido: 'González', dni: 31123456, correo: 'maria.gonzalez@email.com', telefono: '221-7777777' },
-//         { nombre: 'Carlos', apellido: 'Rodríguez', dni: 32123456, correo: 'carlos.rodriguez@email.com', telefono: '221-8888888' },
-//         { nombre: 'Ana', apellido: 'Martínez', dni: 33123456, correo: 'ana.martinez@email.com', telefono: '221-9999999' },
-//         { nombre: 'Luis', apellido: 'Fernández', dni: 34123456, correo: 'luis.fernandez@email.com', telefono: '221-1111111' },
-//         { nombre: 'Carmen', apellido: 'López', dni: 35123456, correo: 'carmen.lopez@email.com', telefono: '221-2222222' },
-//         { nombre: 'Roberto', apellido: 'Silva', dni: 36123456, correo: 'roberto.silva@email.com', telefono: '221-3333333' },
-//         { nombre: 'Elena', apellido: 'Torres', dni: 37123456, correo: 'elena.torres@email.com', telefono: '221-4444444' },
-//         { nombre: 'Diego', apellido: 'Morales', dni: 38123456, correo: 'diego.morales@email.com', telefono: '221-5555555' },
-//         { nombre: 'Patricia', apellido: 'Herrera', dni: 39123456, correo: 'patricia.herrera@email.com', telefono: '221-6666666' },
-//         { nombre: 'Miguel', apellido: 'Ramírez', dni: 40123457, correo: 'miguel.ramirez@email.com', telefono: '221-7777777' },
-//         { nombre: 'Sofía', apellido: 'Vargas', dni: 41123457, correo: 'sofia.vargas@email.com', telefono: '221-8888888' },
-//         { nombre: 'Alejandro', apellido: 'Mendoza', dni: 42123457, correo: 'alejandro.mendoza@email.com', telefono: '221-9999999' },
-//         { nombre: 'Valeria', apellido: 'Castro', dni: 43123457, correo: 'valeria.castro@email.com', telefono: '221-1010101' },
-//         { nombre: 'Ricardo', apellido: 'Flores', dni: 44123457, correo: 'ricardo.flores@email.com', telefono: '221-1111112' },
-//         { nombre: 'Claudia', apellido: 'Jiménez', dni: 45123457, correo: 'claudia.jimenez@email.com', telefono: '221-1212121' },
-//         { nombre: 'Fernando', apellido: 'Gutiérrez', dni: 46123457, correo: 'fernando.gutierrez@email.com', telefono: '221-1313131' },
-//         { nombre: 'Lucía', apellido: 'Romero', dni: 47123457, correo: 'lucia.romero@email.com', telefono: '221-1414141' },
-//         { nombre: 'Andrés', apellido: 'Moreno', dni: 48123457, correo: 'andres.moreno@email.com', telefono: '221-1515151' },
-//         { nombre: 'Natalia', apellido: 'Ramos', dni: 49123457, correo: 'natalia.ramos@email.com', telefono: '221-1616161' },
-//         { nombre: 'Sebastián', apellido: 'Ortega', dni: 50123457, correo: 'sebastian.ortega@email.com', telefono: '221-1717171' },
-//         { nombre: 'Gabriela', apellido: 'Delgado', dni: 51123457, correo: 'gabriela.delgado@email.com', telefono: '221-1818181' },
-//         { nombre: 'Martín', apellido: 'Aguilar', dni: 52123457, correo: 'martin.aguilar@email.com', telefono: '221-1919191' },
-//         { nombre: 'Camila', apellido: 'Vega', dni: 53123457, correo: 'camila.vega@email.com', telefono: '221-2020202' },
-//         { nombre: 'Joaquín', apellido: 'Cruz', dni: 54123457, correo: 'joaquin.cruz@email.com', telefono: '221-2121212' },
-//         { nombre: 'Isabella', apellido: 'Paredes', dni: 55123457, correo: 'isabella.paredes@email.com', telefono: '221-2222223' },
-//         { nombre: 'Emilio', apellido: 'Santana', dni: 56123457, correo: 'emilio.santana@email.com', telefono: '221-2323232' },
-//         { nombre: 'Valentina', apellido: 'Navarro', dni: 57123457, correo: 'valentina.navarro@email.com', telefono: '221-2424242' },
-//         { nombre: 'Tomás', apellido: 'Hernández', dni: 58123457, correo: 'tomas.hernandez@email.com', telefono: '221-2525252' },
-//         { nombre: 'Agustina', apellido: 'Reyes', dni: 59123457, correo: 'agustina.reyes@email.com', telefono: '221-2626262' },
-//     ];
-    
-//     const duenios: Usuario[] = [];
-//     // SOLUCIÓN: Usar un bucle 'for...of' en lugar de 'Promise.all' para evitar sobrecargar la base de datos.
-//     for (const data of dueniosData) {
-//       const duenio = await prisma.usuario.create({
-//         data: {
-//           ...data,
-//           password: hashedPassword,
-//           rol: Rol.DUENIO,
-//         }
-//       });
-//       duenios.push(duenio);
-//     }
-
-//     // 5. Crear Complejos con sus solicitudes aprobadas
-//     console.log('🏢 Creando complejos...');
-//     const complejosData = [
-//         // SOLUCIÓN: Se agrega 'n' al final de cada CUIT para que sea un BigInt
-//         { nombre: 'Complejo El Potrero', ubicacion: 'La Plata', cuit: 30123456781n, usuarioIdx: 0, calle: '13', altura: 456 },
-//         { nombre: 'Fútbol City', ubicacion: 'City Bell', cuit: 30123456782n, usuarioIdx: 1, calle: '14', altura: 2345 },
-//         { nombre: 'La Redonda FC', ubicacion: 'Ensenada', cuit: 30123456783n, usuarioIdx: 2, calle: 'Av. Bossinga', altura: 567 },
-//         { nombre: 'Pase a la Red', ubicacion: 'La Plata', cuit: 30123456784n, usuarioIdx: 3, calle: '50', altura: 1234 },
-//         { nombre: 'Estación Fútbol', ubicacion: 'City Bell', cuit: 30123456785n, usuarioIdx: 4, calle: '476', altura: 890 },
-//         { nombre: 'Club San Luis', ubicacion: 'La Plata', cuit: 30123456788n, usuarioIdx: 5, calle: '70', altura: 234 },
-//         { nombre: 'Club Atenas', ubicacion: 'La Plata', cuit: 30123456780n, usuarioIdx: 6, calle: '13', altura: 1259 },
-//         { nombre: 'Club de Tenis La Plata', ubicacion: 'La Plata', cuit: 30123456786n, usuarioIdx: 7, calle: '4', altura: 1700 },
-//         { nombre: 'Crystal Padel', ubicacion: 'La Plata', cuit: 30123456787n, usuarioIdx: 8, calle: '19', altura: 456 },
-//         { nombre: 'Club Santa Bárbara', ubicacion: 'Gonnet', cuit: 30123456789n, usuarioIdx: 9, calle: 'Camino Gral. Belgrano', altura: 3456 },
-//         { nombre: 'Arena Deportiva Central', ubicacion: 'La Plata', cuit: 30123456790n, usuarioIdx: 10, calle: '7', altura: 890 },
-//         { nombre: 'Sporting Club La Plata', ubicacion: 'La Plata', cuit: 30123456791n, usuarioIdx: 11, calle: 'Diagonal 74', altura: 567 },
-//         { nombre: 'Complejo Deportivo Meridiano', ubicacion: 'City Bell', cuit: 30123456792n, usuarioIdx: 12, calle: '60', altura: 1200 },
-//         { nombre: 'Centro Atlético Tolosa', ubicacion: 'Tolosa', cuit: 30123456793n, usuarioIdx: 13, calle: 'Av. 1', altura: 526 },
-//         { nombre: 'Polideportivo City Bell', ubicacion: 'City Bell', cuit: 30123456794n, usuarioIdx: 14, calle: '11', altura: 460 },
-//         { nombre: 'Club Deportivo Gonnet', ubicacion: 'Gonnet', cuit: 30123456795n, usuarioIdx: 15, calle: 'Camino Centenario', altura: 489 },
-//         { nombre: 'Arena Futsal Premium', ubicacion: 'La Plata', cuit: 30123456796n, usuarioIdx: 16, calle: '13', altura: 666 },
-//         { nombre: 'Complejo Deportivo Ringuelet', ubicacion: 'La Plata', cuit: 30123456797n, usuarioIdx: 17, calle: '514', altura: 678 },
-//         { nombre: 'Centro de Alto Rendimiento', ubicacion: 'La Plata', cuit: 30123456798n, usuarioIdx: 18, calle: '122', altura: 600 },
-//         { nombre: 'Sports Center Villa Elvira', ubicacion: 'Ensenada', cuit: 30123456799n, usuarioIdx: 19, calle: '7', altura: 610 },
-//         { nombre: 'Megadeportivo La Plata', ubicacion: 'La Plata', cuit: 30123456800n, usuarioIdx: 20, calle: '25 de Mayo', altura: 2500 },
-//         { nombre: 'Club Atlético Boca Unidos', ubicacion: 'La Plata', cuit: 30123456801n, usuarioIdx: 21, calle: '115', altura: 490 },
-//         { nombre: 'Deportivo San Carlos', ubicacion: 'La Plata', cuit: 30123456802n, usuarioIdx: 22, calle: '137', altura: 440 },
-//         { nombre: 'Arena Multideporte', ubicacion: 'La Plata', cuit: 30123456803n, usuarioIdx: 23, calle: '20', altura: 470 },
-//         { nombre: 'Complejo Olímpico', ubicacion: 'La Plata', cuit: 30123456804n, usuarioIdx: 24, calle: '60', altura: 250 },
-//         { nombre: 'Centro Deportivo Hipódromo', ubicacion: 'City Bell', cuit: 30123456805n, usuarioIdx: 25, calle: '38', altura: 1200 },
-//         { nombre: 'Polideportivo República de los Niños', ubicacion: 'Gonnet', cuit: 30123456806n, usuarioIdx: 26, calle: 'Camino Gral. Belgrano', altura: 1200 },
-//         { nombre: 'Club Deportivo Almagro', ubicacion: 'La Plata', cuit: 30123456807n, usuarioIdx: 27, calle: '2', altura: 720 },
-//         { nombre: 'Arena Sport Complex', ubicacion: 'La Plata', cuit: 30123456808n, usuarioIdx: 28, calle: '13', altura: 320 },
-//         { nombre: 'Complejo Deportivo El Trébol', ubicacion: 'La Plata', cuit: 30123456809n, usuarioIdx: 29, calle: '64', altura: 170 },
-//     ];
-    
-//     const complejos: Complejo[] = [];
-//     // SOLUCIÓN: Usar un bucle 'for...of' para crear complejos secuencialmente.
-//     for (const data of complejosData) {
-//       const domicilio = await prisma.domicilio.create({
-//         data: {
-//           calle: data.calle,
-//           altura: data.altura,
-//           localidadId: localidadMap.get(data.ubicacion) || localidades[0].id,
-//         }
-//       });
-
-//       const solicitud = await prisma.solicitud.create({
-//         data: {
-//           cuit: data.cuit,
-//           estado: EstadoSolicitud.APROBADA,
-//           usuarioId: duenios[data.usuarioIdx].id,
-//           adminId: admin.id,
-//         }
-//       });
-
-//       const complejo = await prisma.complejo.create({
-//         data: {
-//           nombre: data.nombre,
-//           descripcion: `${data.nombre} - Complejo deportivo de primera categoría`,
-//           puntaje: 4.5 + Math.random() * 0.5,
-//           domicilioId: domicilio.id,
-//           usuarioId: duenios[data.usuarioIdx].id,
-//           solicitudId: solicitud.id,
-//         }
-//       });
-//       complejos.push(complejo);
-//     }
-//     const complejoMap = new Map(complejos.map(c => [c.nombre, c.id]));
-
-//     // 6. Crear Canchas
-//     console.log('🏟️ Creando canchas...');
-//     const canchasData = [
-//       // ... (la data de las canchas es muy larga, la omito por brevedad pero se mantiene igual)
-//        { complejoNombre: 'Complejo El Potrero', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de última generación.', puntaje: 4.8 },
-//        { complejoNombre: 'Fútbol City', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha de 5 techada con caucho de alta densidad.', puntaje: 4.7 },
-//        { complejoNombre: 'La Redonda FC', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'No se suspende por lluvia. Excelente iluminación.', puntaje: 4.2 },
-//        { complejoNombre: 'Pase a la Red', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Iluminación LED profesional.', puntaje: 4.6 },
-//        { complejoNombre: 'Estación Fútbol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'La clásica de Estación. Siempre impecable.', puntaje: 4.9 },
-//        { complejoNombre: 'Arena Deportiva Central', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha principal con tribunas.', puntaje: 4.8 },
-//        { complejoNombre: 'Sporting Club La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético profesional.', puntaje: 4.5 },
-//        { complejoNombre: 'Complejo Deportivo Meridiano', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha techada anti lluvia.', puntaje: 4.7 },
-//        { complejoNombre: 'Arena Futsal Premium', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Piso de futsal profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Megadeportivo La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Instalaciones de primer nivel.', puntaje: 5.0 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha multiuso adaptable.', puntaje: 4.6 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Estándares olímpicos.', puntaje: 4.8 },
-//        { complejoNombre: 'Arena Sport Complex', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Tecnología de última generación.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Ambiente familiar y acogedor.', puntaje: 4.4 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Entrenamiento de alto nivel.', puntaje: 4.9 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de calidad.', puntaje: 4.3 },
-//        { complejoNombre: 'Estación Fútbol', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural con medidas reglamentarias.', puntaje: 4.9 },
-//        { complejoNombre: 'Club San Luis', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha de entrenamiento San Luis.', puntaje: 4.5 },
-//        { complejoNombre: 'Megadeportivo La Plata', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo reglamentario FIFA.', puntaje: 5.0 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Estadio con capacidad 5000 personas.', puntaje: 4.8 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped híbrido profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha histórica del club.', puntaje: 4.6 },
-//        { complejoNombre: 'Deportivo San Carlos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo de entrenamiento principal.', puntaje: 4.4 },
-//        { complejoNombre: 'Club Deportivo Almagro', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural tradicional.', puntaje: 4.5 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo secundario del club.', puntaje: 4.3 },
-//        { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo educativo y recreativo.', puntaje: 4.2 },
-//        { complejoNombre: 'Centro Deportivo Hipódromo', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Ubicación privilegiada.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Deportivo Ringuelet', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo comunitario.', puntaje: 4.1 },
-//        { complejoNombre: 'Club Atenas', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso de parquet flotante profesional.', puntaje: 4.8 },
-//        { complejoNombre: 'Polideportivo City Bell', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Cancha cubierta con gradas.', puntaje: 4.6 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso sintético de alta calidad.', puntaje: 4.7 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha adaptable multi-deporte.', puntaje: 4.5 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Instalaciones olímpicas.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Entrenamiento de selecciones.', puntaje: 5.0 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Ambiente familiar.', puntaje: 4.3 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha techada moderna.', puntaje: 4.4 },
-//        { complejoNombre: 'Club Atenas', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tablero reglamentario FIBA.', puntaje: 4.7 },
-//        { complejoNombre: 'Polideportivo City Bell', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha principal del polideportivo.', puntaje: 4.8 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 3, deporteNombre: 'Básquet', descripcion: 'Piso de maple canadiense.', puntaje: 4.9 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Arena principal con 3000 butacas.', puntaje: 5.0 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Entrenamiento profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha histórica del club.', puntaje: 4.5 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Instalaciones renovadas.', puntaje: 4.6 },
-//        { complejoNombre: 'Club Deportivo Almagro', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tradición en básquet.', puntaje: 4.4 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 4, deporteNombre: 'Handball', descripcion: 'Cancha reglamentaria IHF.', puntaje: 4.8 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Instalaciones de elite.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Centro de entrenamiento nacional.', puntaje: 5.0 },
-//        { complejoNombre: 'Polideportivo City Bell', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Piso antideslizante.', puntaje: 4.6 },
-//        { complejoNombre: 'Club Atenas', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Tradición en handball.', puntaje: 4.5 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Cancha recién inaugurada.', puntaje: 4.7 },
-//        { complejoNombre: 'Club de Tenis La Plata', nroCancha: 1, deporteNombre: 'Tenis', descripcion: 'Polvo de ladrillo profesional.', puntaje: 4.9 },
-//        { complejoNombre: 'Club de Tenis La Plata', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Excelente drenaje.', puntaje: 4.8 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Cancha central con gradas.', puntaje: 4.7 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Superficie de césped sintético.', puntaje: 4.6 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Entrenamiento de tenistas profesionales.', puntaje: 5.0 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Superficie hard court.', puntaje: 4.8 },
-//        { complejoNombre: 'Club San Luis', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Canchas tradicionales de arcilla.', puntaje: 4.5 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Canchas al aire libre.', puntaje: 4.3 },
-//        { complejoNombre: 'Arena Sport Complex', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Tecnología de punta.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Ambiente tranquilo.', puntaje: 4.4 },
-//        { complejoNombre: 'Crystal Padel', nroCancha: 1, deporteNombre: 'Pádel', descripcion: 'Paredes de blindex.', puntaje: 4.9 },
-//        { complejoNombre: 'Crystal Padel', nroCancha: 2, deporteNombre: 'Pádel', descripcion: 'Cancha central.', puntaje: 5.0 },
-//        { complejoNombre: 'Club de Tenis La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas techadas.', puntaje: 4.8 },
-//        { complejoNombre: 'Arena Sport Complex', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Cristales panorámicos.', puntaje: 4.7 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Instalaciones premium.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Entrenamiento profesional.', puntaje: 4.8 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Ambiente exclusivo.', puntaje: 4.6 },
-//        { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas al aire libre cubiertas.', puntaje: 4.4 },
-//        { complejoNombre: 'Megadeportivo La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Complejo de pádel más grande.', puntaje: 4.7 },
-//        { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas familiares.', puntaje: 4.3 },
-//        { complejoNombre: 'Arena Multideporte', nroCancha: 5, deporteNombre: 'Pádel', descripcion: 'Diseño moderno.', puntaje: 4.5 },
-//        { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas económicas.', puntaje: 4.2 },
-//        { complejoNombre: 'Club San Luis', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Césped sintético de agua.', puntaje: 5.0 },
-//        { complejoNombre: 'Club Santa Bárbara', nroCancha: 5, deporteNombre: 'Hockey', descripcion: 'Instalaciones de primer nivel.', puntaje: 4.9 },
-//        { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo reglamentario FIH.', puntaje: 5.0 },
-//        { complejoNombre: 'Complejo Olímpico', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo principal con tribunas.', puntaje: 4.8 },
-//        { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Tradición en hockey femenino.', puntaje: 4.6 },
-//        { complejoNombre: 'Club Deportivo Almagro', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Campo histórico.', puntaje: 4.4 },
-//        { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 4, deporteNombre: 'Hockey', descripcion: 'Césped sintético nuevo.', puntaje: 4.7 },
-//        { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Campo educativo.', puntaje: 4.2 },
-//     ];
-    
-//     const canchasCreadas: Cancha[] = [];
-//     // SOLUCIÓN: Bucle secuencial para no sobrecargar la BD
-//     for (let i = 0; i < canchasData.length; i++) {
-//       const data = canchasData[i];
-//       const complejoId = complejoMap.get(data.complejoNombre);
-//       const deporteId = deporteMap.get(data.deporteNombre);
-      
-//       if (!complejoId || !deporteId) {
-//         console.error(`No se encontró complejo o deporte para: ${data.complejoNombre} - ${data.deporteNombre}`);
-//         continue;
-//       }
-      
-//       const cancha = await prisma.cancha.create({
-//         data: {
-//           nroCancha: 1000 + i, // Número único para evitar conflictos
-//           descripcion: data.descripcion,
-//           puntaje: data.puntaje,
-//           complejoId: complejoId,
-//           deporteId: deporteId,
-//           image: [`/images/canchas/${data.deporteNombre.toLowerCase().replace(' ', '')}-${i + 1}.jpg`],
-//         }
-//       });
-//       canchasCreadas.push(cancha);
-//     }
-
-//     // El resto del script ya usa bucles secuenciales, lo cual es correcto.
-//     // 7. Crear Horarios de Cronograma para cada cancha
-//     console.log('📅 Creando horarios de cronograma...');
-//     const diasSemana = [DiaSemana.LUNES, DiaSemana.MARTES, DiaSemana.MIERCOLES, DiaSemana.JUEVES, DiaSemana.VIERNES, DiaSemana.SABADO, DiaSemana.DOMINGO];
-//     for (const cancha of canchasCreadas) {
-//       for (const dia of diasSemana) {
-//         if (dia === DiaSemana.SABADO || dia === DiaSemana.DOMINGO) {
-//           await prisma.horarioCronograma.create({
-//             data: { horaInicio: new Date('1970-01-01T10:00:00Z'), horaFin: new Date('1970-01-01T12:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-//           });
-//         }
-//         await prisma.horarioCronograma.create({
-//           data: { horaInicio: new Date('1970-01-01T16:00:00Z'), horaFin: new Date('1970-01-01T20:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-//         });
-//         await prisma.horarioCronograma.create({
-//           data: { horaInicio: new Date('1970-01-01T20:00:00Z'), horaFin: new Date('1970-01-01T23:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-//         });
-//       }
-//     }
-
-//     // 8. Crear Turnos para las próximas 2 semanas
-//     console.log('🕐 Creando turnos...');
-//     const hoy = new Date();
-//     const turnos: Turno[] = [];
-//     for (const cancha of canchasCreadas) {
-//       for (let dia = 0; dia < 14; dia++) {
-//         const fecha = new Date(hoy);
-//         fecha.setDate(fecha.getDate() + dia);
-//         fecha.setUTCHours(0, 0, 0, 0); // Normalizar fecha a UTC medianoche
-        
-//         for (let hora = 10; hora <= 22; hora++) {
-//           const precio = 15000 + Math.random() * 20000;
-//           const reservado = Math.random() > 0.6;
-          
-//           const turno = await prisma.turno.create({
-//             data: {
-//               fecha: fecha,
-//               horaInicio: new Date(`1970-01-01T${hora.toString().padStart(2, '0')}:00:00Z`),
-//               precio: Math.round(precio / 500) * 500,
-//               reservado: reservado,
-//               canchaId: cancha.id,
-//             }
-//           });
-//           turnos.push(turno);
-//         }
-//       }
-//     }
-
-//     // 9. Crear algunas reservas/alquileres de ejemplo
-//     console.log('📝 Creando alquileres de ejemplo...');
-//     const turnosReservados = turnos.filter(t => t.reservado).slice(0, 20); // Aumentado a 20 alquileres
-//     for (const turno of turnosReservados) {
-//       const horaFin = new Date(turno.horaInicio);
-//       horaFin.setUTCHours(horaFin.getUTCHours() + 1);
-
-//       const alquiler = await prisma.alquiler.create({
-//         data: {
-//           estado: EstadoAlquiler.PAGADO,
-//           horaInicio: turno.horaInicio,
-//           horaFin: horaFin,
-//           clienteId: cliente.id,
-//         }
-//       });
-//       await prisma.turno.update({ where: { id: turno.id }, data: { alquilerId: alquiler.id } });
-//       await prisma.pago.create({
-//         data: {
-//           codigoTransaccion: `TRX-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-//           metodoPago: MetodoPago.CREDITO,
-//           monto: turno.precio,
-//           alquilerId: alquiler.id,
-//         }
-//       });
-//       if (Math.random() > 0.5) {
-//         await prisma.resenia.create({
-//           data: {
-//             descripcion: 'Excelente cancha, muy bien mantenida. Volveremos!',
-//             puntaje: 4 + Math.floor(Math.random() * 2), // Entre 4 y 5
-//             alquilerId: alquiler.id,
-//           }
-//         });
-//       }
-//     }
-
-//     // 10. Crear solicitudes pendientes
-//     console.log('📋 Creando solicitudes pendientes...');
-//     const usuariosPendientesData = [
-//         { nombre: 'Fernando', apellido: 'Castro', dni: 50123456, correo: 'fernando.castro@email.com', telefono: '221-7777777' },
-//         { nombre: 'Silvia', apellido: 'Ruiz', dni: 51123456, correo: 'silvia.ruiz@email.com', telefono: '221-8888888' },
-//         { nombre: 'Gabriel', apellido: 'Vega', dni: 52123456, correo: 'gabriel.vega@email.com', telefono: '221-9999999' },
-//     ];
-//     const usuariosSolicitudesPendientes: Usuario[] = [];
-//     for(const data of usuariosPendientesData) {
-//         const usuario = await prisma.usuario.create({
-//             data: {
-//                 ...data,
-//                 password: hashedPassword,
-//                 rol: Rol.DUENIO,
-//             }
-//         });
-//         usuariosSolicitudesPendientes.push(usuario);
-//     }
-    
-//     const solicitudesPendientesData = [
-//       { nombre: 'Distrito Pádel Center', cuit: 30900000001n, usuarioId: usuariosSolicitudesPendientes[0].id },
-//       { nombre: 'El Muro Padel', cuit: 30900000002n, usuarioId: usuariosSolicitudesPendientes[1].id },
-//       { nombre: 'Club Hípico', cuit: 30900000003n, usuarioId: usuariosSolicitudesPendientes[2].id },
-//     ];
-//     for (const data of solicitudesPendientesData) {
-//       await prisma.solicitud.create({ data });
-//     }
-
-//     console.log('✅ Seed completado exitosamente!');
-//     console.log(`📊 Resumen:
-//       - Localidades creadas: ${localidades.length}
-//       - Deportes creados: ${deportes.length}
-//       - Usuarios creados: ${duenios.length + usuariosSolicitudesPendientes.length + 1} (${duenios.length} dueños de complejos + ${usuariosSolicitudesPendientes.length} con solicitudes pendientes + 1 cliente)
-//       - Complejos creados: ${complejos.length}
-//       - Canchas creadas: ${canchasCreadas.length}
-//       - Turnos creados: ${turnos.length}
-//       - Alquileres creados: ${turnosReservados.length}
-//     `);
-
-//   } catch (error) {
-//     console.error('❌ Error durante el seed:', error);
-//     process.exit(1);
-//   }
-// }
-
-// main()
-//   .catch((e) => {
-//     console.error(e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
-
-
-import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago, Usuario, Complejo, Cancha, Turno } from '../src/generated/prisma/client';
+// backend/prisma/seed_nuevo_esquema.ts
+import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Iniciando seed de la base de datos...');
+  console.log('🌱 Iniciando seed nuevo esquema...');
 
-    try {
-        // Limpiar base de datos en orden correcto para evitar errores de constraints
-        console.log('🧹 Limpiando base de datos...');
-        await prisma.pago.deleteMany();
-        await prisma.resenia.deleteMany();
-        await prisma.alquiler.deleteMany();
-        await prisma.turno.deleteMany();
-        await prisma.horarioCronograma.deleteMany();
-        await prisma.cancha.deleteMany();
-        await prisma.complejo.deleteMany();
-        await prisma.solicitud.deleteMany();
-        await prisma.administrador.deleteMany();
-        await prisma.usuario.deleteMany();
-        await prisma.domicilio.deleteMany();
-        await prisma.localidad.deleteMany();
-        await prisma.deporte.deleteMany();
-        console.log('✅ Base de datos limpia.');
+  try {
+    // Limpiar base de datos en orden correcto
+    console.log('🧹 Limpiando base de datos...');
+    await prisma.complejoServicio.deleteMany();
+    await prisma.pago.deleteMany();
+    await prisma.resenia.deleteMany();
+    await prisma.alquiler.deleteMany();
+    await prisma.turno.deleteMany();
+    await prisma.horarioCronograma.deleteMany();
+    await prisma.cancha.deleteMany();
+    await prisma.complejo.deleteMany();
+    await prisma.solicitud.deleteMany();
+    await prisma.administrador.deleteMany();
+    await prisma.usuario.deleteMany();
+    await prisma.domicilio.deleteMany();
+    await prisma.localidad.deleteMany();
+    await prisma.deporte.deleteMany();
+    await prisma.servicio.deleteMany();
 
-        // 1. Crear Localidades
-        console.log('📍 Creando localidades...');
-        const localidadesData = [
-            { nombre: 'La Plata' }, { nombre: 'City Bell' }, { nombre: 'Gonnet' },
-            { nombre: 'Ensenada' }, { nombre: 'Los Hornos' }, { nombre: 'Tolosa' }
-        ];
-        const localidades = await prisma.localidad.createManyAndReturn({ data: localidadesData });
-        const localidadMap = new Map(localidades.map(l => [l.nombre, l.id]));
+    // 1. Crear 8 Localidades (una por complejo)
+    console.log('📍 Creando 8 localidades...');
+    const localidadesData = [
+      { nombre: 'La Plata' },
+      { nombre: 'City Bell' }, 
+      { nombre: 'Gonnet' },
+      { nombre: 'Ensenada' },
+      { nombre: 'Los Hornos' },
+      { nombre: 'Tolosa' },
+      { nombre: 'Villa Elisa' },
+      { nombre: 'Berisso' }
+    ];
+    const localidades = await prisma.localidad.createManyAndReturn({ data: localidadesData });
 
-        // 2. Crear Deportes
-        console.log('⚽ Creando deportes...');
-        const deportesData = [
-            { nombre: 'Fútbol 5' }, { nombre: 'Fútbol 11' }, { nombre: 'Vóley' },
-            { nombre: 'Básquet' }, { nombre: 'Handball' }, { nombre: 'Tenis' },
-            { nombre: 'Pádel' }, { nombre: 'Hockey' }
-        ];
-        const deportes = await prisma.deporte.createManyAndReturn({ data: deportesData });
-        const deporteMap = new Map(deportes.map(d => [d.nombre, d.id]));
+    // 2. Crear 8 Deportes
+    console.log('⚽ Creando 8 deportes...');
+    const deportesData = [
+      { nombre: 'Fútbol 5', icono: '⚽' },
+      { nombre: 'Fútbol 11', icono: '🥅' },
+      { nombre: 'Vóley', icono: '🏐' },
+      { nombre: 'Básquet', icono: '🏀' },
+      { nombre: 'Handball', icono: '🤾' },
+      { nombre: 'Tenis', icono: '🎾' },
+      { nombre: 'Pádel', icono: '🎾' },
+      { nombre: 'Hockey', icono: '🏑' }
+    ];
+    const deportes = await prisma.deporte.createManyAndReturn({ data: deportesData });
 
-        // 3. Crear Administrador
-        console.log('👤 Creando administrador...');
-        const hashedAdminPassword = await bcrypt.hash('admin123', 10);
-        const admin = await prisma.administrador.create({
-            data: {
-                email: 'admin@sistema.com', // CORREGIDO: Usar 'email' en lugar de 'correo'
-                password: hashedAdminPassword,
-            }
-        });
+    // 3. Crear Servicios
+    console.log('🛠️ Creando servicios...');
+    const serviciosData = [
+      { nombre: 'WiFi Gratuito', descripcion: 'Conexión a internet inalámbrica', icono: '📶' },
+      { nombre: 'Estacionamiento', descripcion: 'Lugar para estacionar vehículos', icono: '🅿️' },
+      { nombre: 'Vestuarios', descripcion: 'Espacios para cambio de ropa y ducha', icono: '🚿' },
+      { nombre: 'Cafetería', descripcion: 'Servicio de comidas y bebidas', icono: '☕' },
+      { nombre: 'Seguridad 24hs', descripcion: 'Vigilancia las 24 horas', icono: '🔒' },
+      { nombre: 'Aire Acondicionado', descripcion: 'Climatización en espacios cerrados', icono: '❄️' },
+      { nombre: 'Iluminación LED', descripcion: 'Iluminación moderna y eficiente', icono: '💡' },
+      { nombre: 'Alquiler de Equipos', descripcion: 'Alquiler de equipamiento deportivo', icono: '⚽' },
+      { nombre: 'Primeros Auxilios', descripcion: 'Botiquín y atención médica básica', icono: '🏥' },
+      { nombre: 'Música Ambiental', descripcion: 'Sistema de audio para ambiente', icono: '🎵' },
+      { nombre: 'Parrilla', descripcion: 'Zona de parrilla para eventos', icono: '🔥' },
+      { nombre: 'Duchas Calientes', descripcion: 'Duchas con agua caliente', icono: '🚿' }
+    ];
+    const servicios = await prisma.servicio.createManyAndReturn({ data: serviciosData });
 
-        // 4. Crear Usuarios (Clientes y Dueños)
-        console.log('👥 Creando usuarios...');
-        const hashedPassword = await bcrypt.hash('password123', 10);
-        
-        // Usuario cliente de prueba
-        const cliente = await prisma.usuario.create({
-            data: {
-                nombre: 'Nacho', apellido: 'Benitez', dni: '40123456', correo: 'nacho.benitez@email.com',
-                password: hashedPassword, telefono: '221-5555555', rol: Rol.CLIENTE,
-            }
-        });
+    // 4. Crear Administrador del sistema
+    console.log('👤 Creando administrador del sistema...');
+    const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+    const adminSistema = await prisma.administrador.create({
+      data: {
+        email: 'admin@sistema.com',
+        password: hashedAdminPassword,
+      }
+    });
 
-        // Datos de los dueños
-        const dueniosData = [
-            { nombre: 'Juan', apellido: 'Pérez', dni: '30123456', correo: 'juan.perez@email.com', telefono: '221-6666666' },
-            { nombre: 'María', apellido: 'González', dni: '31123456', correo: 'maria.gonzalez@email.com', telefono: '221-7777777' },
-            { nombre: 'Carlos', apellido: 'Rodríguez', dni: '32123456', correo: 'carlos.rodriguez@email.com', telefono: '221-8888888' },
-            { nombre: 'Ana', apellido: 'Martínez', dni: '33123456', correo: 'ana.martinez@email.com', telefono: '221-9999999' },
-            { nombre: 'Luis', apellido: 'Fernández', dni: '34123456', correo: 'luis.fernandez@email.com', telefono: '221-1111111' },
-            { nombre: 'Carmen', apellido: 'López', dni: '35123456', correo: 'carmen.lopez@email.com', telefono: '221-2222222' },
-            { nombre: 'Roberto', apellido: 'Silva', dni: '36123456', correo: 'roberto.silva@email.com', telefono: '221-3333333' },
-            { nombre: 'Elena', apellido: 'Torres', dni: '37123456', correo: 'elena.torres@email.com', telefono: '221-4444444' },
-            { nombre: 'Diego', apellido: 'Morales', dni: '38123456', correo: 'diego.morales@email.com', telefono: '221-5555555' },
-            { nombre: 'Patricia', apellido: 'Herrera', dni: '39123456', correo: 'patricia.herrera@email.com', telefono: '221-6666666' },
-            { nombre: 'Miguel', apellido: 'Ramírez', dni: '40123457', correo: 'miguel.ramirez@email.com', telefono: '221-7777777' },
-            { nombre: 'Sofía', apellido: 'Vargas', dni: '41123457', correo: 'sofia.vargas@email.com', telefono: '221-8888888' },
-            { nombre: 'Alejandro', apellido: 'Mendoza', dni: '42123457', correo: 'alejandro.mendoza@email.com', telefono: '221-9999999' },
-            { nombre: 'Valeria', apellido: 'Castro', dni: '43123457', correo: 'valeria.castro@email.com', telefono: '221-1010101' },
-            { nombre: 'Ricardo', apellido: 'Flores', dni: '44123457', correo: 'ricardo.flores@email.com', telefono: '221-1111112' },
-            { nombre: 'Claudia', apellido: 'Jiménez', dni: '45123457', correo: 'claudia.jimenez@email.com', telefono: '221-1212121' },
-            { nombre: 'Fernando', apellido: 'Gutiérrez', dni: '46123457', correo: 'fernando.gutierrez@email.com', telefono: '221-1313131' },
-            { nombre: 'Lucía', apellido: 'Romero', dni: '47123457', correo: 'lucia.romero@email.com', telefono: '221-1414141' },
-            { nombre: 'Andrés', apellido: 'Moreno', dni: '48123457', correo: 'andres.moreno@email.com', telefono: '221-1515151' },
-            { nombre: 'Natalia', apellido: 'Ramos', dni: '49123457', correo: 'natalia.ramos@email.com', telefono: '221-1616161' },
-            { nombre: 'Sebastián', apellido: 'Ortega', dni: '50123457', correo: 'sebastian.ortega@email.com', telefono: '221-1717171' },
-            { nombre: 'Gabriela', apellido: 'Delgado', dni: '51123457', correo: 'gabriela.delgado@email.com', telefono: '221-1818181' },
-            { nombre: 'Martín', apellido: 'Aguilar', dni: '52123457', correo: 'martin.aguilar@email.com', telefono: '221-1919191' },
-            { nombre: 'Camila', apellido: 'Vega', dni: '53123457', correo: 'camila.vega@email.com', telefono: '221-2020202' },
-            { nombre: 'Joaquín', apellido: 'Cruz', dni: '54123457', correo: 'joaquin.cruz@email.com', telefono: '221-2121212' },
-            { nombre: 'Isabella', apellido: 'Paredes', dni: '55123457', correo: 'isabella.paredes@email.com', telefono: '221-2222223' },
-            { nombre: 'Emilio', apellido: 'Santana', dni: '56123457', correo: 'emilio.santana@email.com', telefono: '221-2323232' },
-            { nombre: 'Valentina', apellido: 'Navarro', dni: '57123457', correo: 'valentina.navarro@email.com', telefono: '221-2424242' },
-            { nombre: 'Tomás', apellido: 'Hernández', dni: '58123457', correo: 'tomas.hernandez@email.com', telefono: '221-2525252' },
-            { nombre: 'Agustina', apellido: 'Reyes', dni: '59123457', correo: 'agustina.reyes@email.com', telefono: '221-2626262' },
-        ];
-        
-        const duenios: Usuario[] = [];
-        for (const data of dueniosData) {
-            const duenio = await prisma.usuario.create({
-                data: {
-                    ...data,
-                    password: hashedPassword,
-                    rol: Rol.DUENIO,
-                }
-            });
-            duenios.push(duenio);
-        }
+    // 5. Crear Usuarios
+    console.log('👥 Creando usuarios...');
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedUserAdminPassword = await bcrypt.hash('admin', 10);
 
-        // 5. Crear Complejos con sus solicitudes aprobadas
-        console.log('🏢 Creando complejos...');
-        const complejosData = [
-            { nombre: 'Complejo El Potrero', ubicacion: 'La Plata', cuit: '30123456781', usuarioIdx: 0, calle: '13', altura: 456 },
-            { nombre: 'Fútbol City', ubicacion: 'City Bell', cuit: '30123456782', usuarioIdx: 1, calle: '14', altura: 2345 },
-            { nombre: 'La Redonda FC', ubicacion: 'Ensenada', cuit: '30123456783', usuarioIdx: 2, calle: 'Av. Bossinga', altura: 567 },
-            { nombre: 'Pase a la Red', ubicacion: 'La Plata', cuit: '30123456784', usuarioIdx: 3, calle: '50', altura: 1234 },
-            { nombre: 'Estación Fútbol', ubicacion: 'City Bell', cuit: '30123456785', usuarioIdx: 4, calle: '476', altura: 890 },
-            { nombre: 'Club San Luis', ubicacion: 'La Plata', cuit: '30123456788', usuarioIdx: 5, calle: '70', altura: 234 },
-            { nombre: 'Club Atenas', ubicacion: 'La Plata', cuit: '30123456780', usuarioIdx: 6, calle: '13', altura: 1259 },
-            { nombre: 'Club de Tenis La Plata', ubicacion: 'La Plata', cuit: '30123456786', usuarioIdx: 7, calle: '4', altura: 1700 },
-            { nombre: 'Crystal Padel', ubicacion: 'La Plata', cuit: '30123456787', usuarioIdx: 8, calle: '19', altura: 456 },
-            { nombre: 'Club Santa Bárbara', ubicacion: 'Gonnet', cuit: '30123456789', usuarioIdx: 9, calle: 'Camino Gral. Belgrano', altura: 3456 },
-            { nombre: 'Arena Deportiva Central', ubicacion: 'La Plata', cuit: '30123456790', usuarioIdx: 10, calle: '7', altura: 890 },
-            { nombre: 'Sporting Club La Plata', ubicacion: 'La Plata', cuit: '30123456791', usuarioIdx: 11, calle: 'Diagonal 74', altura: 567 },
-            { nombre: 'Complejo Deportivo Meridiano', ubicacion: 'City Bell', cuit: '30123456792', usuarioIdx: 12, calle: '60', altura: 1200 },
-            { nombre: 'Centro Atlético Tolosa', ubicacion: 'Tolosa', cuit: '30123456793', usuarioIdx: 13, calle: 'Av. 1', altura: 526 },
-            { nombre: 'Polideportivo City Bell', ubicacion: 'City Bell', cuit: '30123456794', usuarioIdx: 14, calle: '11', altura: 460 },
-            { nombre: 'Club Deportivo Gonnet', ubicacion: 'Gonnet', cuit: '30123456795', usuarioIdx: 15, calle: 'Camino Centenario', altura: 489 },
-            { nombre: 'Arena Futsal Premium', ubicacion: 'La Plata', cuit: '30123456796', usuarioIdx: 16, calle: '13', altura: 666 },
-            { nombre: 'Complejo Deportivo Ringuelet', ubicacion: 'La Plata', cuit: '30123456797', usuarioIdx: 17, calle: '514', altura: 678 },
-            { nombre: 'Centro de Alto Rendimiento', ubicacion: 'La Plata', cuit: '30123456798', usuarioIdx: 18, calle: '122', altura: 600 },
-            { nombre: 'Sports Center Villa Elvira', ubicacion: 'Ensenada', cuit: '30123456799', usuarioIdx: 19, calle: '7', altura: 610 },
-            { nombre: 'Megadeportivo La Plata', ubicacion: 'La Plata', cuit: '30123456800', usuarioIdx: 20, calle: '25 de Mayo', altura: 2500 },
-            { nombre: 'Club Atlético Boca Unidos', ubicacion: 'La Plata', cuit: '30123456801', usuarioIdx: 21, calle: '115', altura: 490 },
-            { nombre: 'Deportivo San Carlos', ubicacion: 'La Plata', cuit: '30123456802', usuarioIdx: 22, calle: '137', altura: 440 },
-            { nombre: 'Arena Multideporte', ubicacion: 'La Plata', cuit: '30123456803', usuarioIdx: 23, calle: '20', altura: 470 },
-            { nombre: 'Complejo Olímpico', ubicacion: 'La Plata', cuit: '30123456804', usuarioIdx: 24, calle: '60', altura: 250 },
-            { nombre: 'Centro Deportivo Hipódromo', ubicacion: 'City Bell', cuit: '30123456805', usuarioIdx: 25, calle: '38', altura: 1200 },
-            { nombre: 'Polideportivo República de los Niños', ubicacion: 'Gonnet', cuit: '30123456806', usuarioIdx: 26, calle: 'Camino Gral. Belgrano', altura: 1200 },
-            { nombre: 'Club Deportivo Almagro', ubicacion: 'La Plata', cuit: '30123456807', usuarioIdx: 27, calle: '2', altura: 720 },
-            { nombre: 'Arena Sport Complex', ubicacion: 'La Plata', cuit: '30123456808', usuarioIdx: 28, calle: '13', altura: 320 },
-            { nombre: 'Complejo Deportivo El Trébol', ubicacion: 'La Plata', cuit: '30123456809', usuarioIdx: 29, calle: '64', altura: 170 },
-        ];
+    // Usuario administrador
+    const adminUser = await prisma.usuario.create({
+      data: {
+        nombre: 'Admin', apellido: 'Sistema', dni: '11111111', correo: 'admin@admin.com',
+        password: hashedUserAdminPassword, telefono: '221-0000000', rol: Rol.ADMINISTRADOR,
+      }
+    });
 
-        const complejos: Complejo[] = [];
-        for (const data of complejosData) {
-            const domicilio = await prisma.domicilio.create({
-                data: {
-                    calle: data.calle,
-                    altura: data.altura,
-                    localidadId: localidadMap.get(data.ubicacion) || localidades[0].id,
-                }
-            });
+    // 3 Clientes
+    const clientesData = [
+      { nombre: 'Nacho', apellido: 'Benitez', dni: '40123456', correo: 'nacho.benitez@email.com', telefono: '221-5555555' },
+      { nombre: 'María', apellido: 'González', dni: '39876543', correo: 'maria.gonzalez@email.com', telefono: '221-5555556' },
+      { nombre: 'Carlos', apellido: 'Rodríguez', dni: '41234567', correo: 'carlos.rodriguez@email.com', telefono: '221-5555557' }
+    ];
 
-            const solicitud = await prisma.solicitud.create({
-                data: {
-                    cuit: data.cuit,
-                    estado: EstadoSolicitud.APROBADA,
-                    usuarioId: duenios[data.usuarioIdx].id,
-                    adminId: admin.id,
-                }
-            });
-
-            const complejo = await prisma.complejo.create({
-                data: {
-                    nombre: data.nombre,
-                    descripcion: `${data.nombre} - Complejo deportivo de primera categoría`,
-                    puntaje: 4.5 + Math.random() * 0.5,
-                    cuit: data.cuit, // CORREGIDO: Se añade el CUIT
-                    domicilioId: domicilio.id,
-                    usuarioId: duenios[data.usuarioIdx].id,
-                    solicitudId: solicitud.id,
-                }
-            });
-            complejos.push(complejo);
-        }
-        const complejoMap = new Map(complejos.map(c => [c.nombre, c.id]));
-
-        // 6. Crear Canchas
-        console.log('🏟️ Creando canchas...');
-        const canchasData = [
-            { complejoNombre: 'Complejo El Potrero', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de última generación.', puntaje: 4.8 },
-            { complejoNombre: 'Fútbol City', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha de 5 techada con caucho de alta densidad.', puntaje: 4.7 },
-            { complejoNombre: 'La Redonda FC', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'No se suspende por lluvia. Excelente iluminación.', puntaje: 4.2 },
-            { complejoNombre: 'Pase a la Red', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Iluminación LED profesional.', puntaje: 4.6 },
-            { complejoNombre: 'Estación Fútbol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'La clásica de Estación. Siempre impecable.', puntaje: 4.9 },
-            { complejoNombre: 'Arena Deportiva Central', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha principal con tribunas.', puntaje: 4.8 },
-            { complejoNombre: 'Sporting Club La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético profesional.', puntaje: 4.5 },
-            { complejoNombre: 'Complejo Deportivo Meridiano', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha techada anti lluvia.', puntaje: 4.7 },
-            { complejoNombre: 'Arena Futsal Premium', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Piso de futsal profesional.', puntaje: 4.9 },
-            { complejoNombre: 'Megadeportivo La Plata', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Instalaciones de primer nivel.', puntaje: 5.0 },
-            { complejoNombre: 'Arena Multideporte', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Cancha multiuso adaptable.', puntaje: 4.6 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Estándares olímpicos.', puntaje: 4.8 },
-            { complejoNombre: 'Arena Sport Complex', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Tecnología de última generación.', puntaje: 4.7 },
-            { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Ambiente familiar y acogedor.', puntaje: 4.4 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Entrenamiento de alto nivel.', puntaje: 4.9 },
-            { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 1, deporteNombre: 'Fútbol 5', descripcion: 'Césped sintético de calidad.', puntaje: 4.3 },
-            { complejoNombre: 'Estación Fútbol', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural con medidas reglamentarias.', puntaje: 4.9 },
-            { complejoNombre: 'Club San Luis', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha de entrenamiento San Luis.', puntaje: 4.5 },
-            { complejoNombre: 'Megadeportivo La Plata', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo reglamentario FIFA.', puntaje: 5.0 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Estadio con capacidad 5000 personas.', puntaje: 4.8 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Césped híbrido profesional.', puntaje: 4.9 },
-            { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Cancha histórica del club.', puntaje: 4.6 },
-            { complejoNombre: 'Deportivo San Carlos', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo de entrenamiento principal.', puntaje: 4.4 },
-            { complejoNombre: 'Club Deportivo Almagro', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Césped natural tradicional.', puntaje: 4.5 },
-            { complejoNombre: 'Club Santa Bárbara', nroCancha: 2, deporteNombre: 'Fútbol 11', descripcion: 'Campo secundario del club.', puntaje: 4.3 },
-            { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo educativo y recreativo.', puntaje: 4.2 },
-            { complejoNombre: 'Centro Deportivo Hipódromo', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Ubicación privilegiada.', puntaje: 4.7 },
-            { complejoNombre: 'Complejo Deportivo Ringuelet', nroCancha: 1, deporteNombre: 'Fútbol 11', descripcion: 'Campo comunitario.', puntaje: 4.1 },
-            { complejoNombre: 'Club Atenas', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso de parquet flotante profesional.', puntaje: 4.8 },
-            { complejoNombre: 'Polideportivo City Bell', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Cancha cubierta con gradas.', puntaje: 4.6 },
-            { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Piso sintético de alta calidad.', puntaje: 4.7 },
-            { complejoNombre: 'Arena Multideporte', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha adaptable multi-deporte.', puntaje: 4.5 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Instalaciones olímpicas.', puntaje: 4.9 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 3, deporteNombre: 'Vóley', descripcion: 'Entrenamiento de selecciones.', puntaje: 5.0 },
-            { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 1, deporteNombre: 'Vóley', descripcion: 'Ambiente familiar.', puntaje: 4.3 },
-            { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 2, deporteNombre: 'Vóley', descripcion: 'Cancha techada moderna.', puntaje: 4.4 },
-            { complejoNombre: 'Club Atenas', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tablero reglamentario FIBA.', puntaje: 4.7 },
-            { complejoNombre: 'Polideportivo City Bell', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha principal del polideportivo.', puntaje: 4.8 },
-            { complejoNombre: 'Arena Multideporte', nroCancha: 3, deporteNombre: 'Básquet', descripcion: 'Piso de maple canadiense.', puntaje: 4.9 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Arena principal con 3000 butacas.', puntaje: 5.0 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 4, deporteNombre: 'Básquet', descripcion: 'Entrenamiento profesional.', puntaje: 4.9 },
-            { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Cancha histórica del club.', puntaje: 4.5 },
-            { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Instalaciones renovadas.', puntaje: 4.6 },
-            { complejoNombre: 'Club Deportivo Almagro', nroCancha: 2, deporteNombre: 'Básquet', descripcion: 'Tradición en básquet.', puntaje: 4.4 },
-            { complejoNombre: 'Arena Multideporte', nroCancha: 4, deporteNombre: 'Handball', descripcion: 'Cancha reglamentaria IHF.', puntaje: 4.8 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Instalaciones de elite.', puntaje: 4.9 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 5, deporteNombre: 'Handball', descripcion: 'Centro de entrenamiento nacional.', puntaje: 5.0 },
-            { complejoNombre: 'Polideportivo City Bell', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Piso antideslizante.', puntaje: 4.6 },
-            { complejoNombre: 'Club Atenas', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Tradición en handball.', puntaje: 4.5 },
-            { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 3, deporteNombre: 'Handball', descripcion: 'Cancha recién inaugurada.', puntaje: 4.7 },
-            { complejoNombre: 'Club de Tenis La Plata', nroCancha: 1, deporteNombre: 'Tenis', descripcion: 'Polvo de ladrillo profesional.', puntaje: 4.9 },
-            { complejoNombre: 'Club de Tenis La Plata', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Excelente drenaje.', puntaje: 4.8 },
-            { complejoNombre: 'Club Santa Bárbara', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Cancha central con gradas.', puntaje: 4.7 },
-            { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Superficie de césped sintético.', puntaje: 4.6 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Entrenamiento de tenistas profesionales.', puntaje: 5.0 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 6, deporteNombre: 'Tenis', descripcion: 'Superficie hard court.', puntaje: 4.8 },
-            { complejoNombre: 'Club San Luis', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Canchas tradicionales de arcilla.', puntaje: 4.5 },
-            { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 3, deporteNombre: 'Tenis', descripcion: 'Canchas al aire libre.', puntaje: 4.3 },
-            { complejoNombre: 'Arena Sport Complex', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Tecnología de punta.', puntaje: 4.7 },
-            { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 2, deporteNombre: 'Tenis', descripcion: 'Ambiente tranquilo.', puntaje: 4.4 },
-            { complejoNombre: 'Crystal Padel', nroCancha: 1, deporteNombre: 'Pádel', descripcion: 'Paredes de blindex.', puntaje: 4.9 },
-            { complejoNombre: 'Crystal Padel', nroCancha: 2, deporteNombre: 'Pádel', descripcion: 'Cancha central.', puntaje: 5.0 },
-            { complejoNombre: 'Club de Tenis La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas techadas.', puntaje: 4.8 },
-            { complejoNombre: 'Arena Sport Complex', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Cristales panorámicos.', puntaje: 4.7 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Instalaciones premium.', puntaje: 4.9 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 7, deporteNombre: 'Pádel', descripcion: 'Entrenamiento profesional.', puntaje: 4.8 },
-            { complejoNombre: 'Club Santa Bárbara', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Ambiente exclusivo.', puntaje: 4.6 },
-            { complejoNombre: 'Sports Center Villa Elvira', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas al aire libre cubiertas.', puntaje: 4.4 },
-            { complejoNombre: 'Megadeportivo La Plata', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Complejo de pádel más grande.', puntaje: 4.7 },
-            { complejoNombre: 'Club Deportivo Gonnet', nroCancha: 4, deporteNombre: 'Pádel', descripcion: 'Canchas familiares.', puntaje: 4.3 },
-            { complejoNombre: 'Arena Multideporte', nroCancha: 5, deporteNombre: 'Pádel', descripcion: 'Diseño moderno.', puntaje: 4.5 },
-            { complejoNombre: 'Complejo Deportivo El Trébol', nroCancha: 3, deporteNombre: 'Pádel', descripcion: 'Canchas económicas.', puntaje: 4.2 },
-            { complejoNombre: 'Club San Luis', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Césped sintético de agua.', puntaje: 5.0 },
-            { complejoNombre: 'Club Santa Bárbara', nroCancha: 5, deporteNombre: 'Hockey', descripcion: 'Instalaciones de primer nivel.', puntaje: 4.9 },
-            { complejoNombre: 'Centro de Alto Rendimiento', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo reglamentario FIH.', puntaje: 5.0 },
-            { complejoNombre: 'Complejo Olímpico', nroCancha: 8, deporteNombre: 'Hockey', descripcion: 'Campo principal con tribunas.', puntaje: 4.8 },
-            { complejoNombre: 'Club Atlético Boca Unidos', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Tradición en hockey femenino.', puntaje: 4.6 },
-            { complejoNombre: 'Club Deportivo Almagro', nroCancha: 3, deporteNombre: 'Hockey', descripcion: 'Campo histórico.', puntaje: 4.4 },
-            { complejoNombre: 'Centro Atlético Tolosa', nroCancha: 4, deporteNombre: 'Hockey', descripcion: 'Césped sintético nuevo.', puntaje: 4.7 },
-            { complejoNombre: 'Polideportivo República de los Niños', nroCancha: 2, deporteNombre: 'Hockey', descripcion: 'Campo educativo.', puntaje: 4.2 },
-        ];
-        
-        const canchasCreadas: Cancha[] = [];
-        for (let i = 0; i < canchasData.length; i++) {
-            const data = canchasData[i];
-            const complejoId = complejoMap.get(data.complejoNombre);
-            const deporteId = deporteMap.get(data.deporteNombre);
-            
-            if (!complejoId || !deporteId) {
-                console.error(`No se encontró complejo o deporte para: ${data.complejoNombre} - ${data.deporteNombre}`);
-                continue;
-            }
-            
-            const cancha = await prisma.cancha.create({
-                data: {
-                    nroCancha: 1000 + i,
-                    descripcion: data.descripcion,
-                    puntaje: data.puntaje,
-                    complejoId: complejoId,
-                    deporteId: deporteId,
-                    image: [`/images/canchas/${data.deporteNombre.toLowerCase().replace(' ', '')}-${i + 1}.jpg`],
-                }
-            });
-            canchasCreadas.push(cancha);
-        }
-
-        // El resto del script ya usa bucles secuenciales, lo cual es correcto.
-        // 7. Crear Horarios de Cronograma para cada cancha
-        console.log('📅 Creando horarios de cronograma...');
-        const diasSemana = [DiaSemana.LUNES, DiaSemana.MARTES, DiaSemana.MIERCOLES, DiaSemana.JUEVES, DiaSemana.VIERNES, DiaSemana.SABADO, DiaSemana.DOMINGO];
-        for (const cancha of canchasCreadas) {
-            for (const dia of diasSemana) {
-                if (dia === DiaSemana.SABADO || dia === DiaSemana.DOMINGO) {
-                    await prisma.horarioCronograma.create({
-                        data: { horaInicio: new Date('1970-01-01T10:00:00Z'), horaFin: new Date('1970-01-01T12:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-                    });
-                }
-                await prisma.horarioCronograma.create({
-                    data: { horaInicio: new Date('1970-01-01T16:00:00Z'), horaFin: new Date('1970-01-01T20:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-                });
-                await prisma.horarioCronograma.create({
-                    data: { horaInicio: new Date('1970-01-01T20:00:00Z'), horaFin: new Date('1970-01-01T23:00:00Z'), diaSemana: dia, canchaId: cancha.id }
-                });
-            }
-        }
-
-        // 8. Crear Turnos para las próximas 2 semanas
-        console.log('🕐 Creando turnos...');
-        const hoy = new Date();
-        const turnos: Turno[] = [];
-        for (const cancha of canchasCreadas) {
-            for (let dia = 0; dia < 7; dia++) {
-                const fecha = new Date(hoy);
-                fecha.setDate(fecha.getDate() + dia);
-                fecha.setUTCHours(0, 0, 0, 0);
-                
-                for (let hora = 10; hora <= 22; hora++) {
-                    const precio = 15000 + Math.random() * 20000;
-                    const reservado = Math.random() > 0.6;
-                    
-                    const turno = await prisma.turno.create({
-                        data: {
-                            fecha: fecha,
-                            horaInicio: new Date(`1970-01-01T${hora.toString().padStart(2, '0')}:00:00Z`),
-                            precio: Math.round(precio / 500) * 500,
-                            reservado: reservado,
-                            canchaId: cancha.id,
-                        }
-                    });
-                    turnos.push(turno);
-                }
-            }
-        }
-
-        // 9. Crear algunas reservas/alquileres de ejemplo
-        console.log('📝 Creando alquileres de ejemplo...');
-        const turnosReservados = turnos.filter(t => t.reservado).slice(0, 20);
-        for (const turno of turnosReservados) {
-            const alquiler = await prisma.alquiler.create({
-                data: {
-                    estado: EstadoAlquiler.PAGADO,
-                    clienteId: cliente.id,
-                }
-            });
-            await prisma.turno.update({ where: { id: turno.id }, data: { alquilerId: alquiler.id } });
-            await prisma.pago.create({
-                data: {
-                    codigoTransaccion: `TRX-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-                    metodoPago: MetodoPago.CREDITO,
-                    monto: turno.precio,
-                    alquilerId: alquiler.id,
-                }
-            });
-            if (Math.random() > 0.5) {
-                await prisma.resenia.create({
-                    data: {
-                        descripcion: 'Excelente cancha, muy bien mantenida. Volveremos!',
-                        puntaje: 4 + Math.floor(Math.random() * 2),
-                        alquilerId: alquiler.id,
-                    }
-                });
-            }
-        }
-
-        // 10. Crear solicitudes pendientes
-        console.log('📋 Creando solicitudes pendientes...');
-        const usuariosPendientesData = [
-            { nombre: 'Fernando', apellido: 'Castro', dni: '50123456', correo: 'fernando.castro@email.com', telefono: '221-7777777' },
-            { nombre: 'Silvia', apellido: 'Ruiz', dni: '51123456', correo: 'silvia.ruiz@email.com', telefono: '221-8888888' },
-            { nombre: 'Gabriel', apellido: 'Vega', dni: '52123456', correo: 'gabriel.vega@email.com', telefono: '221-9999999' },
-        ];
-        const usuariosSolicitudesPendientes: Usuario[] = [];
-        for(const data of usuariosPendientesData) {
-            const usuario = await prisma.usuario.create({
-                data: {
-                    ...data,
-                    password: hashedPassword,
-                    rol: Rol.DUENIO,
-                }
-            });
-            usuariosSolicitudesPendientes.push(usuario);
-        }
-        
-        const solicitudesPendientesData = [
-            { nombre: 'Distrito Pádel Center', cuit: '30900000001', usuarioId: usuariosSolicitudesPendientes[0].id },
-            { nombre: 'El Muro Padel', cuit: '30900000002', usuarioId: usuariosSolicitudesPendientes[1].id },
-            { nombre: 'Club Hípico', cuit: '30900000003', usuarioId: usuariosSolicitudesPendientes[2].id },
-        ];
-        for (const data of solicitudesPendientesData) {
-            await prisma.solicitud.create({
-                data: {
-                    cuit: data.cuit,
-                    usuarioId: data.usuarioId,
-                }
-            });
-        }
-
-        console.log('✅ Seed completado exitosamente!');
-        console.log(`📊 Resumen:
-          - Localidades creadas: ${localidades.length}
-          - Deportes creados: ${deportes.length}
-          - Usuarios creados: ${duenios.length + usuariosSolicitudesPendientes.length + 1} (${duenios.length} dueños de complejos + ${usuariosSolicitudesPendientes.length} con solicitudes pendientes + 1 cliente)
-          - Complejos creados: ${complejos.length}
-          - Canchas creadas: ${canchasCreadas.length}
-          - Turnos creados: ${turnos.length}
-          - Alquileres creados: ${turnosReservados.length}
-        `);
-
-    } catch (error) {
-        console.error('❌ Error durante el seed:', error);
-        process.exit(1);
+    const clientes: any[] = [];
+    for (const data of clientesData) {
+      const cliente = await prisma.usuario.create({
+        data: { ...data, password: hashedPassword, rol: Rol.CLIENTE }
+      });
+      clientes.push(cliente);
     }
+
+    // 8 Dueños (uno por complejo)
+    const dueniosData = [
+      { nombre: 'Roberto', apellido: 'Méndez', dni: '30123456', correo: 'roberto.mendez@email.com', telefono: '221-6666666' },
+      { nombre: 'Ana', apellido: 'Martínez', dni: '29987654', correo: 'ana.martinez@email.com', telefono: '221-7777777' },
+      { nombre: 'Diego', apellido: 'Fernández', dni: '31456789', correo: 'diego.fernandez@email.com', telefono: '221-8888888' },
+      { nombre: 'Laura', apellido: 'Sánchez', dni: '32789012', correo: 'laura.sanchez@email.com', telefono: '221-9999999' },
+      { nombre: 'Jorge', apellido: 'López', dni: '28345678', correo: 'jorge.lopez@email.com', telefono: '221-1111111' },
+      { nombre: 'Patricia', apellido: 'García', dni: '33567890', correo: 'patricia.garcia@email.com', telefono: '221-2222222' },
+      { nombre: 'Alejandro', apellido: 'Ruiz', dni: '34678901', correo: 'alejandro.ruiz@email.com', telefono: '221-3333333' },
+      { nombre: 'Mónica', apellido: 'Torres', dni: '35789012', correo: 'monica.torres@email.com', telefono: '221-4444444' }
+    ];
+
+    const duenios: any[] = [];
+    for (const data of dueniosData) {
+      const duenio = await prisma.usuario.create({
+        data: { ...data, password: hashedPassword, rol: Rol.DUENIO }
+      });
+      duenios.push(duenio);
+    }
+
+    // 5 Usuarios adicionales para solicitudes pendientes
+    const usuariosPendientesData = [
+      { nombre: 'Martín', apellido: 'Silva', dni: '39456789', correo: 'martin.silva@email.com', telefono: '221-3333334' },
+      { nombre: 'Carolina', apellido: 'Pérez', dni: '40567890', correo: 'carolina.perez@email.com', telefono: '221-4444445' },
+      { nombre: 'Rodrigo', apellido: 'Gómez', dni: '41678901', correo: 'rodrigo.gomez@email.com', telefono: '221-5555559' },
+      { nombre: 'Lucía', apellido: 'Ramírez', dni: '42789012', correo: 'lucia.ramirez@email.com', telefono: '221-6666668' },
+      { nombre: 'Sebastián', apellido: 'Moreno', dni: '43890123', correo: 'sebastian.moreno@email.com', telefono: '221-7777779' }
+    ];
+
+    const usuariosPendientes: any[] = [];
+    for (const data of usuariosPendientesData) {
+      const usuario = await prisma.usuario.create({
+        data: { ...data, password: hashedPassword, rol: Rol.DUENIO }
+      });
+      usuariosPendientes.push(usuario);
+    }
+
+    // 6. Crear 8 Domicilios (uno por complejo)
+    console.log('🏠 Creando 8 domicilios...');
+    const direcciones = [
+      { calle: 'Calle 1', altura: 1234, localidadId: localidades[0].id },
+      { calle: 'Avenida 60', altura: 2567, localidadId: localidades[1].id },
+      { calle: 'Diagonal 74', altura: 890, localidadId: localidades[2].id },
+      { calle: 'Calle 122', altura: 3456, localidadId: localidades[3].id },
+      { calle: 'Avenida 7', altura: 1890, localidadId: localidades[4].id },
+      { calle: 'Calle 50', altura: 2134, localidadId: localidades[5].id },
+      { calle: 'Avenida 13', altura: 987, localidadId: localidades[6].id },
+      { calle: 'Calle 32', altura: 1567, localidadId: localidades[7].id }
+    ];
+
+    const domicilios: any[] = [];
+    for (const direccion of direcciones) {
+      const domicilio = await prisma.domicilio.create({ data: direccion });
+      domicilios.push(domicilio);
+    }
+
+    // 7. Crear 8 Complejos APROBADOS
+    console.log('📋 Creando 8 complejos aprobados...');
+    
+    const complejosData = [
+      { nombre: 'Megadeportivo La Plata', descripcion: 'Complejo deportivo de primer nivel', puntaje: 4.8, cuit: '20301234567', horarios: 'Lunes a Domingo: 07:00 - 23:00' },
+      { nombre: 'Centro Deportivo City Bell', descripcion: 'Instalaciones modernas en City Bell', puntaje: 4.7, cuit: '20299876543', horarios: 'Lunes a Domingo: 08:00 - 22:00' },
+      { nombre: 'Club Deportivo Gonnet', descripcion: 'Club familiar en Gonnet', puntaje: 4.5, cuit: '20314567890', horarios: 'Martes a Domingo: 09:00 - 21:00' },
+      { nombre: 'Complejo Ensenada Sport', descripcion: 'Moderno complejo en Ensenada', puntaje: 4.6, cuit: '20327890123', horarios: 'Lunes a Domingo: 07:00 - 23:00' },
+      { nombre: 'Deportivo Los Hornos', descripcion: 'Complejo tradicional Los Hornos', puntaje: 4.4, cuit: '20283456789', horarios: 'Lunes a Domingo: 08:00 - 22:00' },
+      { nombre: 'Arena Tolosa', descripcion: 'Complejo moderno Tolosa', puntaje: 4.7, cuit: '20335678901', horarios: 'Lunes a Domingo: 07:00 - 23:00' },
+      { nombre: 'Villa Elisa Sports', descripcion: 'Centro deportivo Villa Elisa', puntaje: 4.5, cuit: '20346789012', horarios: 'Lunes a Domingo: 08:00 - 22:00' },
+      { nombre: 'Berisso Athletic Club', descripcion: 'Club atlético Berisso', puntaje: 4.3, cuit: '20357890123', horarios: 'Miércoles a Lunes: 09:00 - 21:00' }
+    ];
+
+    const complejos: any[] = [];
+    for (let i = 0; i < complejosData.length; i++) {
+      const data = complejosData[i];
+      
+      // Crear solicitud aprobada
+      const solicitud = await prisma.solicitud.create({
+        data: {
+          cuit: data.cuit,
+          estado: EstadoSolicitud.APROBADA,
+          usuarioId: duenios[i].id,
+          adminId: adminSistema.id,
+        }
+      });
+
+      // Crear complejo (sin imagen por ahora, se asignará después)
+      const complejo = await prisma.complejo.create({
+        data: {
+          nombre: data.nombre,
+          descripcion: data.descripcion,
+          puntaje: data.puntaje,
+          cuit: data.cuit,
+          image: null, // Se asignará después
+          horarios: data.horarios,
+          domicilioId: domicilios[i].id,
+          usuarioId: duenios[i].id,
+          solicitudId: solicitud.id,
+        }
+      });
+      complejos.push(complejo);
+    }
+
+    // 8. Crear 5 solicitudes PENDIENTES
+    console.log('📝 Creando 5 solicitudes pendientes...');
+    
+    const solicitudesPendientes = [
+      { cuit: '20301234568', localidadIndex: 0 }, // La Plata
+      { cuit: '20301234569', localidadIndex: 1 }, // City Bell  
+      { cuit: '20301234570', localidadIndex: 2 }, // Gonnet
+      { cuit: '20301234571', localidadIndex: 3 }, // Ensenada
+      { cuit: '20301234572', localidadIndex: 4 }  // Los Hornos
+    ];
+
+    for (let i = 0; i < solicitudesPendientes.length; i++) {
+      const solicitudData = solicitudesPendientes[i];
+      await prisma.solicitud.create({
+        data: {
+          cuit: solicitudData.cuit,
+          estado: EstadoSolicitud.PENDIENTE,
+          usuarioId: usuariosPendientes[i].id,
+        }
+      });
+    }
+
+    // 9. Asignar servicios a complejos de forma variada
+    console.log('🔧 Asignando servicios a complejos...');
+    
+    const serviciosAsignaciones = [
+      [0, 1, 2, 3, 4, 6, 7, 9], // Complejo 1 - Premium
+      [0, 1, 2, 4, 5, 6, 8, 11], // Complejo 2 - Moderno
+      [1, 2, 6, 9, 10], // Complejo 3 - Básico
+      [0, 1, 2, 3, 5, 6, 7], // Complejo 4 - Completo
+      [1, 2, 6, 10], // Complejo 5 - Tradicional
+      [0, 1, 2, 6, 9], // Complejo 6 - Estándar
+      [1, 2, 3, 6, 10, 11], // Complejo 7 - Familiar
+      [2, 6, 9, 10] // Complejo 8 - Básico
+    ];
+
+    for (let i = 0; i < complejos.length; i++) {
+      const serviciosIndices = serviciosAsignaciones[i];
+      for (const servicioIndex of serviciosIndices) {
+        await prisma.complejoServicio.create({
+          data: {
+            complejoId: complejos[i].id,
+            servicioId: servicios[servicioIndex].id
+          }
+        });
+      }
+    }
+
+    // 10. Crear 64 Canchas (8 complejos × 8 canchas = 1 cancha por deporte por complejo)
+    console.log('🏟️ Creando 64 canchas (8 por complejo, una por deporte)...');
+    
+    const canchas: any[] = [];
+    let nroCanchaGlobal = 1001;
+    let imagenIndex = 1;
+    
+    // Mapeo de deportes a nombres de archivos de imagen
+    const deporteImagenMap: { [key: string]: string[] } = {
+      'Fútbol 5': ['futbol5_01.jpg', 'futbol5_02.jpg', 'futbol5_03.jpg', 'futbol5_04.jpg', 'futbol5_05.jpg', 'futbol5_06.jpg', 'futbol5_07.jpg', 'futbol5_08.jpg'],
+      'Fútbol 11': ['futbol11_01.jpg', 'futbol11_02.jpg', 'futbol11_03.jpg', 'futbol11_04.jpg', 'futbol11_05.jpg', 'futbol11_06.jpg', 'futbol11_07.jpg', 'futbol11_08.jpg'],
+      'Vóley': ['voley_01.jpg', 'voley_02.jpg', 'voley_03.jpg', 'voley_04.jpg', 'voley_05.jpg', 'voley_06.jpg', 'voley_07.jpg', 'voley_08.jpg'],
+      'Básquet': ['basquet_01.jpg', 'basquet_02.jpg', 'basquet_03.jpg', 'basquet_04.jpg', 'basquet_05.jpg', 'basquet_06.jpg', 'basquet_07.jpg', 'basquet_08.jpg'],
+      'Handball': ['handball_01.jpg', 'handball_02.jpg', 'handball_03.jpg', 'handball_04.jpg', 'handball_05.jpg', 'handball_06.jpg', 'handball_07.jpg', 'handball_08.jpg'],
+      'Tenis': ['tenis_01.jpg', 'tenis_02.jpg', 'tenis_03.jpg', 'tenis_04.jpg', 'tenis_05.jpg', 'tenis_06.jpg', 'tenis_07.jpg', 'tenis_08.jpg'],
+      'Pádel': ['padel_01.jpg', 'padel_02.jpg', 'padel_03.jpg', 'padel_04.jpg', 'padel_05.jpg', 'padel_06.jpg', 'padel_07.jpg', 'padel_08.jpg'],
+      'Hockey': ['hockey_01.jpg', 'hockey_02.jpg', 'hockey_03.jpg', 'hockey_04.jpg', 'hockey_05.jpg', 'hockey_06.jpg', 'hockey_07.jpg', 'hockey_08.jpg']
+    };
+    
+    for (let compIndex = 0; compIndex < complejos.length; compIndex++) {
+      const complejo = complejos[compIndex];
+      
+      // Crear una cancha para cada deporte
+      for (let deporteIndex = 0; deporteIndex < deportes.length; deporteIndex++) {
+        const deporte = deportes[deporteIndex];
+        const puntaje = Math.random() * (5 - 4) + 4; // Entre 4.0 y 5.0
+        
+        const descripciones = [
+          `Cancha de ${deporte.nombre} con césped sintético de última generación`,
+          `Cancha de ${deporte.nombre} techada con iluminación LED profesional`,
+          `Cancha de ${deporte.nombre} al aire libre con excelente mantenimiento`,
+          `Cancha de ${deporte.nombre} premium con superficie profesional`,
+          `Cancha de ${deporte.nombre} en perfectas condiciones`,
+          `Cancha de ${deporte.nombre} moderna con tecnología de punta`,
+          `Cancha de ${deporte.nombre} tradicional bien cuidada`,
+          `Cancha de ${deporte.nombre} de competición oficial`
+        ];
+        
+        // Asignar imagen única del deporte correspondiente
+        const imagenesDeporte = deporteImagenMap[deporte.nombre];
+        const imagenCancha = imagenesDeporte[compIndex]; // Usa el índice del complejo para que sea única
+        
+        const cancha = await prisma.cancha.create({
+          data: {
+            nroCancha: nroCanchaGlobal,
+            descripcion: descripciones[Math.floor(Math.random() * descripciones.length)],
+            puntaje: parseFloat(puntaje.toFixed(1)),
+            image: [imagenCancha], // Solo una imagen por cancha
+            complejoId: complejo.id,
+            deporteId: deporte.id,
+          }
+        });
+        
+        canchas.push(cancha);
+        nroCanchaGlobal++;
+      }
+    }
+
+    // Actualizar complejos con imagen de una de sus canchas
+    console.log('🖼️ Asignando imágenes a complejos...');
+    for (let i = 0; i < complejos.length; i++) {
+      const complejo = complejos[i];
+      // Encontrar la primera cancha de fútbol 5 del complejo para usar su imagen
+      const canchaFutbol5 = canchas.find(c => 
+        c.complejoId === complejo.id && 
+        c.deporteId === deportes.find(d => d.nombre === 'Fútbol 5')?.id
+      );
+      
+      if (canchaFutbol5 && canchaFutbol5.image.length > 0) {
+        await prisma.complejo.update({
+          where: { id: complejo.id },
+          data: { image: canchaFutbol5.image[0] }
+        });
+      }
+    }
+
+    // 11. Crear Cronogramas con horarios puntuales para todas las canchas
+    console.log('⏰ Creando cronogramas con horarios puntuales...');
+    
+    const diasSemana = [DiaSemana.LUNES, DiaSemana.MARTES, DiaSemana.MIERCOLES, DiaSemana.JUEVES, DiaSemana.VIERNES, DiaSemana.SABADO, DiaSemana.DOMINGO];
+    const horariosCompletos = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]; // 17 horarios
+    
+    for (const cancha of canchas) {
+      const complejo = complejos.find(c => c.id === cancha.complejoId);
+      if (!complejo) continue;
+      
+      // Determinar horarios según el complejo
+      let horariosCancha: number[] = [];
+      if (complejo.horarios.includes('07:00 - 23:00')) {
+        horariosCancha = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]; // 17 horarios
+      } else if (complejo.horarios.includes('08:00 - 22:00')) {
+        horariosCancha = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]; // 15 horarios
+      } else if (complejo.horarios.includes('09:00 - 21:00')) {
+        horariosCancha = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]; // 13 horarios
+      } else {
+        horariosCancha = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]; // Default
+      }
+      
+      for (const dia of diasSemana) {
+        for (const hora of horariosCancha) {
+          let precio: number;
+          
+          // Pricing según horario
+          if (hora >= 7 && hora <= 11) {
+            precio = Math.floor(Math.random() * (15000 - 10000) + 10000); // Mañana
+          } else if (hora >= 12 && hora <= 17) {
+            precio = Math.floor(Math.random() * (20000 - 15000) + 15000); // Tarde
+          } else {
+            precio = Math.floor(Math.random() * (25000 - 20000) + 20000); // Noche
+          }
+          
+          await prisma.horarioCronograma.create({
+            data: {
+              horaInicio: new Date(`1970-01-01T${hora.toString().padStart(2, '0')}:00:00Z`),
+              horaFin: new Date(`1970-01-01T${(hora + 1).toString().padStart(2, '0')}:00:00Z`),
+              diaSemana: dia,
+              precio: precio,
+              canchaId: cancha.id,
+            }
+          });
+        }
+      }
+    }
+
+    // 12. Crear turnos disponibles para los próximos 14 días
+    console.log('🎯 Creando turnos disponibles...');
+    
+    const cronogramas = await prisma.horarioCronograma.findMany();
+    const hoy = new Date();
+    const turnosData = [];
+    
+    for (let dia = 0; dia < 14; dia++) {
+      const fecha = new Date(hoy);
+      fecha.setDate(hoy.getDate() + dia);
+      
+      const diaSemanaActual = Object.values(DiaSemana)[fecha.getDay() === 0 ? 6 : fecha.getDay() - 1];
+      const cronogramasDelDia = cronogramas.filter(c => c.diaSemana === diaSemanaActual);
+      
+      for (const cronograma of cronogramasDelDia) {
+        // 75% de probabilidad de crear el turno
+        if (Math.random() > 0.25) {
+          turnosData.push({
+            fecha: fecha,
+            horaInicio: cronograma.horaInicio,
+            precio: cronograma.precio,
+            reservado: false,
+            canchaId: cronograma.canchaId,
+          });
+        }
+      }
+    }
+
+    // Crear turnos en lotes de 100
+    for (let i = 0; i < turnosData.length; i += 100) {
+      const batch = turnosData.slice(i, i + 100);
+      await prisma.turno.createMany({
+        data: batch
+      });
+      console.log(`   Creados ${Math.min(i + 100, turnosData.length)} de ${turnosData.length} turnos...`);
+    }
+
+    // 13. Marcar 25% de turnos como ocupados
+    console.log('📅 Marcando 25% de turnos como ocupados...');
+    
+    const todosLosTurnos = await prisma.turno.findMany({ where: { reservado: false } });
+    const turnosAOcupar = Math.floor(todosLosTurnos.length * 0.25);
+    
+    // Seleccionar turnos aleatorios para ocupar
+    const turnosSeleccionados = [];
+    const turnosDisponibles = [...todosLosTurnos];
+    
+    for (let i = 0; i < turnosAOcupar; i++) {
+      const indiceRandom = Math.floor(Math.random() * turnosDisponibles.length);
+      const turnoRandom = turnosDisponibles.splice(indiceRandom, 1)[0];
+      const clienteRandom = clientes[Math.floor(Math.random() * clientes.length)];
+      turnosSeleccionados.push({
+        turnoId: turnoRandom.id,
+        clienteId: clienteRandom.id
+      });
+    }
+
+    // Actualizar turnos en lotes
+    await prisma.turno.updateMany({
+      where: {
+        id: { in: turnosSeleccionados.map(t => t.turnoId) }
+      },
+      data: { reservado: true }
+    });
+
+    // Crear alquileres en lotes de 50
+    for (let i = 0; i < turnosSeleccionados.length; i += 50) {
+      const batch = turnosSeleccionados.slice(i, i + 50);
+      
+      const alquilerPromises = batch.map(turno => 
+        prisma.alquiler.create({
+          data: {
+            estado: EstadoAlquiler.FINALIZADO,
+            clienteId: turno.clienteId,
+            turnos: {
+              connect: [{ id: turno.turnoId }]
+            }
+          }
+        })
+      );
+      
+      await Promise.all(alquilerPromises);
+      console.log(`   Procesados ${Math.min(i + 50, turnosSeleccionados.length)} de ${turnosSeleccionados.length} alquileres...`);
+    }
+
+        // 14. Crear 10 reseñas por cancha (640 reseñas total)
+    console.log('⭐ Creando 10 reseñas por cancha (640 total)...');
+    
+    const comentariosPositivos = [
+      'Excelente cancha, muy bien mantenida y buena atención al cliente',
+      'Instalaciones de primera calidad, iluminación perfecta para jugar',
+      'Muy buen estado del césped sintético, experiencia increíble',
+      'Vestuarios limpios y amplios, muy recomendable el lugar',
+      'Perfecto para jugar con amigos, ambiente familiar y cálido',
+      'Precio justo por la calidad ofrecida, volveremos pronto',
+      'Cancha en perfectas condiciones, precio justo para la calidad',
+      'Excelente servicio, personal muy amable y atento',
+      'Instalaciones modernas con todos los servicios necesarios',
+      'Muy buena ubicación y fácil acceso, estacionamiento amplio',
+      'Calidad premium a precio accesible, definitivamente volveremos',
+      'Canchas profesionales con tecnología de última generación',
+      'Ambiente seguro y bien cuidado, ideal para toda la familia',
+      'Superficie de juego excelente, pelotas y arcos en buen estado',
+      'Atención personalizada y horarios muy convenientes',
+      'Instalaciones limpias y modernas, muy satisfecho con el servicio'
+    ];
+
+    // Crear datos para reseñas en lotes
+    const reseniasData = [];
+    const turnosReseniasData: any[] = [];
+    const alquileresData = [];
+
+    let totalResenias = 0;
+    for (const cancha of canchas) {
+      for (let i = 0; i < 10; i++) {
+        // Crear fecha aleatoria en el pasado (últimos 90 días)
+        const fechaAleatoria = new Date(hoy);
+        fechaAleatoria.setDate(hoy.getDate() - Math.floor(Math.random() * 90));
+        
+        // Datos del turno
+        const horaAleatoria = Math.floor(Math.random() * 17) + 7; // Entre 7 y 23
+        const precioAleatorio = Math.floor(Math.random() * (25000 - 10000) + 10000);
+        const clienteAleatorio = clientes[Math.floor(Math.random() * clientes.length)];
+        
+        turnosReseniasData.push({
+          fecha: fechaAleatoria,
+          horaInicio: new Date(`1970-01-01T${horaAleatoria.toString().padStart(2, '0')}:00:00Z`),
+          precio: precioAleatorio,
+          reservado: true,
+          canchaId: cancha.id,
+        });
+
+        totalResenias++;
+      }
+    }
+
+    // Crear turnos para reseñas en lotes
+    for (let i = 0; i < turnosReseniasData.length; i += 100) {
+      const batch = turnosReseniasData.slice(i, i + 100);
+      await prisma.turno.createMany({ data: batch });
+      console.log(`   Creados ${Math.min(i + 100, turnosReseniasData.length)} de ${turnosReseniasData.length} turnos para reseñas...`);
+    }
+
+    // Obtener los turnos creados para las reseñas
+    const turnosParaResenias = await prisma.turno.findMany({
+      where: {
+        reservado: true,
+        fecha: {
+          lt: hoy
+        }
+      },
+      orderBy: { id: 'desc' },
+      take: totalResenias
+    });
+
+    // Crear alquileres y reseñas
+    for (let i = 0; i < turnosParaResenias.length; i += 50) {
+      const batch = turnosParaResenias.slice(i, i + 50);
+      
+      // Crear alquileres para este lote
+      const alquilerPromises = batch.map(turno => {
+        const clienteAleatorio = clientes[Math.floor(Math.random() * clientes.length)];
+        return prisma.alquiler.create({
+          data: {
+            estado: EstadoAlquiler.FINALIZADO,
+            clienteId: clienteAleatorio.id,
+            turnos: {
+              connect: [{ id: turno.id }]
+            }
+          }
+        });
+      });
+      
+      const alquileresCreados = await Promise.all(alquilerPromises);
+      
+      // Crear reseñas para este lote
+      const reseniasPromises = alquileresCreados.map(alquiler => {
+        const puntajeResenia = Math.floor(Math.random() * 2) + 4; // Entre 4 y 5 estrellas
+        const comentarioAleatorio = comentariosPositivos[Math.floor(Math.random() * comentariosPositivos.length)];
+        
+        return prisma.resenia.create({
+          data: {
+            descripcion: comentarioAleatorio,
+            puntaje: puntajeResenia,
+            alquilerId: alquiler.id,
+          }
+        });
+      });
+      
+      await Promise.all(reseniasPromises);
+      console.log(`   Procesadas ${Math.min(i + 50, turnosParaResenias.length)} de ${turnosParaResenias.length} reseñas...`);
+    }
+
+    console.log('✅ Seed nuevo esquema completado exitosamente!');
+    console.log(`📊 Datos creados:`);
+    console.log(`   - ${localidades.length} localidades`);
+    console.log(`   - ${deportes.length} deportes`);
+    console.log(`   - ${servicios.length} servicios`);
+    console.log(`   - 1 administrador del sistema`);
+    console.log(`   - 1 usuario administrador`);
+    console.log(`   - ${clientes.length} clientes`);
+    console.log(`   - ${duenios.length} dueños de complejos`);
+    console.log(`   - ${usuariosPendientes.length} usuarios con solicitudes pendientes`);
+    console.log(`   - ${complejos.length} complejos deportivos aprobados`);
+    console.log(`   - 5 solicitudes pendientes`);
+    console.log(`   - ${canchas.length} canchas (8 por complejo, una por deporte)`);
+    console.log(`   - 640 reseñas (10 por cancha)`);
+    console.log(`   - Cronogramas con horarios puntuales (7:00-23:00)`);
+    console.log(`   - Turnos disponibles con 25% ocupados`);
+    console.log(`   - 64 imágenes únicas asignadas`);
+
+  } catch (error) {
+    console.error('❌ Error durante el seed:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+

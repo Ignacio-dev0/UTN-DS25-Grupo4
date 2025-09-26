@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getCurrentUser, logout as authLogout } from '../services/auth'; 
+import { API_BASE_URL } from '../config/constants';
 
 const AuthContext = createContext(null);
 
@@ -19,9 +20,36 @@ export function AuthProvider({ children }) {
     setUser(userData);
   };
 
+  const updateUser = (userData) => {
+    setUser(userData);
+    // También actualizar el storage
+    if (localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(userData));
+    } else if (sessionStorage.getItem('user')) {
+      sessionStorage.setItem('user', JSON.stringify(userData));
+    }
+  };
+
   const logout = () => {
     authLogout(); 
     setUser(null);
+  };
+
+  // Helper para verificar si es dueño con solicitud aprobada
+  const isApprovedOwner = async () => {
+    if (!user || user.rol !== 'owner') return false;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
+        return solicitud?.estado === 'APROBADA';
+      }
+    } catch (error) {
+      console.error('Error verificando estado de solicitud:', error);
+    }
+    return false;
   };
 
   const value = {
@@ -29,7 +57,9 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     loading,
     login,
+    updateUser,
     logout,
+    isApprovedOwner,
   };
 
   if (loading) {

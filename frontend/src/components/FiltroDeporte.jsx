@@ -1,31 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
-import { datosDeportes } from '../data/canchas.js';
-import { FaStar, FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
-import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis } from "react-icons/md";
-import { GiTennisRacket } from "react-icons/gi";
-
-const iconMap = {
-  'Populares': <FaStar />,
-  'Fútbol 5': <FaFutbol />,
-  'Fútbol 11': <FaRegFutbol />,
-  'Vóley': <MdSportsVolleyball />,
-  'Básquet': <IoIosBasketball />,
-  'Handball': <MdSportsHandball />,
-  'Tenis': <MdSportsTennis />,
-  'Pádel': <GiTennisRacket />,
-  'Hockey': <FaHockeyPuck />,
-};
+import { FaStar } from "react-icons/fa";
 
 const DEPORTES_VISIBLES = 6;
 
-function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
+function FiltroDeporte({ deporteSeleccionado, onSelectDeporte, deportes = [] }) {
   const [indiceActual, setIndiceActual] = useState(0);
-  const listaCompletaDeportes = useMemo(() => [
-    { id: 'populares', deporte: 'Populares' },
-    ...datosDeportes,
-  ], []);
+  
+  const listaCompletaDeportes = useMemo(() => {
+    // Validar que deportes sea un array antes de mapear
+    const deportesArray = Array.isArray(deportes) ? deportes : [];
+    const deportesFormateados = deportesArray.map(deporte => ({
+      id: deporte.id,
+      deporte: deporte.nombre,
+      icono: deporte.icono || '⚽'
+    }));
+    
+    return [
+      { id: 'populares', deporte: 'Populares', icono: '⭐' },
+      ...deportesFormateados,
+    ];
+  }, [deportes]);
 
   const totalItems = listaCompletaDeportes.length;
 
@@ -54,7 +49,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
 
       <button 
         onClick={handleAnterior}
-        className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+        className="p-2 rounded-full transition-colors flex-shrink-0"
       >
         <ChevronLeftIcon className="w-6 h-6 text-secondary" />
       </button>
@@ -72,7 +67,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
               className={`flex flex-col items-center text-gray-700 hover:text-black w-20 transition-colors group flex-shrink-0 ${deporteSeleccionado === deporte.deporte ? 'font-bold' : ''}`}
             >
               <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-1 transition-colors ${deporteSeleccionado === deporte.deporte ? 'bg-secondary text-accent' : 'bg-accent text-secondary group-hover:bg-white'}`}>
-                <span className="text-2xl">{iconMap[deporte.deporte]}</span>
+                <span className="text-2xl">{deporte.icono}</span>
               </div>
               <span className="text-sm font-semibold whitespace-nowrap">{deporte.deporte}</span>
             </button>
@@ -83,7 +78,7 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte }) {
       {/* Botón de Navegación "Siguiente" */}
       <button 
         onClick={handleSiguiente}
-        className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+        className="p-2 rounded-full transition-colors flex-shrink-0"
       >
         <ChevronRightIcon className="w-6 h-6 text-secondary" />
       </button>

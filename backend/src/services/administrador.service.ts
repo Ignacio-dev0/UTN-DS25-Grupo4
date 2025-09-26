@@ -1,5 +1,5 @@
 import prisma from '../config/prisma';
-import { Administrador } from '../generated/prisma';
+import { Administrador } from '@prisma/client';
 import { CreateAdministradorRequest, AdministradorResponse, AdministradorListResponse } from '../types/administrador.types';
 
 export async function crearAdministrador(data: CreateAdministradorRequest) {

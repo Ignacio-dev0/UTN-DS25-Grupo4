@@ -1,6 +1,6 @@
 // backend/src/services/deportes.service.ts
 import prisma from '../config/prisma'; 
-import { Deporte } from '../generated/prisma';
+import { Deporte } from '@prisma/client';
 import { CreateDeporteResquest, UpdateDeporteResquest } from "../types/deporte.types";
 
 export async function getAllDeportes(): Promise<Deporte[]> {
@@ -30,6 +30,7 @@ export async function createDeporte(data: CreateDeporteResquest): Promise<Deport
     const created = await prisma.deporte.create({
         data: {
             nombre: data.name,
+            icono: data.icono || '⚽',
         },
     });
     return created;
@@ -40,7 +41,8 @@ export async function updateDeporte(id:number, updateData: UpdateDeporteResquest
         const updated= await prisma.deporte.update({
             where: {id},
             data: {
-                ...(updateData.name !== undefined ? {name:updateData.name} : {}),
+                ...(updateData.name !== undefined ? {nombre: updateData.name} : {}),
+                ...(updateData.icono !== undefined ? {icono: updateData.icono} : {}),
             },
         });
         return updated;

@@ -5,10 +5,10 @@ import { actualizarLocalidad, crearLocalidad } from "../validations/localidad.va
 
 const router = Router();
 
-router.post('/',validate(crearLocalidad), localidadController.crearLoc);
-router.put('/:id', validate(actualizarLocalidad), localidadController.actulizarLocalidad);
-router.delete('/:id',localidadController.eliminarLocalidad);
-router.get('/:id',localidadController. obtenerLocalidadById);
-router.get('/', localidadController.getAllLocalidades);
+router.get('/', localidadController.obtenerTodasLasLocalidades);
+router.get('/:id', localidadController.obtenerLocalidadById);
+router.post('/', validate(crearLocalidad), localidadController.crearLoc);
+router.put('/:id', validate(actualizarLocalidad), localidadController.actualizarLocalidad);
+router.delete('/:id', localidadController.eliminarLocalidad);
 
 export default router;

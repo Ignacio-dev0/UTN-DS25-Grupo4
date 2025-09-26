@@ -1,29 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PhotoIcon } from '@heroicons/react/24/solid';
+import { API_BASE_URL } from '../config/api.js';
 
 function FormularioNuevaCancha({ onCerrar, onGuardar }) {
     const [nombreCancha, setNombreCancha] = useState('');
     const [deporte, setDeporte] = useState('');
     const [descripcion, setDescripcion] = useState('');
     const [imagenes, setImagenes] = useState([]);
+    const [deportes, setDeportes] = useState([]);
+    const [loadingDeportes, setLoadingDeportes] = useState(true);
+
+    // Cargar deportes desde la API
+    useEffect(() => {
+        const cargarDeportes = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/deportes`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setDeportes(data.deportes || data || []);
+                }
+            } catch (error) {
+                console.error('Error al cargar deportes:', error);
+                // Deportes por defecto en caso de error
+                setDeportes([
+                    { id: 33, nombre: 'Fútbol 5' },
+                    { id: 34, nombre: 'Fútbol 11' },
+                    { id: 35, nombre: 'Vóley' },
+                    { id: 36, nombre: 'Básquet' },
+                    { id: 37, nombre: 'Handball' },
+                    { id: 38, nombre: 'Tenis' },
+                    { id: 39, nombre: 'Pádel' },
+                    { id: 40, nombre: 'Hockey' }
+                ]);
+            } finally {
+                setLoadingDeportes(false);
+            }
+        };
+
+        cargarDeportes();
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!nombreCancha || !deporte || imagenes.length === 0) {
-            alert('Por favor, completa el nombre, el deporte y sube al menos una imagen.');
+        
+        // Validaciones mejoradas
+        if (!nombreCancha || !nombreCancha.trim()) {
+            alert('Por favor, ingresa el nombre de la cancha.');
             return;
         }
+        
+        if (!deporte) {
+            alert('Por favor, selecciona un deporte.');
+            return;
+        }
+        
+        if (!imagenes || imagenes.length === 0) {
+            alert('Por favor, sube al menos una imagen de la cancha.');
+            return;
+        }
+        
+        // Validar que todas las imágenes sean archivos válidos
+        const imagenesValidas = Array.from(imagenes).every(file => 
+            file && file instanceof File && file.type.startsWith('image/')
+        );
+        
+        if (!imagenesValidas) {
+            alert('Por favor, asegúrate de que todos los archivos sean imágenes válidas.');
+            return;
+        }
+        
         onGuardar({
-            nombre: nombreCancha,
+            nombre: nombreCancha.trim(),
             deporte: deporte,
-            descripcion: descripcion,
-            imagenes: imagenes,
+            descripcion: descripcion.trim(),
+            imagenes: Array.from(imagenes),
         });
     };
     
     const handleImageChange = (e) => {
-        if (e.target.files) {
-            setImagenes(Array.from(e.target.files));
+        if (e.target.files && e.target.files.length > 0) {
+            const archivos = Array.from(e.target.files);
+            
+            // Validar que todos los archivos sean imágenes
+            const imagenesValidas = archivos.filter(file => 
+                file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024 // máximo 5MB
+            );
+            
+            if (imagenesValidas.length !== archivos.length) {
+                alert('Algunos archivos no son imágenes válidas o son demasiado grandes (máximo 5MB).');
+            }
+            
+            setImagenes(imagenesValidas);
+        } else {
+            setImagenes([]);
         }
     };
 
@@ -31,7 +100,7 @@ function FormularioNuevaCancha({ onCerrar, onGuardar }) {
         <div className="fixed inset-0 bg-opacity-40 bg-opacity-60 backdrop-blur-sm flex justify-center items-start z-50 p-8 overflow-y-auto pt-30">
             <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-primary">Agregar Nueva Cancha</h2>
-            <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} noValidate>
                 <div className="space-y-6">
                 {/* Campo Nombre de Cancha */}
                         <div>
@@ -56,16 +125,16 @@ function FormularioNuevaCancha({ onCerrar, onGuardar }) {
                                 onChange={(e) => setDeporte(e.target.value)}
                                 className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
                                 required
+                                disabled={loadingDeportes}
                             >
-                                <option value="">Selecciona un deporte</option>
-                                <option value="Fútbol 5">Fútbol 5</option>
-                                <option value="Fútbol 11">Fútbol 11</option>
-                                <option value="Tenis">Tenis</option>
-                                <option value="Pádel">Pádel</option>
-                                <option value="Básquet">Básquet</option>
-                                <option value="Vóley">Vóley</option>
-                                <option value="Hockey">Hockey</option>
-                                <option value="Handball">Handball</option>
+                                <option value="">
+                                    {loadingDeportes ? 'Cargando deportes...' : 'Selecciona un deporte'}
+                                </option>
+                                {deportes.map(dep => (
+                                    <option key={dep.id} value={dep.nombre}>
+                                        {dep.nombre}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -94,7 +163,15 @@ function FormularioNuevaCancha({ onCerrar, onGuardar }) {
                                             className="relative cursor-pointer rounded-md bg-white font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-secondary"
                                         >
                                             <span>Sube los archivos</span>
-                                            <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple required accept="image/*" onChange={handleImageChange} />
+                                            <input 
+                                                id="file-upload" 
+                                                name="file-upload" 
+                                                type="file" 
+                                                className="sr-only" 
+                                                multiple 
+                                                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
+                                                onChange={handleImageChange} 
+                                            />
                                         </label>
                                         <p className="pl-1">o arrástralos aquí</p>
                                     </div>

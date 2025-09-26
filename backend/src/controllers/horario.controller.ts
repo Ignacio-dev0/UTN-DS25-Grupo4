@@ -1,126 +1,105 @@
-import { Request, Response, NextFunction } from 'express';
-import * as horarioService from '../services/horario.service';
-import { CreateHorario, UpdateCronograma } from '../types/horarioCronograma.types';
+import { Request, Response, NextFunction } from "express";
+import * as horarioservice from "../services/horario.service"
 
-export async function getAllHorariosCronograma(req: Request, res: Response): Promise<void> {
-    try {
-        const horarios = await horarioService.getAllHorariosCronograma();
-        res.status(200).json({
-            horarios: horarios,
-            total: horarios.length,
-            message: ' Lista de horarios obtenida exitosamente'
-        });
-    } catch (error: any) {
-        res.status(500).json({ 
-            horarios: [],
-            total: 0,
-            message: error.message || 'Error al obtener los horarios del cronograma.'
-        });
-    }
-};
-
-export async function getHorarioCronogramaById (req: Request, res: Response): Promise<void> {
-    try {
-        const { id } = req.params;
-        const horario = await horarioService.getHorarioCronogramaById(parseInt(id));
-
-        if (!horario) {
-            res.status(404).json({ 
-                horario: null,
-                message: 'Horario del cronograma no encontrado.'
-            });
-            return;
-        }
-
-        res.status(200).json({
-            horario:horario,
-            message: 'Horario del cronograma obtenido exitosamente'
-        });
-    } catch (error: any) {
-        res.status(500).json({ 
-            horario: null,
-            message: error.message || 'Error al obtener el horario del cronograma.'
-        });
-    }
-};
-
-export async function getHorariosCronogramaByCanchaId(req: Request, res: Response): Promise<void>{
-    try {
-        const { canchaId } = req.params;
-        const { diaSemana } = req.query; // El día de la semana es opcional
-
-        const horarios = await horarioService.getHorariosCronogramaByCanchaId(parseInt(canchaId), diaSemana as any);
-
-        res.status(200).json({
-            horarios:horarios,
-            total: horarios.length,
-            message: ' Horarios de la cancha obtenidos exitosamente'
-        });
-    } catch (error: any) {
-        res.status(500).json({ 
-            horarios: [],
-            total:0,
-            message: error.message || 'Error al obtener los horarios de la cancha.'
-        });
-    }
-};
-
-export async function createHorarioCronograma(req: Request, res: Response): Promise<void> {
-    try {
-        const data: CreateHorario = req.body;
-        const nuevoHorario = await horarioService.createHorarioCronograma(data);
+export const createHorario = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const horario = await horarioservice.createHorario(req.body);
         res.status(201).json({
-            horario:nuevoHorario,
-            message: 'Horario del cronograma creado exitosamente' 
+            horario,
+            message: 'Horario creado correctamente'
         });
-    } catch (error: any) {
-        res.status(500).json({ 
-            horario: null,
-            message: 'error al crear el horario'
-         });
+    }catch(error){
+        next(error);
     }
-};
+}
 
-export async function updateHorarioCronograma (req: Request, res: Response): Promise<void> {
-    try {
-        const { id } = req.params;
-        const data: UpdateCronograma = req.body;
-        const horarioActualizado = await horarioService.updateHorarioCronograma(parseInt(id), data);
+export const getAllHorarios = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const horarios = await horarioservice.getAllHorarios();
         res.status(200).json({
-            horario:horarioActualizado,
-            message:'Horario del cronograma actualizado exitosamente.'
+            horarios,
+            total: horarios.length,
+            message: 'Horarios obtenidos correctamente'
         });
-    } catch (error: any) {
-        if (error.statusCode === 404) {
-            res.status(404).json({ 
-                horario:null,
-                message:error.message
-             });
-        } else {
-            res.status(500).json({ horario:null,message: error.message || 'Error al actualizar el horario del cronograma.' });
-        }
+    }catch(error){
+        next(error);
     }
-};
+}
 
-export async function deleteHorarioCronograma(req: Request, res: Response): Promise<void>{
-    try {
-        const { id } = req.params;
-        const horarioEliminado = await horarioService.deleteHorarioCronograma(parseInt(id));
-        res.status(200).json({ 
-            horario: horarioEliminado, 
-            message: 'Horario del cronograma eliminado exitosamente.'
-        });
-    } catch (error: any) {
-        if (error.statusCode === 404) {
-            res.status(404).json({ 
-                horario: null,
-                message: error.message 
-            });
-        } else {
-            res.status(500).json({ 
-                horario:null,
-                message: error.message || 'Error al eliminar el horario del cronograma.' 
-            });
+export const getHorarioById = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ message: 'El ID debe ser un número válido.' });
         }
+
+        const horario = await horarioservice.getHorarioById(id);
+        if (!horario) {
+            return res.status(404).json({ message: 'Horario no encontrado.' });
+        }
+
+        res.status(200).json({
+            horario,
+            message: 'Horario encontrado'
+        });
+    }catch(error){
+        next(error);
     }
-};
+}
+
+export const getHorariosCancha = async (req: Request<{canchaId: string}>, res:Response, next:NextFunction) => {
+    try{
+        const {canchaId} =req.params;
+        if (isNaN(parseInt(canchaId))) {
+            return res.status(400).json({ message: 'El ID de la cancha debe ser un número válido.' });
+        }
+        const canchaHorarios = await horarioservice.getHorariosByCanchaId(parseInt(canchaId));
+        res.status(200).json({
+            horarios: canchaHorarios,
+            total: canchaHorarios.length,
+            message: 'Horarios de la cancha obtenidos'
+        });
+    }catch(error){
+        next(error);
+    }
+}
+
+export const updateHorario = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ message: 'El ID debe ser un número válido.' });
+        }
+
+        const horario = await horarioservice.updateHorario(id, req.body);
+        res.status(200).json({
+            horario,
+            message: 'Horario actualizado correctamente'
+        });
+    }catch(error: any){
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Horario no encontrado' });
+        }
+        next(error);
+    }
+}
+
+export const deleteHorario = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ message: 'El ID debe ser un número válido.' });
+        }
+
+        const horario = await horarioservice.deleteHorario(id);
+        res.status(200).json({
+            horario,
+            message: 'Horario eliminado correctamente'
+        });
+    }catch(error: any){
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Horario no encontrado' });
+        }
+        next(error);
+    }
+}

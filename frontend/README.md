@@ -15,3 +15,4 @@ react-leaflet: ^5.0.0
 yet-another-react-lightbox: ^3.24.0
 tailwindcss: ^4.1.10
 
+# Frontend fixed - serve instead of vite preview

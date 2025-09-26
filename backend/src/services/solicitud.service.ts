@@ -3,7 +3,7 @@ import prisma from "../config/prisma";
 
 import * as soliTypes from "../types/solicitud.types"
 import { da } from "zod/v4/locales/index.cjs";
-import { Solicitud } from "../generated/prisma";
+import { Solicitud } from "@prisma/client";
 import { primitiveTypes } from "zod/v4/core/util.cjs";
 
 export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) => {
@@ -14,14 +14,102 @@ export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) =>
     }});
 }
 
+export const createSolicitudWithComplejo = async (data: any) => {
+    // Crear la solicitud y luego el complejo asociado
+    return prisma.$transaction(async (tx) => {
+        // Buscar localidad por ID (nuevo comportamiento)
+        let localidadId = data.complejo.domicilio.localidad;
+        if (typeof localidadId === 'string') {
+            localidadId = parseInt(localidadId);
+        }
+        const localidad = await tx.localidad.findUnique({
+            where: { id: localidadId }
+        });
+        if (!localidad) {
+            throw new Error('Localidad no encontrada');
+        }
+
+        // Crear la solicitud primero
+        const nuevaSolicitud = await tx.solicitud.create({
+            data: {
+                cuit: data.cuit,
+                estado: 'PENDIENTE',
+                usuarioId: data.usuarioId,
+                image: data.complejo.imagen  // Guardar imagen en la solicitud
+            }
+        });
+
+        // Crear el domicilio
+        const nuevoDomicilio = await tx.domicilio.create({
+            data: {
+                calle: data.complejo.domicilio.calle,
+                altura: parseInt(data.complejo.domicilio.altura),
+                localidadId: localidad.id
+            }
+        });
+
+        // Crear el complejo asociado a la solicitud (sin imagen inicialmente)
+        const nuevoComplejo = await tx.complejo.create({
+            data: {
+                nombre: data.complejo.nombre,
+                image: null,  // No imagen hasta que se apruebe la solicitud
+                cuit: data.cuit,
+                domicilioId: nuevoDomicilio.id,
+                usuarioId: data.usuarioId,
+                solicitudId: nuevaSolicitud.id
+            }
+        });
+
+        // Retornar la solicitud completa con todas las relaciones
+        return await tx.solicitud.findUnique({
+            where: { id: nuevaSolicitud.id },
+            include: {
+                usuario: true,
+                complejo: {
+                    include: {
+                        domicilio: {
+                            include: {
+                                localidad: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+};
+
 export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitudRequest) =>{
-    const soliUpdate:any={
-        estado: data.estado,
-        evaluador: data.evaluadorId,
-    }
-    return prisma.solicitud.update({
-        where:{id},
-        data:soliUpdate,
+    return prisma.$transaction(async (tx) => {
+        // Actualizar la solicitud
+        const soliUpdate:any={
+            estado: data.estado,
+        }
+        
+        // Solo agregar evaluadorId si se proporciona
+        if (data.evaluadorId) {
+            soliUpdate.evaluador = data.evaluadorId;
+        }
+        
+        const solicitudActualizada = await tx.solicitud.update({
+            where:{id},
+            data:soliUpdate,
+            include: {
+                complejo: true
+            }
+        });
+
+        // Si la solicitud fue aprobada, copiar la imagen de la solicitud al complejo
+        if (data.estado === 'APROBADA' && solicitudActualizada.image && solicitudActualizada.complejo) {
+            await tx.complejo.update({
+                where: { id: solicitudActualizada.complejo.id },
+                data: { image: solicitudActualizada.image }
+            });
+            
+            console.log(`✅ Imagen transferida de solicitud ${solicitudActualizada.id} al complejo ${solicitudActualizada.complejo.id}`);
+        }
+
+        return solicitudActualizada;
     });
 };
 
@@ -87,7 +175,21 @@ export async function getRequestById (id:number): Promise<Solicitud>{
 } 
 
 export async function getAllRequest (): Promise<Solicitud[]>{
-    return prisma.solicitud.findMany();
+    return prisma.solicitud.findMany({
+        include: {
+            usuario: true,
+            admin: true,
+            complejo: {
+                include: {
+                    domicilio: {
+                        include: {
+                            localidad: true
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 export async function deleteSoli(id: number) {
@@ -97,73 +199,73 @@ export async function deleteSoli(id: number) {
 
 // import prisma from '../config/prisma';
 
-import { EstadoSolicitud } from '../generated/prisma';
+import { EstadoSolicitud } from '@prisma/client';
 import { createComplejo } from './complejo.service';
 import { CreateSolicitudRequest, UpdateSolicitudRequest } from '../types/solicitud.types';
 
-export async function crearSolicitud(data: CreateSolicitudRequest) {
-	return prisma.solicitud.create({ data });
-}
+// COMENTADAS TEMPORALMENTE - Hay conflictos con el schema actual
+// export async function crearSolicitud(data: CreateSolicitudRequest) {
+// 	return prisma.solicitud.create({ data });
+// }
 
+// export async function obtenerSolicitudes() {
+//   return prisma.solicitud.findMany({
+// 		include: { emisor: true, documentos: true }
+// 	});
+// };
 
-export async function obtenerSolicitudes() {
-  return prisma.solicitud.findMany({
-		include: { emisor: true, documentos: true }
-	});
-};
+// export async function obtenerSolicitudesPendientes() {
+//   return prisma.solicitud.findMany({
+// 		where: { estado: EstadoSolicitud.PENDIENTE },
+// 		include: { emisor: true, documentos: true }
+// 	});
+// };
 
-export async function obtenerSolicitudesPendientes() {
-  return prisma.solicitud.findMany({
-		where: { estado: EstadoSolicitud.PENDIENTE },
-		include: { emisor: true, documentos: true }
-	});
-};
+// export async function obtenerSolicitudPorId(id: number) {
+//   const solicitud = prisma.solicitud.findUnique({
+//     where: { id }
+//   });
 
-export async function obtenerSolicitudPorId(id: number) {
-  const solicitud = prisma.solicitud.findUnique({
-    where: { id }
-  });
+// 	if (!solicitud) {
+//     const error = new Error('Solicitud not Found');
+//     (error as any).statusCode = 404;
+//     throw error;
+//   }
+// 	return solicitud;
+// };
 
-	if (!solicitud) {
-    const error = new Error('Solicitud not Found');
-    (error as any).statusCode = 404;
-    throw error;
-  }
-	return solicitud;
-};
+// export async function evaluarSolicitud(
+// 	id: number,
+// 	data: UpdateSolicitudRequest
+// ) {
+// 	const solicitud = await prisma.solicitud.findUnique({
+// 		where: { id }
+// 	});
 
-export async function evaluarSolicitud(
-	id: number,
-	data: UpdateSolicitudRequest
-) {
-	const solicitud = await prisma.solicitud.findUnique({
-		where: { id }
-	});
+// 	if (!solicitud) {
+//     const error = new Error('Solicitud not Found');
+//     (error as any).statusCode = 404;
+//     throw error;
+//   }
 
-	if (!solicitud) {
-    const error = new Error('Solicitud not Found');
-    (error as any).statusCode = 404;
-    throw error;
-  }
+// 	if (solicitud.estado !== EstadoSolicitud.PENDIENTE) {
+// 		const error = new Error('La solicitud ya fue evaluada');
+//     (error as any).statusCode = 404;
+//     throw error;
+// 	}
 
-	if (solicitud.estado !== EstadoSolicitud.PENDIENTE) {
-		const error = new Error('La solicitud ya fue evaluada');
-    (error as any).statusCode = 404;
-    throw error;
-	}
+// 	if (data.estado === EstadoSolicitud.APROBADA) {
+// 		crearComplejo({
+// 			solicitud: { connect: { id } },
+// 			duenios: { connect: { id: solicitud.emisorId } },
+// 		});
+// 	}
 
-	if (data.estado === EstadoSolicitud.APROBADA) {
-		crearComplejo({
-			solicitud: { connect: { id } },
-			duenios: { connect: { id: solicitud.emisorId } },
-		});
-	}
-
-	return prisma.solicitud.update({
-		where: { id },
-		data: {
-			estado: data.estado,
-			evaluador: { connect: { id: data.evaluador.id } },
-		},
-	});
-}
+// 	return prisma.solicitud.update({
+// 		where: { id },
+// 		data: {
+// 			estado: data.estado,
+// 			evaluador: { connect: { id: data.evaluadorId } },
+// 		},
+// 	});
+// }

@@ -1,4 +1,3 @@
-// backend/src/controllers/deportes.controller.ts
 import { NextFunction, Request, Response } from 'express';
 import { CreateDeporteResquest, UpdateDeporteResquest, DeporteListResponse, DeporteResponse} from '../types/deporte.types';
 import * as deportesService  from '../services/deportes.service';
@@ -28,7 +27,7 @@ export async function getDeporteById (req: Request, res: Response<DeporteRespons
     }
 }
 
-export async function createDeporte(req : Request<{},DeporteResponse , CreateDeporteResquest>, res: Response<DeporteResponse>){
+export async function createDeporte(req : Request<{},DeporteResponse , CreateDeporteResquest>, res: Response<DeporteResponse>, next: NextFunction){
     try {
         const newDeporte = await deportesService.createDeporte(req.body);
         res.status(201).json({
@@ -36,11 +35,11 @@ export async function createDeporte(req : Request<{},DeporteResponse , CreateDep
             message: 'Deporte created successfully'
         });
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 }
 
-export async function updateDeporte(req: Request<{id:string}, DeporteResponse,UpdateDeporteResquest>, res: Response<DeporteResponse>){
+export async function updateDeporte(req: Request<{id:string}, DeporteResponse,UpdateDeporteResquest>, res: Response<DeporteResponse>, next: NextFunction){
     try {
         const { id } = req.params;
         const updateDeporte = await deportesService.updateDeporte(parseInt(id),req.body);
@@ -48,19 +47,17 @@ export async function updateDeporte(req: Request<{id:string}, DeporteResponse,Up
             deporte: updateDeporte,
             message: 'Deporte updated successfully'
         });
-    }catch(error){
-        console.log(error);
+    } catch (error) {
+        next(error);
     }
 }
 
-export async function deleteDeporte(req: Request<{id:string}, {}, {}>, res: Response) {
+export async function deleteDeporte(req: Request, res: Response, next: NextFunction){
     try {
         const { id } = req.params;
         await deportesService.deleteDeporte(parseInt(id));
-        res.json({
-            message: 'Deporte deleted successfully'
-        });
+        res.status(204).send();
     } catch (error) {
-        console.log(error);
+        next(error);
     }
 }

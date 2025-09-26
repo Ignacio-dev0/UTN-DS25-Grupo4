@@ -1,4 +1,4 @@
-import { Administrador } from "../generated/prisma";
+import { Administrador } from "@prisma/client";
 
 export interface CreateAdministradorRequest {
   email: string,

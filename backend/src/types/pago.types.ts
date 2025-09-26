@@ -1,4 +1,4 @@
-import { Pago, Alquiler, MetodoPago} from "../generated/prisma";
+import { Pago, Alquiler, MetodoPago} from "@prisma/client";
 
 export interface CrearPagoRequest{
     codigotransaccion?: string;

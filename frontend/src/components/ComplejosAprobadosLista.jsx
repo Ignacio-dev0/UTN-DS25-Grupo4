@@ -20,15 +20,35 @@ function ComplejosAprobadosLista({ complejos, onRemove }) {
     setComplejoToRemove(null);
   };
 
+  // Debug para ver qué recibimos
+  console.log('Complejos en componente:', complejos);
+
+  if (!complejos || complejos.length === 0) {
+    return (
+      <div className="p-8">
+        <h2 className="text-2xl font-bold text-secondary mb-6">Complejos Aprobados</h2>
+        <p className="text-gray-600">No hay complejos aprobados para mostrar.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-secondary mb-6">Complejos Aprobados</h2>
       <ul className="space-y-4">
         {complejos.map(complejo => (
-          <li key={complejo.id} className="p-4 bg-white rounded-lg flex justify-between items-center border-primary">
+          <li key={complejo.id} className="p-4 bg-white rounded-lg flex justify-between items-center">
             <div>
-              <p className="font-semibold text-primary">{complejo.nombreComplejo}</p>
-              <p className="text-sm text-secondary">{complejo.ubicacion} - Aprobado el: {complejo.fechaAprobacion}</p>
+              <p className="font-semibold text-primary">{complejo.nombre}</p>
+              <p className="text-sm text-secondary">
+                {complejo.domicilio ? 
+                  `${complejo.domicilio.calle} ${complejo.domicilio.altura}, ${complejo.domicilio.localidad?.nombre || 'Sin localidad'}` 
+                  : 'Sin dirección'
+                }
+              </p>
+              <p className="text-xs text-gray-500">
+                CUIT: {complejo.cuit} - Usuario: {complejo.usuario?.nombre} {complejo.usuario?.apellido}
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <Link to={`/micomplejo/${complejo.id}`}>
@@ -53,7 +73,7 @@ function ComplejosAprobadosLista({ complejos, onRemove }) {
         onClose={() => setShowRemoveModal(false)}
         onConfirm={handleConfirmRemove}
         title="Confirmar Eliminación"
-        message={`¿Estás seguro de que deseas eliminar a ${complejoToRemove?.nombreComplejo} de la lista de complejos aprobados?`}
+        message={`¿Estás seguro de que deseas eliminar a ${complejoToRemove?.nombre} de la lista de complejos aprobados?`}
         confirmText="Sí, Eliminar"
       />
     </div>

@@ -5,12 +5,39 @@ import { CreateReseniaRequest, UpdateReseniaRequest, ReseniaResponse, ReseniaLis
 
 export async function crearResenia(req: Request<{}, ReseniaResponse, CreateReseniaRequest>, res: Response<ReseniaResponse>) {
     try {
+        console.log('🔍 CREAR RESEÑA - Datos recibidos:', JSON.stringify(req.body, null, 2));
+        
+        // Validar que los datos requeridos estén presentes
+        const { descripcion, puntaje, alquilerId } = req.body;
+        
+        if (!descripcion || puntaje === undefined || !alquilerId) {
+            console.log('❌ CREAR RESEÑA - Faltan datos requeridos');
+            return res.status(400).json({
+                resenia: null,
+                message: 'Faltan datos requeridos: descripcion, puntaje, alquilerId'
+            } as any);
+        }
+
+        // Validar tipos de datos
+        if (typeof puntaje !== 'number' || typeof alquilerId !== 'number') {
+            console.log('❌ CREAR RESEÑA - Tipos de datos incorrectos');
+            return res.status(400).json({
+                resenia: null,
+                message: 'El puntaje y alquilerId deben ser números'
+            } as any);
+        }
+
+        console.log('🚀 CREAR RESEÑA - Creando reseña...');
         const nuevaResenia = await resenasService.createResenia(req.body);
+        
+        console.log('✅ CREAR RESEÑA - Reseña creada exitosamente:', nuevaResenia.id);
         res.status(201).json({
             resenia: nuevaResenia,
             message: 'Reseña creada exitosamente'
         });
     } catch (error: any) {
+        console.error('💥 CREAR RESEÑA - Error:', error);
+        
         if (error.statusCode === 400) {
             return res.status(400).json({
                 resenia: null,
@@ -85,7 +112,7 @@ export async function obtenerResenasPorComplejo(req: Request<{complejoId: string
 export async function obtenerResenasPorCancha(req: Request<{canchaId: string}>, res: Response<ReseniaListResponse>, next: NextFunction) {
     try {
         const { canchaId } = req.params;
-        const resenas = await resenasService.getResenasByCancha(parseInt(canchaId));
+        const resenas = await resenasService.getResenasByCanchaId(parseInt(canchaId));
         res.json({
             resenas,
             total: resenas.length

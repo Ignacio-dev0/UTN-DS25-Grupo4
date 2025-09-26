@@ -1,14 +1,16 @@
 import { Router } from "express";
 import * as horarioController from "../controllers/horario.controller"
+import { validate } from "../middlewares/validate";
+import { crearHorarioSchema, actualizarHorarioSchema, horarioIdSchema, horariosCanchaSchema } from "../validations/horario.validation";
 
 const router = Router();
 
-router.get('/',horarioController.getAllHorariosCronograma)
-router.get('/:id',horarioController.getHorarioCronogramaById)
-router.get('/cancha/:canchaId',horarioController.getHorariosCronogramaByCanchaId) // GET /horarios/cancha/1?diaSemana=SABADO
-router.post('/',horarioController.createHorarioCronograma)
-router.put('/:id',horarioController.updateHorarioCronograma)
-router.delete('/:id',horarioController.deleteHorarioCronograma)
+// CRUD completo para horarios
+router.post('/', validate(crearHorarioSchema), horarioController.createHorario);
+router.get('/', horarioController.getAllHorarios);
+router.get('/:id', validate(horarioIdSchema), horarioController.getHorarioById);
+router.get('/cancha/:canchaId', validate(horariosCanchaSchema), horarioController.getHorariosCancha);
+router.put('/:id', validate(horarioIdSchema), validate(actualizarHorarioSchema), horarioController.updateHorario);
+router.delete('/:id', validate(horarioIdSchema), horarioController.deleteHorario);
 
-const horarioRoutes = router;
-export default horarioRoutes;
+export default router;

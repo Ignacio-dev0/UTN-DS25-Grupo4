@@ -1,6 +1,6 @@
 // backend/src/services/resenas.service.ts
 import prisma from '../config/prisma';
-import { Resenia } from '../generated/prisma';
+import { Resenia } from '@prisma/client';
 import { CreateReseniaRequest, UpdateReseniaRequest } from '../types/resenia.types';
 
 export async function getAllResenas(): Promise<Resenia[]> {
@@ -201,35 +201,53 @@ export async function getResenasByUsuario(usuarioId: number): Promise<Resenia[]>
 }
 
 export async function createResenia(data: CreateReseniaRequest): Promise<Resenia> {
+    console.log('🔧 RESENIA SERVICE - createResenia called with data:', JSON.stringify(data, null, 2));
+    
     // Validar que el puntaje esté entre 1 y 5
     if (data.puntaje < 1 || data.puntaje > 5) {
+        console.log('❌ RESENIA SERVICE - Puntaje inválido:', data.puntaje);
         const error = new Error('El puntaje debe estar entre 1 y 5');
         (error as any).statusCode = 400;
         throw error;
     }
 
+    // Validar que la descripción no esté vacía después de limpiar espacios
+    if (!data.descripcion || data.descripcion.trim().length < 10) {
+        console.log('❌ RESENIA SERVICE - Descripción demasiado corta');
+        const error = new Error('La descripción debe tener al menos 10 caracteres');
+        (error as any).statusCode = 400;
+        throw error;
+    }
+
+    console.log('🔍 RESENIA SERVICE - Verificando alquiler...');
     // Verificar que el alquiler existe y no tiene ya una reseña
     const alquiler = await prisma.alquiler.findUnique({
         where: { id: data.alquilerId },
-        include: { resenia: true }
+        include: { 
+            resenia: true,
+            cliente: true // Para validar que existe
+        }
     });
 
     if (!alquiler) {
+        console.log('❌ RESENIA SERVICE - Alquiler no encontrado:', data.alquilerId);
         const error = new Error('El alquiler no existe');
         (error as any).statusCode = 404;
         throw error;
     }
 
     if (alquiler.resenia) {
+        console.log('❌ RESENIA SERVICE - Alquiler ya tiene reseña:', data.alquilerId);
         const error = new Error('Este alquiler ya tiene una reseña');
         (error as any).statusCode = 409;
         throw error;
     }
 
+    console.log('🚀 RESENIA SERVICE - Creando reseña en la base de datos...');
     const created = await prisma.resenia.create({
         data: {
-            descripcion: data.descripcion,
-            puntaje: data.puntaje,
+            descripcion: data.descripcion.trim(), // Limpiar espacios
+            puntaje: Math.round(data.puntaje), // Asegurar que sea entero
             alquilerId: data.alquilerId
         },
         include: {
@@ -247,6 +265,7 @@ export async function createResenia(data: CreateReseniaRequest): Promise<Resenia
         }
     });
 
+    console.log('✅ RESENIA SERVICE - Reseña creada exitosamente:', created.id);
     return created;
 }
 
@@ -305,4 +324,56 @@ export async function deleteResenia(id: number): Promise<Resenia> {
         }
         throw e;
     }
+}
+
+export async function getResenasByCanchaId(canchaId: number): Promise<Resenia[]> {
+    const resenas = await prisma.resenia.findMany({
+        where: {
+            alquiler: {
+                turnos: {
+                    some: {
+                        canchaId: canchaId
+                    }
+                }
+            }
+        },
+        include: {
+            alquiler: {
+                include: {
+                    cliente: {
+                        select: {
+                            nombre: true,
+                            apellido: true,
+                            image: true
+                        }
+                    },
+                    turnos: {
+                        where: {
+                            canchaId: canchaId
+                        },
+                        include: {
+                            cancha: {
+                                include: {
+                                    complejo: {
+                                        select: {
+                                            nombre: true
+                                        }
+                                    },
+                                    deporte: {
+                                        select: {
+                                            nombre: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        orderBy: {
+            id: 'desc'
+        }
+    });
+    return resenas;
 }

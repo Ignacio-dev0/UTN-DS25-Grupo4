@@ -1,49 +1,246 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
-import { datosComplejos } from '../data/complejos.js';
-import { FaFutbol, FaHockeyPuck, FaRegFutbol } from "react-icons/fa";
-import { IoIosBasketball } from "react-icons/io";
-import { MdSportsVolleyball, MdSportsHandball, MdSportsTennis } from "react-icons/md";
-import { GiTennisRacket } from "react-icons/gi";
-
-const iconMap = {
-  'Fútbol 5': <FaFutbol />,
-  'Fútbol 11': <FaRegFutbol />,
-  'Vóley': <MdSportsVolleyball />,
-  'Básquet': <IoIosBasketball />,
-  'Handball': <MdSportsHandball />,
-  'Tenis': <MdSportsTennis />,
-  'Pádel': <GiTennisRacket />, 
-  'Hockey': <FaHockeyPuck />,
-};
+import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
-  const complejo = datosComplejos.find(c => c.id === cancha.complejoId);
+  const [turnosHoy, setTurnosHoy] = useState([]);
+  const [loadingTurnos, setLoadingTurnos] = useState(false);
 
-  if (!complejo) return null; 
+  // Fetch available turns for this court (today from current time onwards)
+  useEffect(() => {
+    const fetchTurnosDisponibles = async () => {
+      if (!cancha.id) return;
+      
+      setLoadingTurnos(true);
+      try {
+        const now = new Date();
+        
+        // Asegurar que usamos la hora local argentina para la comparación
+        const nowInArgentina = new Date(now.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"}));
+        const currentHour = nowInArgentina.getHours();
+        const currentMinute = nowInArgentina.getMinutes();
+        
+        // Get today's date in YYYY-MM-DD format (Argentina timezone)
+        const todayStr = nowInArgentina.toISOString().split('T')[0];
+        
+        // Eliminamos log repetitivo - solo para debug si es necesario
+        console.log(`[DEBUG] Cargando turnos para cancha ${cancha.id} del día ${todayStr} desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')} (Argentina timezone)`);
+        
+        let response = await fetch(`${API_BASE_URL}/turnos/cancha/${cancha.id}`);
+        let data = await response.json();
+        
+        // Log para debug en Railway
+        console.log(`[DEBUG] Respuesta turnos cancha ${cancha.id}:`, data.turnos?.length || 0, 'turnos totales');
+        
+        // Filter for today's date and available turns (not reserved) and only future times
+        let turnosDisponibles = (data.turnos || []).filter(turno => {
+          // Check if turn is for today - mejorar manejo de fechas
+          let turnoFecha;
+          try {
+            // Si la fecha viene con formato ISO, extraer solo la fecha
+            if (turno.fecha.includes('T')) {
+              turnoFecha = turno.fecha.split('T')[0];
+            } else {
+              // Si es solo una fecha, usarla directamente
+              const fechaObj = new Date(turno.fecha);
+              turnoFecha = fechaObj.toISOString().split('T')[0];
+            }
+          } catch (error) {
+            console.warn('Error procesando fecha del turno:', turno.fecha, error);
+            return false;
+          }
+          
+          if (turnoFecha !== todayStr) return false;
+          
+          // Check if turn is not reserved
+          if (turno.reservado) return false;
+          
+          // Parse the hour from the turn time - handle different formats
+          let turnoHour, turnoMinute;
+          
+          if (turno.horaInicio.includes('T')) {
+            // ISO format: "2024-01-01T14:00:00.000Z"
+            const timeMatch = turno.horaInicio.match(/T(\d{2}):(\d{2})/);
+            if (timeMatch) {
+              turnoHour = parseInt(timeMatch[1]);
+              turnoMinute = parseInt(timeMatch[2]);
+            }
+          } else {
+            // Time format: "14:00:00" or "14:00"
+            const timeParts = turno.horaInicio.split(':');
+            if (timeParts.length >= 2) {
+              turnoHour = parseInt(timeParts[0]);
+              turnoMinute = parseInt(timeParts[1]);
+            }
+          }
+          
+          // Only show turns that are in the future (today from current time onwards)
+          if (turnoHour !== undefined && turnoMinute !== undefined) {
+            return turnoHour > currentHour || (turnoHour === currentHour && turnoMinute > currentMinute);
+          }
+          
+          return false;
+        });
+        
+        // Solo mostrar log si hay debug habilitado
+        console.log(`[DEBUG] Turnos disponibles cancha ${cancha.id} hoy desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, turnosDisponibles.length, 'turnos filtrados');
+        
+        setTurnosHoy(turnosDisponibles);
+      } catch (error) {
+        console.error('Error fetching turnos:', error);
+        setTurnosHoy([]);
+      } finally {
+        setLoadingTurnos(false);
+      }
+    };
 
-  const horariosDisponibles = cancha.turnos?.filter(t => t.estado === 'disponible').slice(0, 5).map(t => t.hora) || [];
-  const deporteIconFinal = iconMap[cancha.deporte] || null;
+    fetchTurnosDisponibles();
+  }, [cancha.id]);
+  
+  // Generate available hours from today's turns (only future times)
+  const generarHorariosDelDia = () => {
+    const now = new Date();
+    // Usar hora argentina para consistencia
+    const nowInArgentina = new Date(now.toLocaleString("en-US", {timeZone: "America/Argentina/Buenos_Aires"}));
+    const currentHour = nowInArgentina.getHours();
+    const currentMinute = now.getMinutes();
+
+    if (turnosHoy.length === 0) {
+      // Fallback to cronograma if no turns data available, but still filter by current time
+      if (!cancha.cronograma || cancha.cronograma.length === 0) {
+        return [];
+      }
+
+      const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+      const diaActual = diasSemana[now.getDay()];
+      
+      // Filter cronograma for current day and only future hours
+      const horariosDelDia = cancha.cronograma
+        .filter(cronograma => {
+          if (cronograma.diaSemana !== diaActual) return false;
+          
+          const horaInicio = new Date(cronograma.horaInicio);
+          if (isNaN(horaInicio.getTime())) return false;
+          
+          const cronogramaHour = horaInicio.getUTCHours();
+          const cronogramaMinute = horaInicio.getUTCMinutes();
+          
+          // Only show future times from current hour onwards
+          return cronogramaHour > currentHour || (cronogramaHour === currentHour && cronogramaMinute > currentMinute);
+        })
+        .map(cronograma => {
+          const horaInicio = new Date(cronograma.horaInicio);
+          return horaInicio.toLocaleTimeString('es-AR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+          });
+        });
+
+      // Eliminamos log repetitivo
+      // console.log(`Horarios del cronograma desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, horariosDelDia);
+      return horariosDelDia;
+    }
+
+    // Use actual available turns for today (already filtered by time in the useEffect)
+    const horariosUnicos = new Set();
+    const horariosArray = [];
+    
+    for (const turno of turnosHoy) {
+      // Parse only the time part from the ISO string to avoid timezone issues
+      const timeMatch = turno.horaInicio.match(/T(\d{2}):(\d{2})/);
+      let horaFormateada;
+      
+      if (timeMatch) {
+        horaFormateada = `${timeMatch[1]}:${timeMatch[2]}`;
+      } else {
+        // Fallback to Date parsing if regex fails
+        const horaInicio = new Date(turno.horaInicio);
+        if (isNaN(horaInicio.getTime())) {
+          console.warn('Fecha inválida en turno:', turno.horaInicio);
+          continue;
+        }
+        horaFormateada = horaInicio.toLocaleTimeString('es-AR', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false
+        });
+      }
+      
+      // Solo agregar si no existe ya esta hora
+      if (!horariosUnicos.has(horaFormateada)) {
+        horariosUnicos.add(horaFormateada);
+        horariosArray.push(horaFormateada);
+      }
+    }
+    
+    // Debug para Railway - mostrar horarios generados
+    console.log(`[DEBUG] Cancha ${cancha.id} - Horarios únicos generados:`, horariosArray.length, horariosArray);
+    return horariosArray;
+  };
+
+  const horariosDisponibles = generarHorariosDelDia();
+  
+  // Usar el icono del backend directamente
+  const deporteIcono = cancha.deporte?.icono || '⚽';
+
+  // Function to calculate the cheapest price from available turns today
+  const calcularPrecioMinimo = () => {
+    if (turnosHoy.length > 0) {
+      // Use actual turn prices for today
+      const precios = turnosHoy
+        .map(t => t.precio)
+        .filter(precio => precio > 0);
+      
+      return precios.length > 0 ? Math.min(...precios) : null;
+    }
+    
+    // Fallback to cronograma if no turn data available
+    if (!cancha.cronograma || cancha.cronograma.length === 0) {
+      return null;
+    }
+    
+    const precios = cancha.cronograma
+      .map(c => c.precio)
+      .filter(precio => precio > 0);
+    
+    return precios.length > 0 ? Math.min(...precios) : null;
+  };
+
+  const precioDesde = calcularPrecioMinimo();
+  
+  // Eliminamos logs repetitivos - solo para debug detallado
+  // console.log('CanchaCard - turnosHoy:', turnosHoy);
+  // console.log('CanchaCard - precioDesde:', precioDesde);
+  // console.log('CanchaCard - loadingTurnos:', loadingTurnos);
 
   return (
     <Link to={`/reserva/${cancha.id}`} className="block bg-secondary rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1 group relative">
       <div className="absolute top-3 left-3 z-10 bg-secondary text-accent rounded-full w-12 h-12 flex items-center justify-center shadow-md border-2 border-white">
         <span className="text-2xl">
-          {deporteIconFinal}
+          {deporteIcono}
         </span>
       </div>
       <div className="relative">
-        <img className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" src={cancha.imageUrl || `https://via.placeholder.com/400x300?text=${complejo.nombre}`}/>
-        {cancha.precioDesde && (
+        <img 
+          className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
+          src={getImageUrl(cancha.image?.[0]) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)}
+          onError={(e) => {
+            // Fallback a imagen por defecto del deporte
+            e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
+          }}
+          alt={`Cancha de ${cancha.deporte?.nombre}`}
+        />
+        {precioDesde && (
           <div className="absolute top-0 right-0 bg-secondary bg-opacity-60 text-light text-sm font-bold p-2 m-2 rounded-md">
-            desde ${cancha.precioDesde.toLocaleString('es-AR')}
+            desde ${precioDesde.toLocaleString('es-AR')}
           </div>
         )}
       </div>
       <div className="p-4">
         <div className="flex justify-between items-start">
-            <h3 className="text-lg font-bold text-light font-lora">{complejo.nombre}</h3>
+            <h3 className="text-lg font-bold text-light font-lora">{cancha.complejo?.nombre}</h3>
             <div className="flex items-center text-sm flex-shrink-0 ml-2">
                 <StarIcon className="w-5 h-5 text-yellow-400 mr-1" />
                 <span className="font-bold text-white">{cancha.puntaje > 0 ? cancha.puntaje.toFixed(1) : 'Nuevo'}</span>
@@ -51,19 +248,28 @@ function CanchaCard({ cancha }) {
         </div>
         <p className="text-sm text-accent flex items-center mt-1">
           <MapPinIcon className="w-4 h-4 mr-1" />
-          {complejo.ubicacion} - Cancha N°{cancha.noCancha}
+          {cancha.complejo?.domicilio?.localidad?.nombre} - Cancha N°{cancha.nroCancha}
         </p>
         <div className="border-t border-light mt-4 pt-4">
           {horariosDisponibles.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {horariosDisponibles.map(hora => (
-                <div key={hora} className="bg-light text-secondary font-semibold py-1 px-3 rounded-md text-sm">
+              {horariosDisponibles.map((hora, index) => (
+                <div key={`${cancha.id}-${hora}-${index}`} className="bg-light text-secondary font-semibold py-1 px-3 rounded-md text-sm">
                   {hora}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-accent">Sin turnos próximos.</p>
+            <div className="text-sm text-accent">
+              {loadingTurnos ? (
+                <p>Cargando horarios...</p>
+              ) : (
+                <>
+                  <p>No hay turnos disponibles hoy</p>
+                  <p className="text-xs mt-1">Haz clic para ver próximos días</p>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

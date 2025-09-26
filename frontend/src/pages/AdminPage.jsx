@@ -1,46 +1,155 @@
-import React, { useState } from 'react';
-import { mockSolicitudes, mockComplejosAprobados } from '../data/solicitudes.js';
+import React, { useState, useEffect } from 'react';
 import SolicitudDetalle from '../components/SolicitudDetalle.jsx';
 import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
 import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
 import GestionDeportes from '../components/GestionDeportes.jsx';
+import GestionLocalidades from '../components/GestionLocalidades.jsx';
+import GestionUsuarios from '../components/GestionUsuarios.jsx';
+import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import { API_BASE_URL } from '../config/api.js';
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState('solicitudes');
-  const [solicitudes, setSolicitudes] = useState(mockSolicitudes);
-  const [complejosAprobados, setComplejosAprobados] = useState(mockComplejosAprobados);
-  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(solicitudes[0] || null);
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [complejosAprobados, setComplejosAprobados] = useState([]);
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingComplejos, setLoadingComplejos] = useState(false);
 
-  const handleApprove = (solicitudId) => {
-    const solicitudAprobada = solicitudes.find(s => s.id === solicitudId);
-    if (!solicitudAprobada) return;
-
-    const nuevoComplejo = {
-      id: complejosAprobados.length + 100, 
-      nombreComplejo: solicitudAprobada.nombreComplejo,
-      ubicacion: 'Ubicación a definir',
-      adminEmail: `admin@${solicitudAprobada.nombreComplejo.toLowerCase().replace(/\s/g, '')}.com`,
-      fechaAprobacion: new Date().toISOString().slice(0, 10),
-    };
-
-    setComplejosAprobados(prev => [nuevoComplejo, ...prev]);
-    const nuevasSolicitudes = solicitudes.filter(s => s.id !== solicitudId);
-    setSolicitudes(nuevasSolicitudes);
-
-    setSolicitudSeleccionada(nuevasSolicitudes[0] || null);
-  };
-  
-  const handleDecline = (solicitudId) => {
-    const nuevasSolicitudes = solicitudes.filter(s => s.id !== solicitudId);
-    setSolicitudes(nuevasSolicitudes);
-    setSolicitudSeleccionada(nuevasSolicitudes[0] || null);
-  };
-  
-  const handleRemoveApproved = (complejoId) => {
-      if (window.confirm("¿Estás seguro de que quieres eliminar este complejo de la lista de aprobados?")) {
-          setComplejosAprobados(prev => prev.filter(c => c.id !== complejoId));
+  // Cargar solicitudes desde el backend
+  const fetchSolicitudes = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes`);
+      if (response.ok) {
+        const data = await response.json();
+        const solicitudesPendientes = (data.solicitudes || data || [])
+          .filter(s => s.estado === 'PENDIENTE')
+          .map(solicitud => ({
+            // Estructura original para compatibilidad
+            id: solicitud.id,
+            cuit: solicitud.cuit,
+            estado: solicitud.estado,
+            // Datos transformados para el componente SolicitudDetalle
+            nombreComplejo: solicitud.complejo?.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
+            calle: solicitud.complejo?.domicilio?.calle || 'No especificado',
+            altura: solicitud.complejo?.domicilio?.altura || 'No especificado',
+            imagen: solicitud.image || solicitud.complejo?.image || null,
+            // Información adicional del usuario
+            usuarioNombre: `${solicitud.usuario?.nombre || ''} ${solicitud.usuario?.apellido || ''}`.trim() || 'Usuario sin nombre',
+            usuarioCorreo: solicitud.usuario?.correo || 'Sin correo',
+            usuarioTelefono: solicitud.usuario?.telefono || 'Sin teléfono',
+            localidad: solicitud.complejo?.domicilio?.localidad?.nombre || 'No especificado'
+          }));
+        setSolicitudes(solicitudesPendientes);
+        setSolicitudSeleccionada(solicitudesPendientes[0] || null);
       }
+    } catch (error) {
+      console.error('Error cargando solicitudes:', error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Cargar complejos aprobados
+  const fetchComplejosAprobados = async () => {
+    try {
+      setLoadingComplejos(true);
+      const response = await fetch(`${API_BASE_URL}/complejos/aprobados`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Complejos aprobados recibidos:', data); // Debug
+        setComplejosAprobados(data.complejos || data || []);
+      }
+    } catch (error) {
+      console.error('Error cargando complejos:', error);
+    } finally {
+      setLoadingComplejos(false);
+    }
+  };
+
+  const handleApprove = async (solicitudId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes/${solicitudId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ estado: 'APROBADA' }),
+      });
+
+      if (response.ok) {
+        alert('Solicitud aprobada correctamente');
+        // Recargar datos
+        fetchSolicitudes();
+        if (activeTab === 'aprobados') {
+          fetchComplejosAprobados();
+        }
+      } else {
+        alert('Error al aprobar solicitud');
+      }
+    } catch (error) {
+      console.error('Error aprobando solicitud:', error);
+      alert('Error al aprobar solicitud');
+    }
+  };
+  
+  const handleDecline = async (solicitudId) => {
+    if (!confirm('¿Estás seguro de rechazar esta solicitud?')) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes/${solicitudId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ estado: 'RECHAZADA' }),
+      });
+
+      if (response.ok) {
+        alert('Solicitud rechazada correctamente');
+        fetchSolicitudes();
+      } else {
+        alert('Error al rechazar solicitud');
+      }
+    } catch (error) {
+      console.error('Error rechazando solicitud:', error);
+      alert('Error al rechazar solicitud');
+    }
+  };
+  
+  const handleRemoveApproved = async (complejoId) => {
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este complejo?")) return;
+    
+    try {
+      setLoadingComplejos(true);
+      const response = await fetch(`${API_BASE_URL}/complejos/${complejoId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('Complejo eliminado correctamente');
+        fetchComplejosAprobados();
+      } else {
+        alert('Error al eliminar complejo');
+        setLoadingComplejos(false);
+      }
+    } catch (error) {
+      console.error('Error eliminando complejo:', error);
+      alert('Error al eliminar complejo');
+      setLoadingComplejos(false);
+    }
+  };
+  
+  // Cargar datos al cambiar de tab
+  useEffect(() => {
+    if (activeTab === 'solicitudes') {
+      fetchSolicitudes();
+    } else if (activeTab === 'aprobados') {
+      fetchComplejosAprobados();
+    }
+  }, [activeTab]);
+
   const getTabClass = (tabName) => {
     return `px-3 py-2 font-medium text-sm rounded-md transition-colors flex items-center ${
       activeTab === tabName
@@ -67,33 +176,59 @@ function AdminPage() {
             <button onClick={() => setActiveTab('deportes')} className={getTabClass('deportes')}>
               Deportes
             </button>
+            <button onClick={() => setActiveTab('localidades')} className={getTabClass('localidades')}>
+              Localidades
+            </button>
+            <button onClick={() => setActiveTab('usuarios')} className={getTabClass('usuarios')}>
+              Usuarios
+            </button>
         </nav>
       </div>
       <div>
         {activeTab === 'solicitudes' && (
           <div className="flex">
-            <SolicitudDetalle 
-              solicitud={solicitudSeleccionada}
-              onApprove={handleApprove}
-              onDecline={handleDecline}
-            />
-            <ListaSolicitudes 
-              solicitudes={solicitudes}
-              onSelect={setSolicitudSeleccionada} 
-              solicitudActiva={solicitudSeleccionada}
-            />
+            {loading ? (
+              <div className="w-full">
+                <LoadingSpinner message="Cargando solicitudes..." />
+              </div>
+            ) : (
+              <>
+                <SolicitudDetalle 
+                  solicitud={solicitudSeleccionada}
+                  onApprove={handleApprove}
+                  onDecline={handleDecline}
+                />
+                <ListaSolicitudes 
+                  solicitudes={solicitudes}
+                  onSelect={setSolicitudSeleccionada} 
+                  solicitudActiva={solicitudSeleccionada}
+                />
+              </>
+            )}
           </div>
         )}
         
         {activeTab === 'aprobados' && (
-          <ComplejosAprobadosLista 
-            complejos={complejosAprobados}
-            onRemove={handleRemoveApproved}
-          />
+          loadingComplejos ? (
+            <LoadingSpinner message="Cargando complejos..." />
+          ) : (
+            <ComplejosAprobadosLista 
+              complejos={complejosAprobados}
+              onRemove={handleRemoveApproved}
+            />
+          )
         )}
 
         {activeTab === 'deportes' && (
           <GestionDeportes />
+        )}
+
+        {activeTab === 'localidades' && (
+          <GestionLocalidades />
+        )}
+
+        {activeTab === 'usuarios' && (
+          <GestionUsuarios />
         )}
         
       </div>

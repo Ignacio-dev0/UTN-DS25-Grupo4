@@ -12,6 +12,9 @@ router.get('/', canchaController.obtenerCanchas);
 // Ruta para crear una nueva cancha
 router.post('/', validate(createCanchaSchema), canchaController.crearCancha);
 
+// Ruta para obtener canchas por complejo
+router.get('/complejo/:complejoId', canchaController.obtenerCanchasPorComplejoId);
+
 // Ruta para obtener una única cancha por su ID
 router.get('/:id', canchaController.obtenerCanchaPorId);
 

@@ -1,4 +1,4 @@
-import { Resenia } from "../generated/prisma";
+import { Resenia } from "@prisma/client";
 
 export interface CreateReseniaRequest {
     descripcion: string;

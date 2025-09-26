@@ -8,6 +8,9 @@ const router = Router();
 // Ruta para obtener todos los complejos
 router.get('/', complejoController.obtenerComplejos);
 
+// Ruta para obtener solo complejos aprobados
+router.get('/aprobados', complejoController.obtenerComplejosAprobados);
+
 // Ruta para crear un nuevo complejo
 router.post('/', validate(validationComplejo.crearComplejoSchema) , complejoController.crearComplejo);
 

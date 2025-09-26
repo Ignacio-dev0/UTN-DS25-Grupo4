@@ -45,14 +45,17 @@ function CalendarioPopover({ fechaSeleccionada, onFechaChange, close }) {
         {Array.from({ length: diasEnMes }, (_, i) => i + 1).map(dia => {
           const fechaActual = new Date(fechaVisible.getFullYear(), fechaVisible.getMonth(), dia);
           const estaSeleccionado = fechaSeleccionada && fechaActual.getTime() === fechaSeleccionada.getTime();
+          const esHoy = fechaActual.getTime() === hoy.getTime();
           
           const limiteSuperior = new Date(hoy);
           limiteSuperior.setDate(hoy.getDate() + 7);
           const deshabilitado = fechaActual < hoy || fechaActual >= limiteSuperior;
 
-          let clasesBoton = "w-9 h-9 rounded-full flex items-center justify-center transition-colors ";
+          let clasesBoton = "w-9 h-9 rounded-full flex items-center justify-center transition-colors relative ";
           if (estaSeleccionado) {
             clasesBoton += "bg-primary text-white font-bold";
+          } else if (esHoy) {
+            clasesBoton += "bg-accent text-white font-bold";
           } else if (deshabilitado) {
             clasesBoton += "text-light cursor-not-allowed";
           } else {
@@ -62,6 +65,9 @@ function CalendarioPopover({ fechaSeleccionada, onFechaChange, close }) {
           return (
             <button key={dia} disabled={deshabilitado} onClick={() => handleSeleccionarDia(dia)} className={clasesBoton}>
               {dia}
+              {esHoy && !estaSeleccionado && (
+                <div className="absolute inset-0 rounded-full border-2 border-accent"></div>
+              )}
             </button>
           );
         })}

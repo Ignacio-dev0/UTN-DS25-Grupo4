@@ -1,22 +1,161 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRightIcon, ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/solid';
 import MiniCanchaCard from './MiniCanchaCard.jsx';
 import FormularioNuevaCancha from './FormularioNuevaCancha.jsx';
 import ModalConfirmacion from './ModalConfirmacion.jsx'; 
 import { FaTrash, FaEyeSlash, FaEye, FaPencilAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api.js';
 
-function ListaCanchasComplejo({ canchas, onDisable, onDelete, isEditing }) {
+function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas, isEditing }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [canchaSeleccionada, setCanchaSeleccionada] = useState(null);
   const [accion, setAccion] = useState(''); 
-  const CANCHAS_POR_PAGINA = 5;
-  const canchasPaginadas = canchas.slice(0, CANCHAS_POR_PAGINA);
+  const [deportes, setDeportes] = useState([]);
+  
+  // Cargar deportes para mapear IDs correctamente
+  useEffect(() => {
+    const cargarDeportes = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/deportes`);
+        if (response.ok) {
+          const data = await response.json();
+          setDeportes(data.deportes || data || []);
+        }
+      } catch (error) {
+        console.error('Error al cargar deportes:', error);
+      }
+    };
 
-  const handleGuardarCancha = (nuevaCancha) => {
-    console.log('Guardando nueva cancha:', nuevaCancha);
-    setShowAddForm(false);
+    cargarDeportes();
+  }, []);
+  
+  // Mostrar todas las canchas (sin limitación de paginación)
+  const canchasPaginadas = canchas;
+
+  // Función helper para convertir archivo a base64
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleGuardarCancha = async (nuevaCancha) => {
+    try {
+      // Obtener complejoId desde la URL o props
+      const complejoId = window.location.pathname.split('/')[2]; // Asumiendo /micomplejo/:id
+      
+      // Procesar imágenes - convertir archivos a base64
+      let imagenesBase64 = [];
+      if (nuevaCancha.imagenes && Array.isArray(nuevaCancha.imagenes) && nuevaCancha.imagenes.length > 0) {
+        for (let i = 0; i < nuevaCancha.imagenes.length; i++) {
+          const file = nuevaCancha.imagenes[i];
+          if (file && file instanceof File) {
+            try {
+              const base64 = await convertFileToBase64(file);
+              imagenesBase64.push(base64);
+            } catch (error) {
+              console.error('Error al convertir imagen a base64:', error);
+            }
+          }
+        }
+      }
+      
+      const canchaData = {
+        // nroCancha se genera automáticamente en el backend, no lo enviamos
+        nombre: nuevaCancha?.nombre || 'Nueva Cancha', // Nombre de la cancha
+        descripcion: nuevaCancha?.descripcion || '', // Descripción opcional
+        deporteId: Number(getDeporteIdByName(nuevaCancha?.deporte || 'Fútbol 5')), // Asegurar que sea número
+        complejoId: Number(parseInt(complejoId) || 34), // Asegurar que sea número (34 = Megadeportivo La Plata)
+        image: imagenesBase64.length > 0 ? imagenesBase64 : [] // Array de strings, puede estar vacío
+      };
+
+      // Validar datos antes de enviar
+      if (!canchaData.deporteId || !canchaData.complejoId) {
+        throw new Error('Faltan datos requeridos para crear la cancha');
+      }
+
+      // Validar que los IDs sean números válidos
+      if (isNaN(canchaData.deporteId) || isNaN(canchaData.complejoId)) {
+        throw new Error('Los IDs deben ser números válidos');
+      }
+
+      console.log('Enviando datos de cancha:', canchaData);
+
+      const response = await fetch(`${API_BASE_URL}/canchas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(canchaData),
+      });
+
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Cancha creada exitosamente:', result);
+        alert('Cancha agregada exitosamente');
+        setShowAddForm(false);
+        
+        // Recargar solo las canchas en lugar de toda la página
+        if (onRecargarCanchas) {
+          onRecargarCanchas();
+        }
+      } else {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          console.error('Error al parsear respuesta del servidor:', jsonError);
+          errorData = { message: `Error del servidor (${response.status}): ${response.statusText}` };
+        }
+        console.error('Error del backend:', errorData);
+        throw new Error(errorData.message || 'Error al crear la cancha');
+      }
+    } catch (error) {
+      console.error('Error creando cancha:', error);
+      
+      // Mejor manejo de errores específicos
+      let mensajeError = 'Error al crear la cancha';
+      
+      if (error.message) {
+        if (error.message.includes('unique constraint')) {
+          mensajeError = 'Ya existe una cancha con ese número. Por favor, intenta con otro nombre.';
+        } else if (error.message.includes('foreign key constraint')) {
+          mensajeError = 'Error de datos: Complejo o deporte no válido.';
+        } else {
+          mensajeError += ': ' + error.message;
+        }
+      }
+      
+      alert(mensajeError);
+    }
+  };
+
+  // Función helper para obtener el ID del deporte por nombre
+  const getDeporteIdByName = (nombreDeporte) => {
+    if (deportes.length > 0) {
+      const deporte = deportes.find(d => d.nombre === nombreDeporte);
+      return deporte ? deporte.id : deportes[0]?.id || 33; // Por defecto el primer deporte o ID 33
+    }
+    
+    // Fallback en caso de que no se hayan cargado los deportes
+    const deportesMap = {
+      'Fútbol 5': 33,
+      'Fútbol 11': 34,
+      'Vóley': 35,
+      'Básquet': 36,
+      'Handball': 37,
+      'Tenis': 38,
+      'Pádel': 39,
+      'Hockey': 40
+    };
+    return deportesMap[nombreDeporte] || 33; // Por defecto fútbol 5
   };
   
 
@@ -88,7 +227,27 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, isEditing }) {
                   <FaTrash />
                 </button>
                 <Link to={`/micomplejo/cancha/${cancha.id}/editar`}>
-                  <button className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600" title="Editar Cancha">
+                  <button 
+                    className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600" 
+                    title="Editar Cancha"
+                    onClick={async (e) => {
+                      // Validar que la cancha existe antes de navegar
+                      try {
+                        const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`);
+                        if (!response.ok) {
+                          e.preventDefault();
+                          alert('La cancha no se encuentra disponible. Recargando la lista...');
+                          onRecargarCanchas();
+                          return;
+                        }
+                      } catch (error) {
+                        e.preventDefault();
+                        console.error('Error validando cancha:', error);
+                        alert('Error al acceder a la cancha. Recargando la lista...');
+                        onRecargarCanchas();
+                      }
+                    }}
+                  >
                     <FaPencilAlt />
                   </button>
                 </Link>

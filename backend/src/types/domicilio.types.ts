@@ -1,4 +1,4 @@
-import { Domicilio, Localidad, Complejo } from '../generated/prisma';
+import { Domicilio, Localidad, Complejo } from '@prisma/client';
 
 export interface crearDomicilioRequest {
     calle : string;

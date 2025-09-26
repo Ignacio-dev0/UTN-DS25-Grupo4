@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PencilIcon, EnvelopeIcon, PhoneIcon, MapPinIcon, CheckIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
+import { getLocalidades } from '../services/search.js';
+
+// Función para calcular el nivel del usuario basado en turnos finalizados
+const calcularNivelUsuario = (turnosFinalizados) => {
+  if (turnosFinalizados >= 100) return "Leyenda del Deporte";
+  if (turnosFinalizados >= 50) return "Maestro de las Canchas";
+  if (turnosFinalizados >= 25) return "Veterano Experimentado";
+  if (turnosFinalizados >= 15) return "Jugador Avanzado";
+  if (turnosFinalizados >= 10) return "Deportista Dedicado";
+  if (turnosFinalizados >= 5) return "Jugador Entusiasta";
+  if (turnosFinalizados >= 1) return "Deportista Novato";
+  return "Jugador Apasionado";
+};
 
 const EditableField = ({ isEditing, value, onChange, name, icon }) => {
   if (isEditing) {
@@ -24,14 +37,67 @@ const EditableField = ({ isEditing, value, onChange, name, icon }) => {
   );
 };
 
-function PerfilInfo({ usuario, onSave }) {
+const EditableLocalidadField = ({ isEditing, value, onChange, name, icon, localidades }) => {
+  console.log('EditableLocalidadField render:', { isEditing, value, name, localidades: localidades?.length });
+  
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-3">
+        {icon}
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full px-2 py-1 bg-white border border-primary rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">Seleccionar localidad...</option>
+          {localidades.map((localidad) => (
+            <option key={localidad.id} value={localidad.nombre}>
+              {localidad.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-3 text-secondary">
+      {icon}
+      <span>{value || 'Sin localidad'}</span>
+    </div>
+  );
+};
+
+function PerfilInfo({ usuario, onSave, turnosFinalizados = 0 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(usuario);
+  const [localidades, setLocalidades] = useState([]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     setEditedData(usuario);
   }, [usuario]);
+
+  // Cargar localidades cuando el componente se monta
+  useEffect(() => {
+    const cargarLocalidades = async () => {
+      try {
+        console.log('Cargando localidades...');
+        const response = await getLocalidades();
+        console.log('Respuesta localidades:', response);
+        if (response.ok) {
+          console.log('Localidades cargadas:', response.localidades);
+          setLocalidades(response.localidades);
+        } else {
+          console.error('Error en respuesta de localidades:', response.error);
+        }
+      } catch (error) {
+        console.error('Error al cargar localidades:', error);
+      }
+    };
+    
+    cargarLocalidades();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +105,7 @@ function PerfilInfo({ usuario, onSave }) {
   };
 
   const handleSave = () => {
+    console.log('Guardando datos desde PerfilInfo:', editedData);
     onSave(editedData);
     setIsEditing(false);
   };
@@ -51,9 +118,20 @@ function PerfilInfo({ usuario, onSave }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Verificar tamaño del archivo (máximo 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('La imagen es muy grande. Por favor selecciona una imagen menor a 2MB.');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditedData(prev => ({ ...prev, profileImageUrl: reader.result }));
+        // Guardar la imagen real como base64
+        setEditedData(prev => ({ 
+          ...prev, 
+          profileImageUrl: reader.result, // Mostrar la imagen seleccionada
+          profileImageData: reader.result, // Usar la misma imagen para enviar al backend
+        }));
       };
       reader.readAsDataURL(file);
     }
@@ -127,7 +205,7 @@ function PerfilInfo({ usuario, onSave }) {
           <h3 className="text-2xl font-bold text-primary font-lora">{usuario.nombre}</h3>
         )}
 
-        <p className="text-md text-secondary mb-6">{usuario.rol}</p>
+        <p className="text-md text-secondary mb-6">{calcularNivelUsuario(turnosFinalizados)}</p>
         
         <div className="space-y-4 self-start w-full">
           {/* Email (no editable) */}
@@ -144,12 +222,13 @@ function PerfilInfo({ usuario, onSave }) {
             icon={<PhoneIcon className="w-5 h-5" />}
           />
 
-          <EditableField 
+          <EditableLocalidadField 
             isEditing={isEditing}
             value={editedData.direccion}
             onChange={handleChange}
             name="direccion"
             icon={<MapPinIcon className="w-5 h-5" />}
+            localidades={localidades}
           />
         </div>
       </div>

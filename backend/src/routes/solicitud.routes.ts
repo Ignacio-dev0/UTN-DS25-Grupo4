@@ -6,6 +6,9 @@ const router = Router();
 
 router.post('/', solicitudController.createRequest);
 
+// Nueva ruta para crear solicitudes con imagen
+router.post('/with-image', solicitudController.uploadMiddleware, solicitudController.createRequestWithImage);
+
 router.get('/', solicitudController.getAllSol);
 
 router.get('/:id', solicitudController.getSolById);

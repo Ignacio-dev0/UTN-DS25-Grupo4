@@ -11,7 +11,7 @@ function ResultadoCard({ cancha }) {
       {/* --- Área de la Imagen --- */}
       <div className="relative">
         <div className="bg-accent h-48 flex items-center justify-center">
-            <img className="w-full h-full object-cover" src={cancha.imageUrl || `https://via.placeholder.com/400x300?text=${cancha.nombre}`} alt={`Cancha en ${cancha.nombre}`} />
+            <img className="w-full h-full object-cover" src={cancha.imageUrl || `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="18" fill="#6b7280">${cancha.nombre}</text></svg>`)}`} alt={`Cancha en ${cancha.nombre}`} />
         </div>
         {cancha.precioDesde && (
           <div className="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-sm font-bold p-2 m-2 rounded-md">

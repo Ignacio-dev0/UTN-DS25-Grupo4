@@ -7,10 +7,12 @@ export async function crearPago(req : Request, res: Response) {
     const newPago = await pagoService.crearPago(req.body)
     res.status(201).json({
         pago: newPago,
-        message: 'Pago Creado Exitosamente',// luego de un ({}) , o nada si es el ultimo arg no ;
+        message: 'Pago Creado Exitosamente'
     });
  } catch (error: any) {
-    return res.status(500).json({error:'Error interno del servidor'})as any;
+    return res.status(500).json({
+        error: 'Error interno del servidor'
+    });
  }  
 };
 
@@ -18,7 +20,7 @@ export async function obtenerAllPagos(req: Request, res: Response<PagoListRespon
     try {
         const pagos = await pagoService.getAllpagos();
         res.json({
-            pagos,
+            pagos: pagos,
             total: pagos.length
         })
     } catch (error) {

@@ -1,39 +1,35 @@
 import { z } from 'zod';
 
 export const createCanchaSchema = z.object({
-  body: z.object({
-    
-    nroCancha: z.int(),
-    
-    descripcion: z.string()
-      .max(200, 'La descripcion no debe exceder los 200 caracteres')
-      .optional(),
-    
-    image: z.array( z.string() )
-      .min(1, 'Se debe recibir la url de al menos una imagen'),
-    
-    complejoId: z.int('ComplejoId debe ser un entero'),
-    
-    deporteId: z.int('DeporteId debe ser un entero'),
+  
+  // nroCancha se genera automáticamente, no debe venir del frontend
+  
+  descripcion: z.string()
+    .max(200, 'La descripcion no debe exceder los 200 caracteres')
+    .optional(),
+  
+  image: z.array( z.string() )
+    .optional(),
 
-  }),
+  complejoId: z.int().positive(),
+
+  deporteId: z.int().positive(),
 
 });
 
 export const updateCanchaSchema = z.object({
-  body: z.object({
 
-    nroCancha: z.int(),
-    
-    descripcion: z.string()
+  nroCancha: z.int(),
+  
+  descripcion: z.string()
     .max(200, 'La descripcion no debe exceder los 200 caracteres')
     .optional(),
-    
-    image: z.array( z.string() )
-    .min(1, 'Se debe recibir la url de al menos una imagen'),
-    
-    deporteId: z.int().positive(),
+  
+  image: z.array( z.string() )
+    .optional(),
 
-  }),
+  activa: z.boolean().optional(),
+
+  deporteId: z.int().positive(),
 
 }).partial();
