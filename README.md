@@ -55,4 +55,4 @@ En este proyecto se implementarán las siguientes tecnologías:
   - Legajo: 32594
   - Usuario de Slack: Antar Mauro
   - https://github.com/MauroAntar
-# Trigger redeploy
+    
