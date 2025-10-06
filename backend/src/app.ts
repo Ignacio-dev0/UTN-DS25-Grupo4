@@ -27,6 +27,7 @@ const PORT = process.env.PORT || 3000;
 
 // Configuración CORS más específica
 const allowedOrigins = [
+    'http://localhost',                // Frontend en puerto 80 (Docker)
     'http://localhost:5173',           // Desarrollo local
     'http://localhost:5174',           // Desarrollo local (puerto alternativo de Vite)
     'http://localhost:3000',           // Desarrollo local alternativo
@@ -39,7 +40,7 @@ if (process.env.FRONTEND_URL) {
 }
 
 app.use(cors({
-    origin: allowedOrigins,
+    origin: true, // Permitir todos los orígenes temporalmente
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

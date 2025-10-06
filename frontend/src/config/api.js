@@ -1,5 +1,5 @@
 // Configuración de la API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const API_BASE_URL = 'http://localhost:3000/api';
 
 // Función helper para construir URLs de imágenes
 export const getImageUrl = (imagePath) => {
@@ -25,6 +25,12 @@ export const getImageUrl = (imagePath) => {
   
   // Si no, asumimos que es una ruta relativa dentro de /images/
   return `/images/${imagePath}`;
+};
+
+// Función para evitar peticiones infinitas de imágenes
+export const getImageUrlWithFallback = (imagePath, fallback = null) => {
+  if (!imagePath) return fallback;
+  return getImageUrl(imagePath);
 };
 
 // Función helper para construir URLs de API

@@ -8,8 +8,10 @@ services:
     restart: always
     ports:
       - "3000:3000"
+      - "5555:5555"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_DIRECT_URL=${DATABASE_DIRECT_URL}
       - NODE_ENV=production
     networks:
       - app-network
@@ -26,7 +28,7 @@ services:
     ports:
       - "80:80"
     environment:
-      - VITE_BACKEND_URL=http://backend:3000
+      - VITE_API_URL=http://localhost:3000/api
     networks:
       - app-network
     depends_on:

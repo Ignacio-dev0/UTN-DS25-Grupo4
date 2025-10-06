@@ -4,13 +4,16 @@ WORKDIR /app
 
 # Copy package files for better caching
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the application
 RUN npm run build
+
+# Prune devDependencies to keep image smaller in next stage
+RUN npm prune --omit=dev
 
 # Production stage
 FROM nginx:alpine
@@ -21,9 +24,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create non-root user
-RUN addgroup -g 1001 -S nginx
-RUN adduser -S nginx -u 1001
+# Use existing nginx user (already exists in nginx:alpine)
+# No need to create user, nginx user already exists
 
 # Set proper permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html
