@@ -1,24 +1,23 @@
-#!/bin/bash
+#!/bin/sh
 
-# Script de inicio para el backend en Render
-echo "🚀 Iniciando CanchaYa Backend..."
+echo "🚀 Starting CanchaYa Backend..."
 
-# Ejecutar migraciones de Prisma
-echo "📊 Ejecutando migraciones de base de datos..."
+# Wait for database to be ready
+echo "⏳ Waiting for database connection..."
+until npx prisma db push --accept-data-loss; do
+  echo "Database is unavailable - sleeping"
+  sleep 2
+done
+
+echo "✅ Database connection established"
+
+# Run migrations
+echo "🔄 Running database migrations..."
 npx prisma migrate deploy
 
-# Verificar si las migraciones fueron exitosas
-if [ $? -eq 0 ]; then
-    echo "✅ Migraciones completadas exitosamente"
-else
-    echo "❌ Error en las migraciones"
-    exit 1
-fi
-
-# Generar cliente de Prisma
-echo "🔧 Generando cliente de Prisma..."
+# Generate Prisma client
+echo "🔧 Generating Prisma client..."
 npx prisma generate
 
-# Iniciar la aplicación
-echo "🌟 Iniciando servidor..."
-node dist/app.js
+echo "🎯 Starting application server..."
+exec npm run start
