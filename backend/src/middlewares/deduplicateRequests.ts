@@ -8,7 +8,7 @@ interface RequestCacheEntry {
 }
 
 const requestCache = new Map<string, RequestCacheEntry>();
-const CACHE_DURATION = 5000; // 5 segundos
+const CACHE_DURATION = 3000; // 3 segundos - reducido para permitir más requests
 
 // Función para limpiar cache expirado
 function cleanExpiredRequests() {
@@ -32,12 +32,18 @@ export function deduplicateRequests(req: Request, res: Response, next: NextFunct
     
     if (cached) {
         if (cached.inProgress) {
-            // Si hay un request en progreso, esperar un poco y devolver error de duplicado
-            console.log(`⚠️ Request duplicado detectado: ${cacheKey}`);
-            return res.status(429).json({ 
-                error: 'Request duplicado detectado, espere un momento',
-                retryAfter: 1 
-            });
+            // Si hay un request en progreso muy reciente (menos de 1 segundo), considerar duplicado
+            const timeDiff = Date.now() - cached.timestamp;
+            if (timeDiff < 1000) {
+                console.log(`⚠️ Request duplicado detectado: ${cacheKey} (${timeDiff}ms)`);
+                return res.status(429).json({ 
+                    error: 'Request duplicado detectado, espere un momento',
+                    retryAfter: 1 
+                });
+            } else {
+                // Si ha pasado más de 1 segundo, permitir el request (el anterior pudo haber fallado)
+                console.log(`🔄 Request anterior tardó mucho, permitiendo nuevo request: ${cacheKey}`);
+            }
         }
         
         if (cached.result && (Date.now() - cached.timestamp) < CACHE_DURATION) {

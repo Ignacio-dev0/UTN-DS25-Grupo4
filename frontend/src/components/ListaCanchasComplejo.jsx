@@ -141,21 +141,18 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
   const getDeporteIdByName = (nombreDeporte) => {
     if (deportes.length > 0) {
       const deporte = deportes.find(d => d.nombre === nombreDeporte);
-      return deporte ? deporte.id : deportes[0]?.id || 33; // Por defecto el primer deporte o ID 33
+      if (deporte) {
+        return deporte.id;
+      }
+      
+      // Si no encuentra el deporte específico, devolver el primer deporte disponible
+      console.warn(`Deporte "${nombreDeporte}" no encontrado, usando primer deporte disponible`);
+      return deportes[0]?.id || 60; // 60 es Fútbol 5 por defecto
     }
     
-    // Fallback en caso de que no se hayan cargado los deportes
-    const deportesMap = {
-      'Fútbol 5': 33,
-      'Fútbol 11': 34,
-      'Vóley': 35,
-      'Básquet': 36,
-      'Handball': 37,
-      'Tenis': 38,
-      'Pádel': 39,
-      'Hockey': 40
-    };
-    return deportesMap[nombreDeporte] || 33; // Por defecto fútbol 5
+    // Si no hay deportes cargados, devolver un ID por defecto
+    console.error('No hay deportes cargados, usando Fútbol 5 por defecto');
+    return 60; // Fútbol 5 por defecto
   };
   
 

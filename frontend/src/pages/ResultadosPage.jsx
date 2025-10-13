@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Buscador from '../components/Buscador.jsx';
 import CanchaCard from '../components/CanchaCard.jsx';
-import { getCanchas } from '../services/search.js';
+import { getCanchasConFiltros } from '../services/search.js';
 
 function ResultadosPage() {
   const [searchParams] = useSearchParams();
@@ -19,28 +19,20 @@ function ResultadosPage() {
     const cargarCanchas = async () => {
       try {
         setLoading(true);
-        const response = await getCanchas();
+        
+        // Preparar filtros para enviar al backend
+        const filtros = {};
+        if (deporteQuery) filtros.deporte = deporteQuery;
+        if (localidadQuery) filtros.localidad = localidadQuery;
+        if (fechaQuery) filtros.fecha = fechaQuery;
+        if (horaQuery) filtros.hora = horaQuery;
+        
+        console.log('Aplicando filtros:', filtros);
+        
+        const response = await getCanchasConFiltros(filtros);
         
         if (response.ok) {
-          let canchasFiltradas = response.canchas;
-
-          // Filtrar por deporte
-          if (deporteQuery) {
-            canchasFiltradas = canchasFiltradas.filter(cancha => 
-              cancha.deporte?.nombre === deporteQuery
-            );
-          }
-
-          // Filtrar por localidad
-          if (localidadQuery) {
-            canchasFiltradas = canchasFiltradas.filter(cancha => 
-              cancha.complejo?.domicilio?.localidad?.nombre === localidadQuery
-            );
-          }
-
-          // TODO: Implementar filtros de fecha y hora cuando estén disponibles en el backend
-
-          setCanchas(canchasFiltradas);
+          setCanchas(response.canchas);
         } else {
           setError(response.error);
         }

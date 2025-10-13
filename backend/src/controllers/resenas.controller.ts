@@ -118,6 +118,87 @@ export async function obtenerResenasPorCancha(req: Request<{canchaId: string}>, 
             total: resenas.length
         });
     } catch (error) {
+        // Si hay problema de conectividad, devolver resultado vacío en lugar de error 500
+        if (error instanceof Error && error.message.includes("Can't reach database server")) {
+            console.log(`⚠️ Base de datos no disponible para cancha ${req.params.canchaId}, devolviendo resultado vacío`);
+            res.json({
+                resenas: [],
+                total: 0
+            });
+            return;
+        }
+        next(error);
+    }
+}
+
+export async function obtenerPuntajesResenasPorCancha(req: Request<{canchaId: string}>, res: Response, next: NextFunction) {
+    try {
+        const { canchaId } = req.params;
+        const puntajes = await resenasService.getReseniasPuntajesByCanchaId(parseInt(canchaId));
+        
+        // Calcular estadísticas
+        const total = puntajes.length;
+        const promedio = total > 0 ? puntajes.reduce((sum, r) => sum + r.puntaje, 0) / total : 0;
+        
+        res.json({
+            total,
+            promedio: parseFloat(promedio.toFixed(1)),
+            puntajes: puntajes.map(p => p.puntaje)
+        });
+    } catch (error) {
+        // Si hay problema de conectividad, devolver resultado vacío en lugar de error 500
+        if (error instanceof Error && error.message.includes("Can't reach database server")) {
+            console.log(`⚠️ Base de datos no disponible para puntajes cancha ${req.params.canchaId}, devolviendo resultado vacío`);
+            res.json({
+                total: 0,
+                promedio: 0,
+                puntajes: []
+            });
+            return;
+        }
+        next(error);
+    }
+}
+
+export async function obtenerPuntajesResenasLote(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { canchaIds } = req.body;
+        
+        if (!Array.isArray(canchaIds)) {
+            return res.status(400).json({
+                error: 'canchaIds debe ser un array de números'
+            });
+        }
+
+        const resultado: {[key: number]: {total: number, promedio: number, puntajes: number[]}} = {};
+        
+        // Procesar canchas en paralelo
+        const promesas = canchaIds.map(async (canchaId: number) => {
+            try {
+                const puntajes = await resenasService.getReseniasPuntajesByCanchaId(canchaId);
+                const total = puntajes.length;
+                const promedio = total > 0 ? puntajes.reduce((sum, r) => sum + r.puntaje, 0) / total : 0;
+                
+                resultado[canchaId] = {
+                    total,
+                    promedio: parseFloat(promedio.toFixed(1)),
+                    puntajes: puntajes.map(p => p.puntaje)
+                };
+            } catch (error) {
+                console.log(`⚠️ Error obteniendo puntajes para cancha ${canchaId}:`, error);
+                resultado[canchaId] = {
+                    total: 0,
+                    promedio: 0,
+                    puntajes: []
+                };
+            }
+        });
+
+        await Promise.all(promesas);
+        
+        res.json(resultado);
+    } catch (error) {
+        console.error('Error en obtenerPuntajesResenasLote:', error);
         next(error);
     }
 }

@@ -7,5 +7,21 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "dependencies": {
+    "axios": "^1.12.2"
+  },
+  "description": "__LINK docx BackLog CanchaYa__: https://docs.google.com/document/d/1y5J4jth5tO87Zypx5PhKmP9MzolIblxFHoj5UW7F7aM/edit?tab=t.2ltjmgw975ek",
+  "main": "test-canchas.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ignacio-dev0/UTN-DS25-Grupo4.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ignacio-dev0/UTN-DS25-Grupo4/issues"
+  },
+  "homepage": "https://github.com/Ignacio-dev0/UTN-DS25-Grupo4#readme"
 }

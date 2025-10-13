@@ -19,4 +19,5 @@ export interface DeporteResponse{
 export interface DeporteListResponse{
     deportes: Deporte[];
     total: number;
+    message?: string;
 }

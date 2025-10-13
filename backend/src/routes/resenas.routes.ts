@@ -15,6 +15,7 @@ const router = Router();
 
 // Rutas CRUD para reseñas
 router.post('/', validate(crearReseniaSchema), resenasController.crearResenia);
+router.post('/lote/puntajes', resenasController.obtenerPuntajesResenasLote);
 router.get('/', resenasController.obtenerTodasLasResenas);
 router.get('/:id', validate(reseniaIdSchema), resenasController.obtenerReseniaPorId);
 router.put('/:id', validate(reseniaIdSchema), validate(actualizarReseniaSchema), resenasController.actualizarResenia);
@@ -23,6 +24,7 @@ router.delete('/:id', validate(reseniaIdSchema), resenasController.eliminarResen
 // Rutas específicas para obtener reseñas por contexto
 router.get('/complejo/:complejoId', validate(complejoIdSchema), resenasController.obtenerResenasPorComplejo);
 router.get('/cancha/:canchaId', validate(canchaIdSchema), resenasController.obtenerResenasPorCancha);
+router.get('/cancha/:canchaId/puntajes', validate(canchaIdSchema), resenasController.obtenerPuntajesResenasPorCancha);
 router.get('/usuario/:usuarioId', validate(usuarioIdSchema), resenasController.obtenerResenasPorUsuario);
 
 export default router;

@@ -59,7 +59,16 @@ export const getHorariosCancha = async (req: Request<{canchaId: string}>, res:Re
             total: canchaHorarios.length,
             message: 'Horarios de la cancha obtenidos'
         });
-    }catch(error){
+    }catch(error: any){
+        // Manejo específico para errores de conectividad de base de datos
+        if (error.message && error.message.includes("Can't reach database server")) {
+            console.log(`⚠️ HORARIO CONTROLLER - Base de datos no disponible para horarios cancha ${req.params.canchaId}, devolviendo lista vacía`);
+            return res.status(200).json({
+                horarios: [],
+                total: 0,
+                message: 'Servicio temporalmente no disponible'
+            });
+        }
         next(error);
     }
 }
