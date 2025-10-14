@@ -4,10 +4,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
-    "build": "tsc",
+    "build": "npx prisma generate && tsc",
     "start": "echo 'Starting CanchaYa Backend...' && node dist/app.js",
     "start:dev": "node dist/app.js",
-    "postbuild": "npx prisma generate",
     "migrate": "npx prisma migrate deploy",
     "seed": "ts-node prisma/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
