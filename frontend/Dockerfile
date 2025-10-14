@@ -1,9 +1,18 @@
 FROM node:20 as builder
 WORKDIR /app
 
+# Copiar archivos de configuración
 COPY package*.json ./
 RUN npm ci
+
+# Copiar código fuente y archivos de entorno
 COPY . .
+
+# Variables de entorno para el build
+ENV VITE_API_URL=https://utn-ds25-grupo4-canchaya.up.railway.app/api
+ENV VITE_APP_ENV=production
+
+# Build de la aplicación
 RUN npm run build
 
 ##-----------------
