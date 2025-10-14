@@ -34,7 +34,16 @@ export async function obtenerUsuarios(req: Request, res: Response<UsuarioListRes
       usuarios,
       total: usuarios.length
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Manejo específico para errores de conectividad de base de datos
+    if (error.message && error.message.includes("Can't reach database server")) {
+      console.log(`⚠️ USUARIO CONTROLLER - Base de datos no disponible para obtener usuarios`);
+      return res.status(200).json({ 
+        usuarios: [],
+        total: 0,
+        message: 'No se pudieron obtener los usuarios en este momento'
+      } as any);
+    }
     next(error);
   }
 }
@@ -55,7 +64,15 @@ export async function obtenerUsuarioPorId(req: Request<{id: string}>, res: Respo
       usuario,
       message: 'Usuario obtenido exitosamente'
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Manejo específico para errores de conectividad de base de datos
+    if (error.message && error.message.includes("Can't reach database server")) {
+      console.log(`⚠️ USUARIO CONTROLLER - Base de datos no disponible para obtener usuario ID: ${req.params.id}`);
+      return res.status(404).json({ 
+        usuario: null,
+        message: 'Usuario no encontrado - servicio no disponible'
+      } as any);
+    }
     next(error);
   }
 }
@@ -76,7 +93,15 @@ export async function obtenerUsuarioPorEmail(req: Request<{email: string}>, res:
       usuario,
       message: 'Usuario obtenido exitosamente'
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Manejo específico para errores de conectividad de base de datos
+    if (error.message && error.message.includes("Can't reach database server")) {
+      console.log(`⚠️ USUARIO CONTROLLER - Base de datos no disponible para obtener usuario por email: ${req.params.email}`);
+      return res.status(404).json({ 
+        usuario: null,
+        message: 'Usuario no encontrado - servicio no disponible'
+      } as any);
+    }
     next(error);
   }
 }

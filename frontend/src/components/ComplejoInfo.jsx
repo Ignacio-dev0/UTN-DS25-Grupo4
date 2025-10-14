@@ -99,7 +99,7 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
             <span className="text-yellow-500 text-lg">
               {'★'.repeat(Math.floor(complejo.puntaje || 0))}{'☆'.repeat(5 - Math.floor(complejo.puntaje || 0))}
             </span>
-            <span className="text-sm text-gray-600 ml-2">({complejo.puntaje || 0})</span>
+            <span className="text-sm text-gray-600 ml-2">({(complejo.puntaje || 0).toFixed(1)})</span>
           </div>
         )}
         <button onClick={onToggleEdit} className="text-secondary hover:text-green-400 ml-4" title={isEditing ? "Finalizar Edición" : "Editar Complejo"}>

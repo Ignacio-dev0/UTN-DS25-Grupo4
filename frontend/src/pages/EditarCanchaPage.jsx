@@ -34,8 +34,16 @@ function EditarCanchaPage() {
         
         // Cargar turnos reales (como en ReservaPage)
         const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
-        if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
+        if (!turnosResponse.ok) {
+          console.error('Error en respuesta de turnos:', {
+            status: turnosResponse.status,
+            statusText: turnosResponse.statusText,
+            url: `${API_BASE_URL}/turnos/cancha/${canchaId}`
+          });
+          throw new Error(`Error al cargar turnos: ${turnosResponse.status} ${turnosResponse.statusText}`);
+        }
         const turnosData = await turnosResponse.json();
+        console.log('Datos de turnos recibidos:', turnosData);
         
         // Función auxiliar para obtener el día de la semana en español
         const obtenerDiaSemana = (fecha) => {
@@ -55,15 +63,19 @@ function EditarCanchaPage() {
         };
         
         // Formatear turnos reales (igual que en ReservaPage)
-        const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => ({
-          id: turno.id,
-          dia: obtenerDiaSemana(turno.fecha),
-          hora: formatearHora(turno.horaInicio),
-          precio: turno.precio,
-          reservado: turno.reservado, // Mantener el campo reservado como booleano
-          alquilerId: turno.alquilerId, // Para distinguir entre ocupado manualmente vs reservado por usuario
-          fecha: turno.fecha
-        }));
+        console.log('Procesando turnos...', { turnosArray: turnosData.turnos || turnosData || [] });
+        const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
+          console.log('Procesando turno individual:', turno);
+          return {
+            id: turno.id,
+            dia: obtenerDiaSemana(turno.fecha),
+            hora: formatearHora(turno.horaInicio),
+            precio: turno.precio,
+            reservado: turno.reservado, // Mantener el campo reservado como booleano
+            alquilerId: turno.alquilerId, // Para distinguir entre ocupado manualmente vs reservado por usuario
+            fecha: turno.fecha
+          };
+        });
         
         // Separar imagen principal de otras imágenes
         const imageArray = canchaInfo.image || [];

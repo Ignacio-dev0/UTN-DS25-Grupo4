@@ -19,6 +19,14 @@ export const useCanchas = () => {
       }
       const result = await response.json();
       
+      // Manejar respuesta de servicio no disponible
+      if (result.message === 'Servicio temporalmente no disponible') {
+        console.log('⚠️ Servicio de canchas temporalmente no disponible');
+        setCanchas([]);
+        setError('El servicio está temporalmente no disponible. Por favor, intenta más tarde.');
+        return;
+      }
+      
       // El backend puede devolver { data: [...] } o { canchas: [...] }
       const data = result.data || result.canchas || result;
       
@@ -29,20 +37,9 @@ export const useCanchas = () => {
       
       // Transformar datos manteniendo estructura original del backend
       const transformedData = data.map(cancha => {
-        console.log('Raw cancha from API:', cancha);
-        console.log('Raw cronograma:', cancha.cronograma);
-        
-        // Calcular precio mínimo desde cronograma
-        const precios = cancha.cronograma?.map(horario => horario.precio).filter(precio => precio > 0);
-        const precioMinimo = precios?.length > 0 ? Math.min(...precios) : null;
-        
-        console.log('Precios array:', precios);
-        console.log('Precio mínimo calculated:', precioMinimo);
-        
-        // Mantener estructura original del backend, solo agregar campos calculados
+        // Usar el precio precalculado del backend en lugar de recalcular
         return {
-          ...cancha, // Mantener todos los datos originales
-          precioDesde: precioMinimo, // Campo calculado para mostrar precio mínimo
+          ...cancha, // Mantener todos los datos originales (incluyendo precioDesde del backend)
           localidad: cancha.complejo?.domicilio?.localidad?.nombre || 'Sin localidad', // Campo de conveniencia
         };
       });
@@ -153,6 +150,15 @@ export const useDeportes = () => {
         throw new Error('Error al obtener deportes');
       }
       const data = await response.json();
+      
+      // Manejar respuesta de servicio no disponible
+      if (data.message === 'Servicio temporalmente no disponible') {
+        console.log('⚠️ Servicio de deportes temporalmente no disponible');
+        setDeportes([]);
+        setError('El servicio está temporalmente no disponible. Por favor, intenta más tarde.');
+        return;
+      }
+      
       setDeportes(data.deportes || []);
     } catch (err) {
       setError('Error al cargar los deportes');

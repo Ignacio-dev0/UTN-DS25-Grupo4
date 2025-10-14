@@ -1,35 +1,70 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import CanchaCard from '../components/CanchaCard.jsx';
 import Buscador from '../components/Buscador.jsx';
 import FiltroDeporte from '../components/FiltroDeporte.jsx';
 import FaqSection from '../components/FaqSection.jsx';
-import { useCanchas, useDeportes } from '../hooks/useApi-simple.js';
-import { calcularInfoReseñas } from '../utils/calculos.js';
+import { useCanchas } from '../hooks/useApi-simple.js';
+import { useDeportes } from '../hooks/useApi-simple.js';
+import { calcularInfoReseñasEnLotes } from '../utils/calculos.js';
+
 
 function HomePage() {
   const [deporteSeleccionado, setDeporteSeleccionado] = useState('Populares');
+  const [canchasConReseñas, setCanchasConReseñas] = useState([]);
   
-  // Usar hooks del backend en lugar de datos mock
+  // Hooks originales individuales
   const { canchas, loading: loadingCanchas, error: errorCanchas } = useCanchas();
   const { deportes, loading: loadingDeportes, error: errorDeportes } = useDeportes();
   
-  const canchasMostradas = useMemo(() => {
-    if (!canchas || canchas.length === 0) return [];
+  // Estados derivados para compatibilidad
+  const loading = loadingCanchas || loadingDeportes;
+  const error = errorCanchas || errorDeportes;
+  
+
+  // Cargar cantidad de reseñas de forma optimizada usando la nueva función de lotes
+  useEffect(() => {
+    const cargarCantidadReseñas = async () => {
+      if (!canchas || canchas.length === 0) {
+        setCanchasConReseñas([]);
+        return;
+      }
+      
+      // Inicializar con las canchas tal como vienen del backend
+      setCanchasConReseñas(canchas);
+      
+      try {
+        // Usar la nueva función optimizada de lotes
+        const canchaIds = canchas.map(cancha => cancha.id);
+        const resultadosReseñas = await calcularInfoReseñasEnLotes(canchaIds, 3); // Lotes de 3
+        
+        // Combinar los resultados con las canchas
+        const canchasConReseñasActualizadas = canchas.map(cancha => {
+          const infoReseñas = resultadosReseñas[cancha.id];
+          return {
+            ...cancha,
+            cantidadReseñas: infoReseñas ? infoReseñas.cantidadResenas : 0,
+          };
+        });
+        
+        setCanchasConReseñas(canchasConReseñasActualizadas);
+      } catch (error) {
+        console.error('Error cargando reseñas en lotes:', error);
+        // En caso de error, usar las canchas sin información de reseñas
+        setCanchasConReseñas(canchas);
+      }
+    };
     
-    const canchasConPuntaje = canchas.map(cancha => {
-      const infoReseñas = calcularInfoReseñas(cancha.id);
-      return {
-        ...cancha,
-        puntaje: cancha.puntaje || infoReseñas.promedio, 
-        cantidadReseñas: infoReseñas.cantidad,
-      };
-    });
+    cargarCantidadReseñas();
+  }, [canchas]);
+
+  const canchasMostradas = useMemo(() => {
+    if (!canchasConReseñas || canchasConReseñas.length === 0) return [];
 
     if (deporteSeleccionado === 'Populares') {
       // Group courts by sport and get the highest-rated court for each sport
       const canchasPorDeporte = {};
       
-      canchasConPuntaje.forEach(cancha => {
+      canchasConReseñas.forEach(cancha => {
         const deporteNombre = cancha.deporte?.nombre;
         if (!deporteNombre) return;
         
@@ -39,20 +74,22 @@ function HomePage() {
         }
       });
       
-      // Return all the highest-rated courts from each sport, sorted by rating
       return Object.values(canchasPorDeporte)
         .sort((a, b) => b.puntaje - a.puntaje);
     }
 
-    const canchasFiltradas = canchasConPuntaje.filter(cancha => 
-      cancha.deporte?.nombre === deporteSeleccionado
-    );
+
+
+    const canchasFiltradas = canchasConReseñas.filter(cancha => {
+      return cancha.deporte?.nombre === deporteSeleccionado;
+    });
+    
     
     return canchasFiltradas;
-  }, [canchas, deporteSeleccionado]);
+  }, [canchasConReseñas, deporteSeleccionado]);
 
   // Estados de carga
-  if (loadingCanchas || loadingDeportes) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-light">
         <div className="text-center">
@@ -64,12 +101,15 @@ function HomePage() {
   }
 
   // Estados de error
-  if (errorCanchas || errorDeportes) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-light">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar datos</h2>
-          <p className="text-gray-600">{errorCanchas || errorDeportes}</p>
+          <p className="text-gray-600">{error}</p>
+          <p className="text-sm text-gray-500 mt-2">
+            El sistema intentó usar el endpoint optimizado y fallback automático.
+          </p>
         </div>
       </div>
     );
@@ -114,8 +154,8 @@ function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {canchasMostradas.map(cancha => (
-              <CanchaCard key={cancha.id} cancha={cancha} />
+            {canchasMostradas.map((cancha, index) => (
+              <CanchaCard key={cancha.id} cancha={cancha} index={index} />
             ))}
           </div>
           
