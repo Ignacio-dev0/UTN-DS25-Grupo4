@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 import { getImageUrl, getPlaceholderImage } from '../config/api.js';
 
 function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
@@ -49,6 +49,25 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
     fileInputRef.current.click();
   };
 
+  const handleDeleteImage = (index) => {
+    if (index === 'main') {
+      // Eliminar imagen principal
+      setCancha(prevCancha => ({
+        ...prevCancha,
+        image: [],
+        imageUrl: null,
+        imageData: null
+      }));
+    } else if (typeof index === 'number') {
+      // Eliminar imagen de thumbnails
+      setCancha(prevCancha => {
+        const updatedOtrasImagenes = [...(prevCancha.otrasImagenes || [])];
+        updatedOtrasImagenes.splice(index, 1);
+        return { ...prevCancha, otrasImagenes: updatedOtrasImagenes };
+      });
+    }
+  };
+
   // Pre-generamos espacios para 3 thumbnails adicionales si no existen
   const thumbnailsParaMostrar = [...otrasImagenes];
   while (thumbnailsParaMostrar.length < 3) {
@@ -58,24 +77,45 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
   return (
     <div>
       <div className="grid grid-cols-2 grid-rows-2 gap-2 h-80">
-        <div className="col-span-1 row-span-2 bg-accent rounded-lg overflow-hidden relative">
-          <img 
-            src={imageUrl?.startsWith('data:') ? imageUrl : getImageUrl(imageUrl) || getPlaceholderImage('Cancha')} 
-            alt="Imagen principal de la cancha"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.src = getPlaceholderImage('Cancha');
-            }}
-          />
-          <button 
-            onClick={() => handleAddImageClick('main')} 
-            className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center text-white text-4xl opacity-0 hover:opacity-100 transition-opacity duration-300"
-            title="Cambiar imagen principal"
-          >
-            <FaPlus />
-          </button>
+        <div className="col-span-1 row-span-2 bg-accent rounded-lg overflow-hidden relative group">
+          {imageUrl ? (
+            <>
+              <img 
+                src={imageUrl?.startsWith('data:') ? imageUrl : getImageUrl(imageUrl) || getPlaceholderImage('Cancha')} 
+                alt="Imagen principal de la cancha"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = getPlaceholderImage('Cancha');
+                }}
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
+                <button 
+                  onClick={() => handleAddImageClick('main')} 
+                  className="bg-secondary text-white p-3 rounded-full shadow-lg hover:bg-primary transition-colors"
+                  title="Cambiar imagen principal"
+                >
+                  <FaPlus className="text-lg" />
+                </button>
+                <button 
+                  onClick={() => handleDeleteImage('main')} 
+                  className="bg-red-500 text-white p-3 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                  title="Eliminar imagen principal"
+                >
+                  <FaTrash className="text-lg" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <button 
+              onClick={() => handleAddImageClick('main')} 
+              className="w-full h-full flex items-center justify-center text-primary text-4xl hover:bg-gray-200 transition-colors"
+              title="Agregar imagen principal"
+            >
+              <FaPlus />
+            </button>
+          )}
         </div>
-        <div className="col-span-1 row-span-1 bg-accent rounded-lg flex items-center justify-center overflow-hidden relative">
+        <div className="col-span-1 row-span-1 bg-accent rounded-lg flex items-center justify-center overflow-hidden relative group">
             {thumbnailsParaMostrar[0] ? (
               <>
                 <img 
@@ -86,13 +126,22 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
                     e.target.src = getPlaceholderImage('Miniatura');
                   }}
                 />
-                <button 
-                  onClick={() => handleAddImageClick(0)} 
-                  className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center text-white text-4xl opacity-0 hover:opacity-100 transition-opacity duration-300"
-                  title="Cambiar miniatura"
-                >
-                  <FaPlus />
-                </button>
+                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => handleAddImageClick(0)} 
+                    className="bg-secondary text-white p-2 rounded-full shadow-lg hover:bg-primary transition-colors"
+                    title="Cambiar miniatura"
+                  >
+                    <FaPlus className="text-sm" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteImage(0)} 
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                    title="Eliminar miniatura"
+                  >
+                    <FaTrash className="text-sm" />
+                  </button>
+                </div>
               </>
             ) : (
               <button 
@@ -105,7 +154,7 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
             )}
         </div>
         <div className="col-span-1 row-span-1 grid grid-cols-2 gap-2">
-          <div className="bg-accent rounded-lg flex items-center justify-center overflow-hidden relative">
+          <div className="bg-accent rounded-lg flex items-center justify-center overflow-hidden relative group">
             {thumbnailsParaMostrar[1] ? (
               <>
                 <img 
@@ -116,13 +165,22 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
                     e.target.src = getPlaceholderImage('Miniatura');
                   }}
                 />
-                <button 
-                  onClick={() => handleAddImageClick(1)} 
-                  className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center text-white text-4xl opacity-0 hover:opacity-100 transition-opacity duration-300"
-                  title="Cambiar miniatura"
-                >
-                  <FaPlus />
-                </button>
+                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-1">
+                  <button 
+                    onClick={() => handleAddImageClick(1)} 
+                    className="bg-secondary text-white p-1.5 rounded-full shadow-lg hover:bg-primary transition-colors"
+                    title="Cambiar miniatura"
+                  >
+                    <FaPlus className="text-xs" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteImage(1)} 
+                    className="bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                    title="Eliminar miniatura"
+                  >
+                    <FaTrash className="text-xs" />
+                  </button>
+                </div>
               </>
             ) : (
               <button 
@@ -134,7 +192,7 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
               </button>
             )}
           </div>
-          <div className="bg-accent rounded-lg flex items-center justify-center overflow-hidden relative">
+          <div className="bg-accent rounded-lg flex items-center justify-center overflow-hidden relative group">
             {thumbnailsParaMostrar[2] ? (
               <>
                 <img 
@@ -145,13 +203,22 @@ function GaleriaFotosEditable({ imageUrl, otrasImagenes = [], setCancha }) {
                     e.target.src = getPlaceholderImage('Miniatura');
                   }}
                 />
-                <button 
-                  onClick={() => handleAddImageClick(2)} 
-                  className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center text-white text-4xl opacity-0 hover:opacity-100 transition-opacity duration-300"
-                  title="Cambiar miniatura"
-                >
-                  <FaPlus />
-                </button>
+                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-1">
+                  <button 
+                    onClick={() => handleAddImageClick(2)} 
+                    className="bg-secondary text-white p-1.5 rounded-full shadow-lg hover:bg-primary transition-colors"
+                    title="Cambiar miniatura"
+                  >
+                    <FaPlus className="text-xs" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteImage(2)} 
+                    className="bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                    title="Eliminar miniatura"
+                  >
+                    <FaTrash className="text-xs" />
+                  </button>
+                </div>
               </>
             ) : (
               <button 
