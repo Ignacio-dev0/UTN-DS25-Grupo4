@@ -6,13 +6,13 @@ ENV VITE_API_URL=https://utn-ds25-grupo4-canchaya.up.railway.app/api
 ENV VITE_APP_ENV=production
 
 # Copiar package.json del frontend
-COPY frontend/package*.json ./
+COPY package*.json ./
 
 # Instalar dependencias
 RUN npm ci
 
 # Copiar todo el código fuente del frontend
-COPY frontend .
+COPY . .
 
 # Build de la aplicación
 RUN npm run build
