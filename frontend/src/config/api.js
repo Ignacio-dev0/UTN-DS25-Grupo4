@@ -1,11 +1,14 @@
 // Configuración de la API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// TEMPORAL: Hardcodeamos la URL de producción para Railway
+const PRODUCTION_API_URL = 'https://utn-ds25-grupo4-canchaya.up.railway.app/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
 
 // Debug log temporal - remover después
 console.log('🚀 Frontend Config:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
   API_BASE_URL,
-  VITE_APP_ENV: import.meta.env.VITE_APP_ENV
+  VITE_APP_ENV: import.meta.env.VITE_APP_ENV,
+  HARDCODED_URL: PRODUCTION_API_URL
 });
 
 // Función helper para construir URLs de imágenes
