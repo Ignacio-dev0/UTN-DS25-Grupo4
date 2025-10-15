@@ -1,18 +1,20 @@
 FROM node:20 as builder
 WORKDIR /app
 
-# Copiar package.json del frontend
-COPY frontend/package*.json ./
-RUN npm ci
-
-# Copiar código fuente del frontend y archivos de entorno
-COPY frontend/ .
-
-# Variables de entorno para el build (las definimos aquí para asegurar que se usen)
+# Variables de entorno para el build (definir antes de todo)
 ENV VITE_API_URL=https://utn-ds25-grupo4-canchaya.up.railway.app/api
 ENV VITE_APP_ENV=production
 
-# Build de la aplicación (Vite usará las variables ENV definidas arriba)
+# Copiar package.json del frontend
+COPY frontend/package*.json ./
+
+# Instalar dependencias
+RUN npm ci
+
+# Copiar todo el código fuente del frontend
+COPY frontend .
+
+# Build de la aplicación
 RUN npm run build
 
 ##-----------------
