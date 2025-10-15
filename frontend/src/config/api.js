@@ -1,6 +1,13 @@
 // Configuración de la API
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+// Debug log temporal - remover después
+console.log('🚀 Frontend Config:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_BASE_URL,
+  VITE_APP_ENV: import.meta.env.VITE_APP_ENV
+});
+
 // Función helper para construir URLs de imágenes
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
