@@ -21,8 +21,8 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
-# Copiar package.json del frontend (no de la raíz)
-COPY frontend/package*.json ./
+# Copiar package.json del frontend
+COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Copiar el build generado
