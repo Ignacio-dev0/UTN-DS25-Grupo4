@@ -31,15 +31,32 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
     // Verificar si se solicita incluir canchas inactivas (para dueños gestionando su complejo)
     const incluirInactivas = req.query.incluirInactivas === 'true';
     
+    // Obtener filtros adicionales para búsqueda
+    const filtros = {
+      localidad: req.query.localidad as string,
+      deporte: req.query.deporte as string,
+      fecha: req.query.fecha as string,
+      hora: req.query.hora as string
+    };
+    
 		const canchas = complejoId ?
 			await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas) :
-			await canchaService.obtenerCanchas(incluirInactivas);
+			await canchaService.obtenerCanchasConFiltros(incluirInactivas, filtros);
 
 		return res.status(200).json({
 				canchas,
 				total: canchas.length,
 		});
   } catch (error) {
+		// Manejo específico para errores de conectividad de base de datos
+		if (error.message && error.message.includes("Can't reach database server")) {
+			console.log('⚠️ CANCHA CONTROLLER - Base de datos no disponible, devolviendo lista vacía');
+			return res.status(200).json({
+				canchas: [],
+				total: 0,
+				message: 'Servicio temporalmente no disponible'
+			});
+		}
 		next(error);
   }
 };

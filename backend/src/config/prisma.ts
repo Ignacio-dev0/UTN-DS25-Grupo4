@@ -8,7 +8,7 @@ function createPrismaClient() {
         errorFormat: 'minimal',
         datasources: {
             db: {
-                url: process.env.DATABASE_URL,
+                url: process.env.DATABASE_URL + '?pgbouncer=true&connection_limit=10',
             },
         },
     })

@@ -10,6 +10,15 @@ export async function getAllDeportes (req: Request, res: Response<DeporteListRes
             total: deportes.length
         })
     } catch (error) {
+        // Manejo específico para errores de conectividad de base de datos
+        if (error.message && error.message.includes("Can't reach database server")) {
+            console.log('⚠️ DEPORTES CONTROLLER - Base de datos no disponible, devolviendo lista vacía');
+            return res.status(200).json({
+                deportes: [],
+                total: 0,
+                message: 'Servicio temporalmente no disponible'
+            });
+        }
         next(error);
     }
 };

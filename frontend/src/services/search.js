@@ -1,56 +1,9 @@
 import { API_BASE_URL } from '../config/api.js';
 
 /**
- * Función para normalizar rutas de imágenes (remover acentos)
- */
-const normalizeImagePath = (path) => {
-  return path
-    .replace(/á/g, 'a')
-    .replace(/é/g, 'e')
-    .replace(/í/g, 'i')
-    .replace(/ó/g, 'o')
-    .replace(/ú/g, 'u')
-    .replace(/ñ/g, 'n');
-};
-
-/**
- * Función para mapear imágenes a las que realmente existen (1-8 por deporte)
- */
-const mapToExistingImage = (imagePath, deporteNombre) => {
-  const normalizedPath = normalizeImagePath(imagePath);
-  
-  // Extraer el número de la imagen original
-  const match = normalizedPath.match(/(\w+)-(\d+)\.jpg$/);
-  if (!match) return normalizedPath;
-  
-  const [, deporte, numero] = match;
-  const num = parseInt(numero);
-  
-  // Mapear a números 1-8 que realmente existen
-  const mappedNum = ((num - 1) % 8) + 1;
-  const newPath = normalizedPath.replace(/(\w+)-(\d+)\.jpg$/, `$1-${mappedNum}.jpg`);
-  
-  return newPath;
-};
-
-/**
- * Función para crear URL de imagen con fallback
- */
-const createImageUrl = (imagePath, deporte) => {
-  const mappedPath = mapToExistingImage(imagePath, deporte);
-  const imageUrl = `${API_BASE_URL.replace("/api", "")}${mappedPath}`;
-  return imageUrl;
-};
-
-/**
  * Función para transformar los datos de canchas con mapeo de imágenes
  */
 const transformCanchaData = (cancha) => {
-  // Calcular precio mínimo desde los turnos disponibles (no reservados)
-  const turnosDisponibles = cancha.turnos?.filter(turno => !turno.reservado) || [];
-  const precios = turnosDisponibles.map(turno => turno.precio).filter(precio => precio > 0);
-  const precioMinimo = precios.length > 0 ? Math.min(...precios) : null;
-  
   return {
     id: cancha.id,
     nroCancha: cancha.nroCancha,
@@ -62,10 +15,12 @@ const transformCanchaData = (cancha) => {
     localidad: cancha.complejo?.domicilio?.localidad?.nombre || 'Sin localidad',
     descripcion: cancha.descripcion || '',
     puntaje: cancha.puntaje || 0,
-    image: cancha.image ? cancha.image.map(img => createImageUrl(img, cancha.deporte?.nombre)) : [],
-    imagenes: cancha.image ? cancha.image.map(img => createImageUrl(img, cancha.deporte?.nombre)) : [],
+    // Keep original image array for CanchaCard component compatibility
+    image: cancha.image || [],
+    imagenes: cancha.image || [],
     turnos: cancha.turnos || [],
-    precioDesde: precioMinimo,
+    // Use the precalculated price from backend instead of calculating from turnos
+    precioDesde: cancha.precioDesde || cancha.precioHora || 0,
   };
 };
 
@@ -107,6 +62,53 @@ export const getCanchas = async () => {
 };
 
 /**
+ * Función para obtener canchas con filtros (incluyendo fecha y hora)
+ */
+export const getCanchasConFiltros = async (filtros = {}) => {
+  try {
+    // Construir query parameters
+    const queryParams = new URLSearchParams();
+    
+    if (filtros.deporte) queryParams.append('deporte', filtros.deporte);
+    if (filtros.localidad) queryParams.append('localidad', filtros.localidad);
+    if (filtros.fecha) queryParams.append('fecha', filtros.fecha);
+    if (filtros.hora) queryParams.append('hora', filtros.hora);
+    
+    const url = `${API_BASE_URL}/canchas?${queryParams.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al obtener las canchas con filtros');
+    }
+
+    const data = await response.json();
+    
+    // Asegurar que data es un array
+    const canchasArray = Array.isArray(data) ? data : (data.canchas || []);
+    
+    // Transformar datos con mapeo de imágenes
+    const transformedData = canchasArray.map(cancha => transformCanchaData(cancha));
+    
+    return {
+      ok: true,
+      canchas: transformedData || []
+    };
+  } catch (error) {
+    console.error('Error en getCanchasConFiltros:', error);
+    return {
+      ok: false,
+      error: 'Error de conexión'
+    };
+  }
+};
+
+/**
  * Función para obtener todos los deportes
  */
 export const getDeportes = async () => {
@@ -139,17 +141,20 @@ export const getDeportes = async () => {
 /**
  * Función para obtener todas las localidades
  */
-export const getLocalidades = async () => {
+export const getLocalidades = async (reintentos = 2) => {
   try {
     const response = await fetch(`${API_BASE_URL}/localidades`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      // Agregar timeout para evitar requests colgados
+      signal: AbortSignal.timeout(10000) // 10 segundos
     });
 
     if (!response.ok) {
-      throw new Error('Error al obtener las localidades');
+      console.error(`Error HTTP ${response.status}:`, response.statusText);
+      throw new Error(`Error al obtener las localidades: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -159,9 +164,17 @@ export const getLocalidades = async () => {
     };
   } catch (error) {
     console.error('Error en getLocalidades:', error);
+    
+    // Reintentar si hay reintentos disponibles y no es un error de timeout
+    if (reintentos > 0 && error.name !== 'TimeoutError') {
+      console.log(`Reintentando... quedan ${reintentos} intentos`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+      return getLocalidades(reintentos - 1);
+    }
+    
     return {
       ok: false,
-      error: 'Error de conexión'
+      error: error.message || 'Error de conexión'
     };
   }
 };

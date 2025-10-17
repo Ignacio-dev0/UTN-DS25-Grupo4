@@ -20,6 +20,15 @@ export const obtenerComplejos = async (req: Request, res: Response, next:NextFun
       total: complejos.length,
     });
   } catch (error) {
+    // Manejo específico para errores de conectividad de base de datos
+    if (error.message && error.message.includes("Can't reach database server")) {
+      console.log('⚠️ COMPLEJO CONTROLLER - Base de datos no disponible, devolviendo lista vacía');
+      return res.status(200).json({
+        complejos: [],
+        total: 0,
+        message: 'Servicio temporalmente no disponible'
+      });
+    }
     next(error);
     console.log(error);
   }
@@ -33,6 +42,15 @@ export const obtenerComplejosAprobados = async (req: Request, res: Response, nex
       total: complejos.length,
     });
   } catch (error) {
+    // Manejo específico para errores de conectividad de base de datos
+    if (error.message && error.message.includes("Can't reach database server")) {
+      console.log('⚠️ COMPLEJO CONTROLLER - Base de datos no disponible, devolviendo lista vacía');
+      return res.status(200).json({
+        complejos: [],
+        total: 0,
+        message: 'Servicio temporalmente no disponible'
+      });
+    }
     next(error);
     console.log(error);
   }

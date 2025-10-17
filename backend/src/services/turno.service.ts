@@ -2,6 +2,7 @@ import { number } from 'zod';
 import prisma from '../config/prisma';
 import { Turno} from '@prisma/client';
 import { CreateTurno } from '../types/turno.types';
+import { recalcularPrecioDesde } from './cancha.service';
 
 // Cache simple en memoria para turnos por cancha
 interface CacheEntry {
@@ -106,6 +107,9 @@ export async function createTurno(data: CreateTurno): Promise<Turno>{
             }
         }
     })
+
+    // Recalcular precio desde después de crear el turno
+    await recalcularPrecioDesde(data.canchaId);
 
     return created
 }
@@ -225,6 +229,10 @@ export async function updateTurno(id: number, data: Partial<CreateTurno>): Promi
             }
         }
     });
+    
+    // Recalcular precio desde después de actualizar el turno
+    await recalcularPrecioDesde(updated.canchaId);
+    
     return updated;
 }
 
@@ -239,5 +247,63 @@ export async function deleteTurno(id: number): Promise<Turno> {
             }
         }
     });
+    
+    // Recalcular precio desde después de eliminar el turno
+    await recalcularPrecioDesde(deleted.canchaId);
+    
     return deleted;
+}
+
+// Función específica para obtener turnos disponibles del día actual posteriores a la hora actual
+export async function getTurnosDisponiblesHoy(canchaId: number): Promise<Turno[]> {
+    try {
+        console.log(`🔍 Buscando turnos disponibles hoy para cancha ${canchaId}`);
+        
+        const ahora = new Date();
+        const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+        const manana = new Date(hoy);
+        manana.setDate(hoy.getDate() + 1);
+        
+        // Crear hora mínima como time (formato HH:MM:SS)
+        const horaActual = ahora.getHours();
+        const horaMinima = new Date();
+        horaMinima.setFullYear(1970, 0, 1); // Año 1970 para Time fields
+        horaMinima.setHours(horaActual + 1, 0, 0, 0);
+        
+        console.log(`📅 Buscando turnos para hoy (${hoy.toDateString()}) después de las ${horaMinima.toTimeString()}`);
+        
+        const turnos = await prisma.turno.findMany({
+            where: {
+                canchaId: canchaId,
+                reservado: false, // Solo turnos disponibles
+                fecha: {
+                    gte: hoy,
+                    lt: manana
+                },
+                // Solo turnos que empiecen al menos 1 hora después de ahora
+                horaInicio: {
+                    gte: horaMinima
+                }
+            },
+            select: {
+                id: true,
+                fecha: true,
+                horaInicio: true,
+                precio: true,
+                reservado: true,
+                canchaId: true
+            },
+            orderBy: {
+                horaInicio: 'asc'
+            },
+            take: 12 // Limitamos a 12 turnos para mejor rendimiento
+        });
+        
+        console.log(`✅ Encontrados ${turnos.length} turnos disponibles hoy para cancha ${canchaId}`);
+        return turnos as Turno[];
+        
+    } catch (error) {
+        console.error(`❌ Error obteniendo turnos disponibles hoy para cancha ${canchaId}:`, error);
+        return [];
+    }
 }

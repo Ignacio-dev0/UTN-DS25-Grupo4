@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../config/api.js';
 
-// Usar el mismo orden que JavaScript getDay(): 0=Domingo, 1=Lunes, etc.
-const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+// Calendario de Lunes a Domingo (orden europeo)
+const diasSemana = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
 // IMPORTANTE: Para el renderizado del calendario, usar el MISMO orden que diasSemana
 // Esto asegura que los turnos aparezcan en la columna correcta
-const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+const dias = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
 const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 
 function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
@@ -13,9 +13,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
 
   // Editar precio de un turno específico
   const handleEditarPrecio = async (dia, hora) => {
-    const turnoExistente = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);
-    
-    // No permitir editar turnos reservados por usuarios
+    const turnoExistente = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);    // No permitir editar turnos reservados por usuarios
     if (turnoExistente && turnoExistente.alquilerId && turnoExistente.alquilerId !== null) {
       alert("No se puede modificar un turno reservado por un usuario");
       return;
@@ -36,48 +34,39 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
     if (turnoExistente && turnoExistente.id) {
       await actualizarTurnoEnBD(turnoExistente.id, { precio: nuevoPrecio });
     } else {
-      // Crear nuevo turno en la base de datos
+      // Crear nuevo turno con actualización optimista
+      
+      // 1. Actualizar estado local inmediatamente (optimistic update)
+      const turnoTemporal = {
+        id: `temp-${Date.now()}`, // ID temporal hasta que se sincronice con BD
+        dia: dia,
+        hora: hora,
+        precio: nuevoPrecio,
+        reservado: true,
+        alquilerId: null,
+        fecha: new Date().toISOString() // Fecha temporal
+      };
+      
+      const turnosConNuevo = [...turnos, turnoTemporal];
+      onTurnosChange(turnosConNuevo);
+      console.log("✅ Turno agregado localmente (optimistic):", turnoTemporal);
+      
+      // 2. Crear turno en la base de datos en segundo plano
       try {
         const nuevoTurnoCreado = await crearTurnoEnBD(canchaId, dia, hora, nuevoPrecio);
-        console.log("✅ Turno creado exitosamente:", nuevoTurnoCreado);
+        console.log("✅ Turno creado en BD:", nuevoTurnoCreado);
         
-        // Recargar turnos desde la base de datos para obtener el turno con ID correcto
-        const response = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
-        if (response.ok) {
-          const turnosData = await response.json();
-          
-          // Formatear turnos igual que en EditarCanchaPage
-          const obtenerDiaSemana = (fechaISO) => {
-            const fecha = new Date(fechaISO);
-            const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-            // CORREGIR: Usar getUTCDay() en lugar de getDay() para evitar problemas de timezone
-            const diaCalculado = diasSemana[fecha.getUTCDay()];
-            return diaCalculado;
-          };
-          
-          const formatearHora = (horaISO) => {
-            const fecha = new Date(horaISO);
-            // CORREGIR: Usar getUTCHours() y getUTCMinutes() para evitar problemas de timezone
-            const horas = fecha.getUTCHours().toString().padStart(2, '0');
-            const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
-            const horaFormateada = `${horas}:${minutos}`;
-            return horaFormateada;
-          };
-          
-          const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => ({
-            id: turno.id,
-            dia: obtenerDiaSemana(turno.fecha),
-            hora: formatearHora(turno.horaInicio),
-            precio: turno.precio,
-            reservado: turno.reservado,
-            alquilerId: turno.alquilerId,
-            fecha: turno.fecha
-          }));
-          
-          console.log(`📋 TURNOS FORMATEADOS:`, turnosFormateados);
-          onTurnosChange(turnosFormateados);
-          console.log("✅ Turnos actualizados desde BD");
-        }
+        // 3. Actualizar el turno temporal con los datos reales de la BD
+        const turnosActualizados = turnosConNuevo.map(turno => 
+          turno.id === turnoTemporal.id ? {
+            ...turno,
+            id: nuevoTurnoCreado.id,
+            fecha: nuevoTurnoCreado.fecha
+          } : turno
+        );
+        
+        onTurnosChange(turnosActualizados);
+        console.log("✅ Turno sincronizado con BD");
         
       } catch (error) {
         console.error("❌ Error al crear turno:", error);
@@ -94,14 +83,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
       }
     }
 
-    // Actualizar localmente para mostrar el cambio inmediatamente
-    if (turnoExistente) {
-      const nuevosTurnos = turnos.map(t => 
-        String(t.dia).toUpperCase() === dia && t.hora === hora ? { ...t, precio: nuevoPrecio } : t
-      );
-      onTurnosChange(nuevosTurnos);
-    }
-    // Si se creó un turno nuevo, la actualización ya se hizo recargando desde BD
+    // Para turnos existentes, la actualización ya se hizo directamente en BD y localmente
+    // Para turnos nuevos, se usa actualización optimista
   };
 
   // Toggle estado del turno (disponible/deshabilitado manualmente)
@@ -161,6 +144,63 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
           throw new Error(`La cancha con ID ${canchaId} no existe. Por favor verifica que la cancha sea válida.`);
         }
         
+        // Si el turno ya existe, recargar datos para sincronizar
+        if (response.status === 400 && errorData.error === 'Ya existe un turno en ese horario') {
+          console.log('⚠️ Turno ya existe, recargando datos...');
+          // Recargar turnos desde la BD para sincronizar
+          try {
+            const reloadResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
+            if (reloadResponse.ok) {
+              const turnosData = await reloadResponse.json();
+              
+              const obtenerDiaSemana = (fechaISO) => {
+                const fecha = new Date(fechaISO);
+                const diasSemanaBD = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+                return diasSemanaBD[fecha.getUTCDay()];
+              };
+              
+              const formatearHora = (horaISO) => {
+                const fecha = new Date(horaISO);
+                const horas = fecha.getUTCHours().toString().padStart(2, '0');
+                const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
+                const horaFormateada = `${horas}:${minutos}`;
+                console.log(`🕐 FORMATEAR HORA 2: ${horaISO} -> ${horaFormateada}`);
+                return horaFormateada;
+              };
+              
+              // FILTRAR SOLO TURNOS DE LA SEMANA ACTUAL (desde hoy hasta +6 días)  
+              const hoy = new Date();
+              const inicioSemana = new Date(hoy);
+              inicioSemana.setHours(0, 0, 0, 0);
+              
+              const finSemana = new Date(hoy);
+              finSemana.setDate(hoy.getDate() + 6);
+              finSemana.setHours(23, 59, 59, 999);
+
+              const turnosEstaSemana = (turnosData.turnos || turnosData || []).filter(turno => {
+                const fechaTurno = new Date(turno.fecha);
+                return fechaTurno >= inicioSemana && fechaTurno <= finSemana;
+              });
+
+              const turnosFormateados = turnosEstaSemana.map(turno => ({
+                id: turno.id,
+                dia: obtenerDiaSemana(turno.fecha),
+                hora: formatearHora(turno.horaInicio),
+                precio: turno.precio,
+                reservado: turno.reservado,
+                alquilerId: turno.alquilerId,
+                fecha: turno.fecha
+              }));
+              
+              onTurnosChange(turnosFormateados);
+              alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+              return; // No lanzar error, solo informar
+            }
+          } catch (reloadError) {
+            console.error('Error recargando turnos:', reloadError);
+          }
+        }
+        
         throw new Error(errorData.error || `Error al crear turno (${response.status})`);
       }
       
@@ -195,6 +235,47 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
       alert('Error al guardar el cambio. Inténtalo de nuevo.');
     } finally {
       setGuardandoCambios(false);
+    }
+  };
+
+  // Función para eliminar turno
+  const handleEliminarTurno = async (e, dia, hora) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const turno = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);
+    if (!turno || !turno.id) {
+      alert("No se puede eliminar: turno no encontrado");
+      return;
+    }
+
+    // No permitir eliminar turnos reservados por usuarios
+    if (turno.alquilerId && turno.alquilerId !== null) {
+      alert("No se puede eliminar un turno reservado por un usuario");
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de eliminar el turno de ${dia} a las ${hora} por $${turno.precio}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/turnos/individual/${turno.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar turno');
+      }
+
+      // Actualizar localmente removiendo el turno
+      const turnosActualizados = turnos.filter(t => t.id !== turno.id);
+      onTurnosChange(turnosActualizados);
+      
+      console.log('✅ Turno eliminado exitosamente');
+    } catch (error) {
+      console.error('❌ Error al eliminar turno:', error);
+      alert('Error al eliminar el turno. Inténtalo de nuevo.');
     }
   };
 
@@ -249,14 +330,20 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
               {dias.map(dia => {
                 const turno = turnos.find(t => String(t.dia).toUpperCase() === dia && t.hora === hora);
                 
-                // Debug para render
+                // Debug para render - mostrar siempre
+                console.log(`🔍 RENDER: Buscando ${dia} ${hora} - Encontrado:`, turno ? 'SÍ' : 'NO');
                 if (turno) {
                   console.log(`🎯 RENDER: Turno encontrado para ${dia} ${hora}:`, {
                     dia: turno.dia,
                     hora: turno.hora,
                     precio: turno.precio,
-                    reservado: turno.reservado
+                    reservado: turno.reservado,
+                    id: turno.id
                   });
+                } else {
+                  // Mostrar qué turnos tenemos disponibles para esta hora
+                  const turnosEstaHora = turnos.filter(t => t.hora === hora);
+                  console.log(`❌ RENDER: No encontrado ${dia} ${hora}. Turnos para ${hora}:`, turnosEstaHora.map(t => t.dia));
                 }
                 
                 let clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 relative text-white font-bold ";
@@ -289,11 +376,20 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId }) {
                       {turno ? `$${(turno.precio / 1000).toFixed(0)}k` : '+'}
                       
                       {turno && esEditable && (
-                        <div 
-                          onClick={(e) => handleToggleEstado(e, dia, hora)}
-                          className={`absolute top-1 right-1 h-4 w-4 rounded-full cursor-pointer ${!turno.reservado ? 'bg-green-500' : 'bg-red-500'}`}
-                          title={`${!turno.reservado ? 'Disponible - Clic para deshabilitar' : 'Deshabilitado - Clic para habilitar'}`}
-                        />
+                        <>
+                          <div 
+                            onClick={(e) => handleToggleEstado(e, dia, hora)}
+                            className={`absolute top-1 right-1 h-4 w-4 rounded-full cursor-pointer ${!turno.reservado ? 'bg-green-500' : 'bg-red-500'}`}
+                            title={`${!turno.reservado ? 'Disponible - Clic para deshabilitar' : 'Deshabilitado - Clic para habilitar'}`}
+                          />
+                          <div 
+                            onClick={(e) => handleEliminarTurno(e, dia, hora)}
+                            className="absolute top-1 left-1 h-4 w-4 bg-red-600 hover:bg-red-700 rounded cursor-pointer flex items-center justify-center"
+                            title="Eliminar turno"
+                          >
+                            <span className="text-white text-xs">🗑️</span>
+                          </div>
+                        </>
                       )}
                       
                       {turno && turno.alquilerId && turno.alquilerId !== null && (

@@ -53,6 +53,7 @@ router.delete(
 // Los endpoints para obtener reseñas deberían estar en las rutas de complejo, cancha y usuario
 router.get('/complejo/:complejoId', validate(complejoIdSchema), resenasController.obtenerResenasPorComplejo);
 router.get('/cancha/:canchaId', validate(canchaIdSchema), resenasController.obtenerResenasPorCancha);
+router.get('/cancha/:canchaId/puntajes', validate(canchaIdSchema), resenasController.obtenerPuntajesResenasPorCancha);
 router.get('/usuario/:usuarioId', validate(usuarioIdSchema), resenasController.obtenerResenasPorUsuario);
 
 export default router;

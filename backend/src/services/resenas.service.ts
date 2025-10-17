@@ -259,6 +259,11 @@ export async function createResenia(data: CreateReseniaRequest): Promise<Resenia
                             apellido: true,
                             image: true
                         }
+                    },
+                    turnos: {
+                        select: {
+                            canchaId: true
+                        }
                     }
                 }
             }
@@ -266,6 +271,26 @@ export async function createResenia(data: CreateReseniaRequest): Promise<Resenia
     });
 
     console.log('✅ RESENIA SERVICE - Reseña creada exitosamente:', created.id);
+    
+    // Actualizar campos calculados para todas las canchas afectadas
+    console.log('🔄 RESENIA SERVICE - Actualizando campos calculados...');
+    try {
+        const { actualizarCamposCalculadosCancha } = require('./camposCalculados.service.js');
+        
+        // Obtener las canchas únicas de los turnos del alquiler
+        const canchasIds = [...new Set(created.alquiler.turnos.map(turno => turno.canchaId))];
+        
+        // Actualizar campos calculados para cada cancha
+        for (const canchaId of canchasIds) {
+            await actualizarCamposCalculadosCancha(canchaId);
+        }
+        
+        console.log('✅ RESENIA SERVICE - Campos calculados actualizados para canchas:', canchasIds);
+    } catch (error) {
+        console.error('❌ RESENIA SERVICE - Error actualizando campos calculados:', error);
+        // No lanzamos el error para no afectar la creación de la reseña
+    }
+    
     return created;
 }
 
@@ -293,11 +318,36 @@ export async function updateResenia(id: number, updateData: UpdateReseniaRequest
                                 apellido: true,
                                 image: true
                             }
+                        },
+                        turnos: {
+                            select: {
+                                canchaId: true
+                            }
                         }
                     }
                 }
             }
         });
+        
+        // Actualizar campos calculados si se modificó el puntaje
+        if (updateData.puntaje !== undefined) {
+            console.log('🔄 RESENIA SERVICE - Actualizando campos calculados por cambio de puntaje...');
+            try {
+                const { actualizarCamposCalculadosCancha } = require('./camposCalculados.service.js');
+                
+                // Obtener las canchas únicas de los turnos del alquiler
+                const canchasIds = [...new Set(updated.alquiler.turnos.map(turno => turno.canchaId))];
+                
+                // Actualizar campos calculados para cada cancha
+                for (const canchaId of canchasIds) {
+                    await actualizarCamposCalculadosCancha(canchaId);
+                }
+                
+                console.log('✅ RESENIA SERVICE - Campos calculados actualizados para canchas:', canchasIds);
+            } catch (error) {
+                console.error('❌ RESENIA SERVICE - Error actualizando campos calculados:', error);
+            }
+        }
         
         return updated;
     } catch (e: any) {
@@ -324,6 +374,25 @@ export async function deleteResenia(id: number): Promise<Resenia> {
         }
         throw e;
     }
+}
+
+// Función optimizada para obtener solo puntajes (para cálculos de frontend)
+export async function getReseniasPuntajesByCanchaId(canchaId: number): Promise<{puntaje: number}[]> {
+    const resenas = await prisma.resenia.findMany({
+        where: {
+            alquiler: {
+                turnos: {
+                    some: {
+                        canchaId: canchaId
+                    }
+                }
+            }
+        },
+        select: {
+            puntaje: true
+        }
+    });
+    return resenas;
 }
 
 export async function getResenasByCanchaId(canchaId: number): Promise<Resenia[]> {

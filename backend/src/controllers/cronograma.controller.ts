@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
+import { recalcularPrecioDesde } from '../services/cancha.service';
 
 export const obtenerCronogramaCancha = async (req: Request, res: Response) => {
     try {
@@ -23,7 +24,16 @@ export const obtenerCronogramaCancha = async (req: Request, res: Response) => {
             cronograma,
             total: cronograma.length
         });
-    } catch (error) {
+    } catch (error: any) {
+        // Manejo específico para errores de conectividad de base de datos
+        if (error.message && error.message.includes("Can't reach database server")) {
+            console.log(`⚠️ CRONOGRAMA CONTROLLER - Base de datos no disponible para cronograma cancha ${req.params.canchaId}, devolviendo lista vacía`);
+            return res.status(200).json({
+                cronograma: [],
+                total: 0,
+                message: 'Servicio temporalmente no disponible'
+            });
+        }
         console.error('Error al obtener cronograma:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
@@ -159,6 +169,10 @@ export const actualizarCronogramaCancha = async (req: Request, res: Response) =>
                 
                 console.log(`✅ Transacción completada exitosamente`);
             });
+            
+            // Recalcular el precio "desde" de la cancha después de actualizar cronograma
+            await recalcularPrecioDesde(canchaIdNum);
+            
         } catch (transactionError) {
             console.error('❌ Error en la transacción de cronograma:', transactionError);
             throw transactionError;

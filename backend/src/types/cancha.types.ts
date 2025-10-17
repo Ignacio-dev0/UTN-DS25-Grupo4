@@ -62,5 +62,6 @@ export interface CanchaResponse {
 export interface CanchaListResponse {
 	canchas: CanchaConRelaciones[],
 	total: number,
+	message?: string,
 }
 

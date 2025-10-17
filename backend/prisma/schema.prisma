@@ -51,6 +51,7 @@ model Complejo {
   nombre      String
   descripcion String?
   puntaje     Float              @default(0.0)
+  precioDesde Float?             @default(0.0)  // Campo calculado para precio mínimo del complejo
   image       String?
   domicilioId Int                @unique
   usuarioId   Int                @unique
@@ -84,6 +85,7 @@ model Cancha {
   nroCancha   Int
   descripcion String?
   puntaje     Float               @default(0.0)
+  precioDesde Float?              @default(0.0)  // Campo calculado para precio mínimo
   image       String[]
   complejoId  Int
   deporteId   Int

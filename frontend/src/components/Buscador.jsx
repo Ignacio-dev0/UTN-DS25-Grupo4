@@ -10,10 +10,19 @@ function Buscador() {
   const [searchParams] = useSearchParams();
   
   // Inicializar con valores de la URL si existen
+  // Función para obtener hora por defecto (hora actual + 1)
+  const getDefaultHour = () => {
+    const now = new Date();
+    const nextHour = now.getHours() + 1;
+    // Asegurar que esté dentro del rango 7-23
+    const hourToUse = Math.max(7, Math.min(23, nextHour));
+    return `${hourToUse}:00hs`;
+  };
+
   const [localidad, setLocalidad] = useState(searchParams.get('localidad') || '');
   const [deporte, setDeporte] = useState(searchParams.get('deporte') || '');
   const [fecha, setFecha] = useState(searchParams.get('fecha') ? new Date(searchParams.get('fecha')) : new Date());
-  const [hora, setHora] = useState(searchParams.get('hora') || '15:00hs');
+  const [hora, setHora] = useState(searchParams.get('hora') || getDefaultHour());
   
   // Estados para datos del backend
   const [deportes, setDeportes] = useState([]);
@@ -39,15 +48,50 @@ function Buscador() {
           setDeportes(deportesResponse.deportes);
         } else {
           console.error('Error al cargar deportes:', deportesResponse.error);
+          // Fallback: usar lista básica de deportes si falla la carga
+          setDeportes([
+            { id: 60, nombre: "Fútbol 5", icono: "⚽" },
+            { id: 61, nombre: "Fútbol 11", icono: "🥅" },
+            { id: 62, nombre: "Vóley", icono: "🏐" },
+            { id: 63, nombre: "Básquet", icono: "🏀" },
+            { id: 65, nombre: "Tenis", icono: "🎾" },
+            { id: 66, nombre: "Pádel", icono: "🎾" }
+          ]);
         }
 
         if (localidadesResponse.ok) {
           setLocalidades(localidadesResponse.localidades);
+          console.log('✅ Localidades cargadas desde API:', localidadesResponse.localidades.length);
         } else {
           console.error('Error al cargar localidades:', localidadesResponse.error);
+          // Fallback: usar lista completa de localidades si falla la carga
+          const fallbackLocalidades = [
+            { id: 58, nombre: "La Plata" },
+            { id: 59, nombre: "City Bell" },
+            { id: 60, nombre: "Gonnet" },
+            { id: 61, nombre: "Ensenada" },
+            { id: 62, nombre: "Los Hornos" },
+            { id: 63, nombre: "Tolosa" },
+            { id: 64, nombre: "Villa Elisa" },
+            { id: 65, nombre: "Berisso" }
+          ];
+          setLocalidades(fallbackLocalidades);
+          console.log('⚠️ Usando fallback de localidades:', fallbackLocalidades.length);
         }
       } catch (error) {
         console.error('Error al cargar datos:', error);
+        // En caso de error total, usar fallbacks
+        setLocalidades([
+          { id: 58, nombre: "La Plata" },
+          { id: 59, nombre: "City Bell" },
+          { id: 60, nombre: "Gonnet" },
+          { id: 61, nombre: "Ensenada" },
+          { id: 62, nombre: "Los Hornos" },
+          { id: 63, nombre: "Tolosa" },
+          { id: 64, nombre: "Villa Elisa" },
+          { id: 65, nombre: "Berisso" }
+        ]);
+        console.log('🚨 Error total, usando fallback completo de localidades');
       } finally {
         setLoading(false);
       }

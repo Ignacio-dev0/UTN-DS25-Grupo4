@@ -11,7 +11,16 @@ export async function crearAlquiler(req: Request, res: Response<AlquilerResponse
 			alquiler,
 			message: 'Alquiler creado exitosamente',
 		});
-	} catch(error) {
+	} catch(error: any) {
+		// Manejo específico para errores de conectividad de base de datos
+		if (error.message && error.message.includes("Can't reach database server")) {
+			console.log(`⚠️ ALQUILER CONTROLLER - Base de datos no disponible para crear alquiler`);
+			return res.status(503).json({ 
+				error: 'Servicio temporalmente no disponible',
+				message: 'No se puede crear el alquiler en este momento. Intenta más tarde.',
+				alquiler: null
+			} as any);
+		}
 		console.error('💥 CREAR ALQUILER - Error:', error);
 		next(error);
 	}
@@ -25,7 +34,15 @@ export async function obtenerAlquilerPorId(req: Request, res: Response<AlquilerR
 			alquiler,
 			message: 'Alquiler encontrado',
 		});
-	} catch(error) {
+	} catch(error: any) {
+		// Manejo específico para errores de conectividad de base de datos
+		if (error.message && error.message.includes("Can't reach database server")) {
+			console.log(`⚠️ ALQUILER CONTROLLER - Base de datos no disponible para obtener alquiler ID: ${req.params.id}`);
+			return res.status(404).json({ 
+				alquiler: null,
+				message: 'Alquiler no encontrado - servicio no disponible'
+			} as any);
+		}
 		next(error);
 	}
 }
@@ -41,7 +58,16 @@ export async function obtenerAlquileres(req: Request, res: Response<AlquilerList
 			alquileres,
 			total: alquileres.length,
 		});
-	} catch(error) {
+	} catch(error: any) {
+		// Manejo específico para errores de conectividad de base de datos
+		if (error.message && error.message.includes("Can't reach database server")) {
+			console.log(`⚠️ ALQUILER CONTROLLER - Base de datos no disponible para obtener alquileres`);
+			return res.status(200).json({ 
+				alquileres: [],
+				total: 0,
+				message: 'No se pudieron obtener los alquileres en este momento'
+			} as any);
+		}
 		next(error);
 	}
 }

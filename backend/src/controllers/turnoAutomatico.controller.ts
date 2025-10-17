@@ -199,6 +199,14 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             });
         }
 
+        // Validar formato de hora (HH:MM)
+        const horaRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!horaRegex.test(hora)) {
+            return res.status(400).json({ 
+                error: "Formato de hora inválido. Use formato HH:MM (ej: 17:00)" 
+            });
+        }
+
         const canchaIdNum = Number(canchaId);
         const precioNum = Number(precio);
 
@@ -210,13 +218,12 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Día inválido" });
         }
 
-        // Crear fecha para los próximos 7 días (como en el calendario)
+        // Crear fecha para los próximos 7 días (como en el calendario) usando UTC
         const hoy = new Date();
-        let fechaTurno = new Date(hoy);
         
         // Buscar la próxima ocurrencia de ese día dentro de los próximos 7 días
-        let diasAgregar = (indiceDia - hoy.getDay() + 7) % 7;
-        if (diasAgregar === 0 && hoy.getHours() < parseInt(hora.split(':')[0])) {
+        let diasAgregar = (indiceDia - hoy.getUTCDay() + 7) % 7;
+        if (diasAgregar === 0 && hoy.getUTCHours() < parseInt(hora.split(':')[0])) {
             // Si es el mismo día y aún no pasó la hora, usar hoy
             diasAgregar = 0;
         } else if (diasAgregar === 0) {
@@ -224,17 +231,24 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             diasAgregar = 7;
         }
         
-        fechaTurno.setDate(hoy.getDate() + diasAgregar);
-        // Normalizar la fecha a medianoche para evitar problemas de timezone
-        fechaTurno.setHours(0, 0, 0, 0);
+        // Crear fechaTurno con fecha específica (sin tiempo) en UTC
+        const fechaTurno = new Date(hoy);
+        fechaTurno.setUTCDate(hoy.getUTCDate() + diasAgregar);
+        fechaTurno.setUTCHours(0, 0, 0, 0); // Normalizar a medianoche UTC
         
-        // Crear horaInicio usando la misma fecha del turno
+        // Validar que la hora sea en punto (solo :00 permitido)
         const [horas, minutos] = hora.split(':');
-        const horaInicio = new Date(fechaTurno);  // ✅ Usar la fecha del turno
-        horaInicio.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+        if (parseInt(minutos) !== 0) {
+            return res.status(400).json({ 
+                error: "Solo se permiten horarios en punto (ej: 17:00, 18:00). No se aceptan horarios con minutos." 
+            });
+        }
+        
+        // Crear horaInicio en la MISMA FECHA que fechaTurno pero en UTC
+        const horaInicio = new Date(fechaTurno);
+        horaInicio.setUTCHours(parseInt(horas), 0, 0, 0); // Siempre minutos = 0
 
-        console.log(`📅 Creando turno para: ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);
-        console.log(`🕐 Hora inicio: ${horaInicio.toTimeString()}`);
+
 
         // Verificar si ya existe un turno en ese horario exacto
         const turnoExistente = await prisma.turno.findFirst({
@@ -246,8 +260,6 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         });
 
         if (turnoExistente) {
-            console.log(`⚠️ Ya existe un turno para cancha ${canchaIdNum} el ${fechaTurno.toISOString().split('T')[0]} a las ${hora}`);
-            console.log(`📋 Turno existente ID: ${turnoExistente.id}, reservado: ${turnoExistente.reservado}`);
             return res.status(400).json({ 
                 error: "Ya existe un turno en ese horario",
                 detalle: `Turno ID ${turnoExistente.id} ya existe para esta fecha y hora`
@@ -273,6 +285,65 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('Error al crear turno individual:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+// Endpoint para eliminar un turno individual
+export const eliminarTurnoIndividual = async (req: Request, res: Response) => {
+    try {
+        const { turnoId } = req.params;
+        const turnoIdNum = Number(turnoId);
+
+        if (!turnoIdNum || isNaN(turnoIdNum)) {
+            return res.status(400).json({ error: "ID de turno inválido" });
+        }
+
+        // Verificar que el turno existe
+        const turnoExistente = await prisma.turno.findUnique({
+            where: { id: turnoIdNum },
+            include: {
+                cancha: {
+                    include: {
+                        complejo: true
+                    }
+                }
+            }
+        });
+
+        if (!turnoExistente) {
+            return res.status(404).json({ error: "Turno no encontrado" });
+        }
+
+        // No permitir eliminar turnos reservados por usuarios
+        if (turnoExistente.alquilerId && turnoExistente.alquilerId !== null) {
+            return res.status(400).json({ 
+                error: "No se puede eliminar un turno reservado por un usuario",
+                detalle: `El turno está reservado por el usuario ID ${turnoExistente.alquilerId}`
+            });
+        }
+
+        // Eliminar el turno
+        await prisma.turno.delete({
+            where: { id: turnoIdNum }
+        });
+
+        console.log(`🗑️ Turno eliminado: ID ${turnoIdNum} de cancha ${turnoExistente.canchaId}`);
+
+        res.json({ 
+            message: 'Turno eliminado exitosamente',
+            turnoEliminado: {
+                id: turnoExistente.id,
+                fecha: turnoExistente.fecha,
+                horaInicio: turnoExistente.horaInicio,
+                precio: turnoExistente.precio,
+                cancha: turnoExistente.cancha.nroCancha,
+                complejo: turnoExistente.cancha.complejo.nombre
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al eliminar turno individual:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
