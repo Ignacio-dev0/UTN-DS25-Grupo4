@@ -1,26 +1,93 @@
 import { Router } from "express";
 import * as turnoController from "../controllers/turno.controllers";
-    import * as turnoAutomaticoController from "../controllers/turnoAutomatico.controller";
+import * as turnoAutomaticoController from "../controllers/turnoAutomatico.controller";
 import { validate } from "../middlewares/validate";
 import { deduplicateRequests } from "../middlewares/deduplicateRequests";
 import { crearTurnoSchema, actualizarTurnoSchema, turnoIdSchema, turnosCanchaSchema } from "../validations/turno.validation";
+import { authenticate, authorize } from "../middlewares/auth.middleware";
 
 const router = Router()
 
 // Sistema de turnos automáticos (NUEVO)
-router.post('/regenerar/:canchaId', turnoAutomaticoController.regenerarTurnosSemanales);
-router.put('/individual/:turnoId', turnoAutomaticoController.actualizarTurnoIndividual);
-router.post('/individual', turnoAutomaticoController.crearTurnoIndividual);
+router.post(
+  '/regenerar/:canchaId',
+  authenticate,
+  authorize('DUENIO'),
+  turnoAutomaticoController.regenerarTurnosSemanales
+);
+
+router.put(
+  '/individual/:turnoId',
+  authenticate,
+  authorize('DUENIO'),
+  turnoAutomaticoController.actualizarTurnoIndividual
+);
+
+router.post(
+  '/individual',
+  authenticate,
+  authorize('DUENIO'),
+  turnoAutomaticoController.crearTurnoIndividual
+);
 
 // Generar turnos automáticamente (LEGACY)
-router.post('/generar', turnoController.generarTurnos);
+// ¿¿¿¿¿¿¿¿
+router.post(
+  '/generar',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  turnoController.generarTurnos
+);
 
 // CRUD completo para turnos
-router.post('/', validate(crearTurnoSchema), turnoController.createTurno);
-router.get('/', turnoController.getAllTurnos);
-router.get('/:id', validate(turnoIdSchema), turnoController.getTurnoById);
-router.get('/cancha/:canchaId', deduplicateRequests, validate(turnosCanchaSchema), turnoController.getTurnosByCancha);
-router.put('/:id', validate(turnoIdSchema), validate(actualizarTurnoSchema), turnoController.updateTurno);
-router.delete('/:id', validate(turnoIdSchema), turnoController.deleteTurno);
+router.post(
+  '/',
+  authenticate,
+  authorize('DUENIO'),
+  validate(crearTurnoSchema),
+  turnoController.createTurno
+);
+
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  turnoController.getAllTurnos
+);
+
+router.get(
+  '/:id',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  validate(turnoIdSchema),
+  turnoController.getTurnoById
+);
+
+// Este endpoint debería estar en las rutas de cancha
+// router.get(
+//   '/cancha/:canchaId',
+//   authenticate,
+//   authorize('ADMINISTRADOR'),
+//   deduplicateRequests,
+//   validate(turnosCanchaSchema),
+//   turnoController.getTurnosByCancha
+// );
+
+router.put(
+  '/:id',
+  authenticate,
+  authorize('DUENIO'),
+  validate(turnoIdSchema),
+  validate(actualizarTurnoSchema),
+  turnoController.updateTurno
+);
+
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('DUENIO'),
+  validate(turnoIdSchema),
+  turnoController.deleteTurno
+);
 
 export default router;

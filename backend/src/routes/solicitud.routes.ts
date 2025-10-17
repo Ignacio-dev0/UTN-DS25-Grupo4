@@ -1,21 +1,46 @@
 import { Router } from "express";
-
 import * as solicitudController from "../controllers/solicitud.controller";
+import { authenticate, authorize } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post('/', solicitudController.createRequest);
+router.post(
+  '/',
+  authenticate,
+  authorize('DUENIO'),
+  solicitudController.createRequest
+);
 
 // Nueva ruta para crear solicitudes con imagen
 router.post('/with-image', solicitudController.uploadMiddleware, solicitudController.createRequestWithImage);
 
-router.get('/', solicitudController.getAllSol);
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  solicitudController.getAllSol
+);
 
-router.get('/:id', solicitudController.getSolById);
+router.get(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  solicitudController.getSolById
+);
 
-router.put('/:id', solicitudController.updateReq)
+router.put(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  solicitudController.updateReq
+);
 
-router.delete('/:id', solicitudController.eliminarSoli);
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  solicitudController.eliminarSoli
+);
 
 export default router;
 

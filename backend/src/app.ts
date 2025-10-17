@@ -3,6 +3,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import authRoutes from './routes/auth.routes'
 import deporteRoutes from './routes/deportes.routes';
 import usuarioRoutes from "./routes/usuario.routes";
 import complejoRoutes from './routes/complejo.routes';
@@ -91,6 +92,7 @@ app.use('/api/images', (req, res, next) => {
 // (MAURO)=> puse cuit como string en lugar de bigint para sacar este GPT-codigo horrible que solo GPT-entiende >:(
 
 // app.use('/api/turnos',            turnoRoutes);
+app.use('/api/auth',              authRoutes);
 app.use('/api/deportes',          deporteRoutes);
 app.use('/api/resenas',           resenaRoutes);
 app.use("/api/usuarios",          usuarioRoutes);

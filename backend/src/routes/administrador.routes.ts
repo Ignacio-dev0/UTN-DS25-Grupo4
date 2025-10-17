@@ -1,12 +1,28 @@
 import { Router } from 'express';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 import * as administradorController from '../controllers/administrador.controller';
 
 const router = Router();
 
-router.get('/', administradorController.obtenerAdministradores);
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  administradorController.obtenerAdministradores
+);
 
-router.get('/:id', administradorController.obtenerAdministradorPorId);
+router.get(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  administradorController.obtenerAdministradorPorId
+);
 
-router.post('/', administradorController.crearAdministrador);
+router.post(
+  '/',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  administradorController.crearAdministrador
+);
 
 export default router;

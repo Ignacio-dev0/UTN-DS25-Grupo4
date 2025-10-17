@@ -1,14 +1,31 @@
 import { Router } from 'express';
-import * as pagoController from "../controllers/pago.controller";
 import { validate } from '../middlewares/validate';
+import { authenticate, authorize } from "../middlewares/auth.middleware";
 import { crearPagoShema, actulizarPagoShema } from '../validations/pago.validation';
+import * as pagoController from "../controllers/pago.controller";
 
 const router = Router();
-// todos eran post 
-router.post('/', validate(crearPagoShema), pagoController.crearPago);
-router.put('/:id', validate(actulizarPagoShema), pagoController.actualizarPago);
-router.get('/', pagoController.obtenerAllPagos);
-router.get('/:id', pagoController.obtenerPagoById);
-router.delete('/:id',pagoController.eliminarPago);
+
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMINISTRADOR'), 
+  pagoController.obtenerAllPagos
+);
+
+router.get(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR', 'CLIENTE', 'DUENIO'),
+  pagoController.obtenerPagoById
+);
+
+router.post(
+  '/',
+  authenticate,
+  authorize('CLIENTE'),
+  validate(crearPagoShema),
+  pagoController.crearPago
+);
 
 export default router;

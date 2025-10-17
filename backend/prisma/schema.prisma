@@ -15,7 +15,7 @@ model Usuario {
   apellido    String
   nombre      String
   dni         String     @unique
-  correo      String     @unique
+  email      String     @unique
   password    String
   telefono    String?
   rol         Rol        @default(CLIENTE)

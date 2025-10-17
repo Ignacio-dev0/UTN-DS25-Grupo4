@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-export const crearHorarioSchema = z.object({
+const params = z.object({
+  canchaId: z.string().min(1, "ID de cancha es requerido")
+});
+
+export const crearHorario = z.object({
   body: z.object({
     horaInicio: z.string().min(1, "Hora de inicio es requerida"),
     horaFin: z.string().min(1, "Hora de fin es requerida"),
@@ -8,7 +12,8 @@ export const crearHorarioSchema = z.object({
   })
 });
 
-export const actualizarHorarioSchema = z.object({
+export const updateHorario = z.object({
+  params,
   body: z.object({
     horaInicio: z.string().min(1, "Hora de inicio es requerida").optional(),
     horaFin: z.string().min(1, "Hora de fin es requerida").optional(),
@@ -16,14 +21,4 @@ export const actualizarHorarioSchema = z.object({
   })
 });
 
-export const horarioIdSchema = z.object({
-  params: z.object({
-    id: z.string().min(1, "ID es requerido")
-  })
-});
-
-export const horariosCanchaSchema = z.object({
-  params: z.object({
-    canchaId: z.string().min(1, "ID de cancha es requerido")
-  })
-});
+export const getHorarioById = z.object({ params });
