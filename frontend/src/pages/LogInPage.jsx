@@ -1,19 +1,48 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login as authLogin } from '../services/auth'; 
+import { login as authLogin, login } from '../services/auth'; 
 import { useAuth } from '../context/AuthContext'; 
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { loginShema } from '../validations/loginShema';
+
 function LogInPage() {
+
+  /*
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  
+  */
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   const navigate = useNavigate();
   const { login } = useAuth(); 
 
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: {errors, isSubmitting }} = useForm({resolver: yupResolver(loginShema)});
+  
+
+  const onSubmit = async (data) => {
+    const res = await authLogin(data.email, data.password, data.rememberMe);
+    if (res.ok) {
+      login(res.user);
+      navigate('/');
+    }else {
+      setError('root', {
+        type: 'manual',
+        message: res.error || 'Credenciales Invalidas'
+      });
+    }
+  };
+
+  /*
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -29,7 +58,7 @@ function LogInPage() {
       setError(res.error);
     }
   };
-
+  */
   return (
     <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Iniciar sesión</h2>
