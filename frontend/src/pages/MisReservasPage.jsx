@@ -88,11 +88,30 @@ function MisReservasPage() {
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
         try {
+            console.log('🔍 CARGANDO RESERVAS - Usuario ID:', usuarioId);
+            console.log('🔍 URL de consulta:', `${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
             const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
+            console.log('📡 Respuesta del servidor - Status:', response.status, 'OK:', response.ok);
             if (response.ok) {
                 const data = await response.json();
-                const reservasFormateadas = (data.alquileres || []).map(alquiler => {
+                console.log('📦 Datos recibidos:', data);
+                console.log('📊 Total de alquileres:', data.alquileres?.length || 0);
+                
+                // Filtrar solo alquileres que tengan turnos
+                const alquileresConTurnos = (data.alquileres || []).filter(alquiler => 
+                    alquiler.turnos && alquiler.turnos.length > 0
+                );
+                console.log('✅ Alquileres con turnos:', alquileresConTurnos.length);
+                
+                const reservasFormateadas = alquileresConTurnos.map(alquiler => {
                     const primerTurno = alquiler.turnos[0];
+                    
+                    // Validación adicional por si acaso
+                    if (!primerTurno || !primerTurno.fecha || !primerTurno.cancha) {
+                        console.warn('⚠️ Alquiler con datos incompletos:', alquiler.id);
+                        return null;
+                    }
+                    
                     const fecha = new Date(primerTurno.fecha);
                     // Usar UTC para evitar problemas de timezone
                     const fechaInicio = new Date(primerTurno.horaInicio);
@@ -140,8 +159,12 @@ function MisReservasPage() {
                     };
                 });
                 
+                // Filtrar los null (alquileres con datos incompletos)
+                const reservasValidas = reservasFormateadas.filter(r => r !== null);
+                console.log('✅ Reservas válidas después de formatear:', reservasValidas.length);
+                
                 // Ordenar reservas por estado (pendientes primero) y luego por fecha más reciente
-                const reservasOrdenadas = reservasFormateadas.sort((a, b) => {
+                const reservasOrdenadas = reservasValidas.sort((a, b) => {
                     // Definir prioridad de estados
                     const prioridades = {
                         'Pendiente': 1,
@@ -167,7 +190,7 @@ function MisReservasPage() {
                 setReservas(reservasOrdenadas);
                 
                 // Calcular turnos finalizados para el sistema de niveles
-                const finalizadas = reservasFormateadas.filter(r => r.estado === 'Finalizada').length;
+                const finalizadas = reservasValidas.filter(r => r.estado === 'Finalizada').length;
                 setTurnosFinalizados(finalizadas);
             }
         } catch (error) {

@@ -383,60 +383,31 @@ async function main() {
       }
     }
 
-    // 12. Crear exactamente 90 turnos por cancha (50 disponibles, 40 ocupados)
-    console.log('🎯 Creando 90 turnos por cancha (50 disponibles + 40 ocupados)...');
+    // 12. Crear turnos disponibles para los próximos 14 días
+    console.log('🎯 Creando turnos disponibles...');
     
     const cronogramas = await prisma.horarioCronograma.findMany();
     const hoy = new Date();
     const turnosData = [];
     
-    // Crear turnos para cada cancha individualmente
-    for (const cancha of canchas) {
-      console.log(`   📅 Generando turnos para cancha ${cancha.id}...`);
+    for (let dia = 0; dia < 14; dia++) {
+      const fecha = new Date(hoy);
+      fecha.setDate(hoy.getDate() + dia);
       
-      const cronogramasCancha = cronogramas.filter(c => c.canchaId === cancha.id);
-      const fechasTurnos = [];
+      const diaSemanaActual = Object.values(DiaSemana)[fecha.getDay() === 0 ? 6 : fecha.getDay() - 1];
+      const cronogramasDelDia = cronogramas.filter(c => c.diaSemana === diaSemanaActual);
       
-      // Generar fechas desde 15 días atrás hasta 45 días adelante (60 días total)
-      for (let dia = -15; dia < 45; dia++) {
-        const fecha = new Date(hoy);
-        fecha.setDate(hoy.getDate() + dia);
-        
-        const diaSemanaActual = Object.values(DiaSemana)[fecha.getDay() === 0 ? 6 : fecha.getDay() - 1];
-        const cronogramasDelDia = cronogramasCancha.filter(c => c.diaSemana === diaSemanaActual);
-        
-        // Agregar cada horario disponible para esta fecha
-        for (const cronograma of cronogramasDelDia) {
-          fechasTurnos.push({
+      for (const cronograma of cronogramasDelDia) {
+        // 75% de probabilidad de crear el turno
+        if (Math.random() > 0.25) {
+          turnosData.push({
             fecha: fecha,
-            cronograma: cronograma
+            horaInicio: cronograma.horaInicio,
+            precio: cronograma.precio,
+            reservado: false,
+            canchaId: cronograma.canchaId,
           });
         }
-      }
-      
-      // Mezclar aleatoriamente las fechas/horarios disponibles
-      for (let i = fechasTurnos.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [fechasTurnos[i], fechasTurnos[j]] = [fechasTurnos[j], fechasTurnos[i]];
-      }
-      
-      // Tomar exactamente 90 turnos (o el máximo disponible)
-      const turnosParaCancha = fechasTurnos.slice(0, Math.min(90, fechasTurnos.length));
-      
-      // De estos 90 turnos: 50 disponibles (reservado=false), 40 ocupados (reservado=true)
-      for (let i = 0; i < turnosParaCancha.length; i++) {
-        const { fecha, cronograma } = turnosParaCancha[i];
-        
-        // Los primeros 40 turnos serán ocupados, el resto disponibles
-        const reservado = i < 40;
-        
-        turnosData.push({
-          fecha: fecha,
-          horaInicio: cronograma.horaInicio,
-          precio: cronograma.precio,
-          reservado: reservado,
-          canchaId: cancha.id,
-        });
       }
     }
 
@@ -449,64 +420,56 @@ async function main() {
       console.log(`   Creados ${Math.min(i + 100, turnosData.length)} de ${turnosData.length} turnos...`);
     }
 
-    // 13. Crear alquileres para turnos ocupados
-    console.log('📅 Creando alquileres para turnos ocupados...');
+    // 13. Marcar 25% de turnos como ocupados
+    console.log('📅 Marcando 25% de turnos como ocupados...');
     
-    const turnosOcupados = await prisma.turno.findMany({ where: { reservado: true } });
-    console.log(`   Encontrados ${turnosOcupados.length} turnos ocupados`);
+    const todosLosTurnos = await prisma.turno.findMany({ where: { reservado: false } });
+    const turnosAOcupar = Math.floor(todosLosTurnos.length * 0.25);
     
-    // Crear 20 clientes adicionales para tener más variedad
-    console.log('👥 Creando 20 clientes adicionales...');
-    const clientesAdicionalesData = [];
-    for (let i = 0; i < 20; i++) {
-      const nombres = ['Juan', 'Ana', 'Luis', 'Carmen', 'Pedro', 'Laura', 'Diego', 'Sofia', 'Miguel', 'Elena', 'Roberto', 'Lucia', 'Fernando', 'Valentina', 'Gonzalo', 'Isabella', 'Mateo', 'Camila', 'Santiago', 'Martina'];
-      const apellidos = ['García', 'Rodríguez', 'González', 'Fernández', 'López', 'Martínez', 'Sánchez', 'Pérez', 'Gómez', 'Martín', 'Jiménez', 'Ruiz', 'Hernández', 'Díaz', 'Moreno', 'Muñoz', 'Álvarez', 'Romero', 'Gutiérrez', 'Navarro'];
-      
-      clientesAdicionalesData.push({
-        nombre: nombres[i % nombres.length],
-        apellido: apellidos[i % apellidos.length],
-        dni: `4${(5000000 + i).toString()}`,
-        correo: `cliente${i + 4}@email.com`,
-        telefono: `221-${(5000000 + i).toString().slice(-7)}`,
-        password: hashedPassword,
-        rol: Rol.CLIENTE
+    // Seleccionar turnos aleatorios para ocupar
+    const turnosSeleccionados = [];
+    const turnosDisponibles = [...todosLosTurnos];
+    
+    for (let i = 0; i < turnosAOcupar; i++) {
+      const indiceRandom = Math.floor(Math.random() * turnosDisponibles.length);
+      const turnoRandom = turnosDisponibles.splice(indiceRandom, 1)[0];
+      const clienteRandom = clientes[Math.floor(Math.random() * clientes.length)];
+      turnosSeleccionados.push({
+        turnoId: turnoRandom.id,
+        clienteId: clienteRandom.id
       });
-    }
-    
-    const clientesAdicionales = [];
-    for (const data of clientesAdicionalesData) {
-      const cliente = await prisma.usuario.create({ data });
-      clientesAdicionales.push(cliente);
-    }
-    
-    const todosLosClientes = [...clientes, ...clientesAdicionales];
-    
-    // Crear alquileres para turnos ocupados en lotes de 50
-    for (let i = 0; i < turnosOcupados.length; i += 50) {
-      const batch = turnosOcupados.slice(i, i + 50);
-      
-      const alquilerPromises = batch.map(turno => {
-        const clienteRandom = todosLosClientes[Math.floor(Math.random() * todosLosClientes.length)];
-        // Los turnos pasados están finalizados, los futuros pagados
-        const estado = turno.fecha < hoy ? EstadoAlquiler.FINALIZADO : EstadoAlquiler.PAGADO;
-        
-        return prisma.alquiler.create({
-          data: {
-            estado: estado,
-            clienteId: clienteRandom.id,
-            turnos: {
-              connect: [{ id: turno.id }]
-            }
-          }
-        });
-      });
-      
-      await Promise.all(alquilerPromises);
-      console.log(`   Procesados ${Math.min(i + 50, turnosOcupados.length)} de ${turnosOcupados.length} alquileres...`);
     }
 
-    // 14. Crear exactamente 5 reseñas por cancha (320 reseñas total)
-    console.log('⭐ Creando exactamente 5 reseñas por cancha (320 total)...');
+    // Actualizar turnos en lotes
+    await prisma.turno.updateMany({
+      where: {
+        id: { in: turnosSeleccionados.map(t => t.turnoId) }
+      },
+      data: { reservado: true }
+    });
+
+    // Crear alquileres en lotes de 50
+    for (let i = 0; i < turnosSeleccionados.length; i += 50) {
+      const batch = turnosSeleccionados.slice(i, i + 50);
+      
+      const alquilerPromises = batch.map(turno => 
+        prisma.alquiler.create({
+          data: {
+            estado: EstadoAlquiler.FINALIZADO,
+            clienteId: turno.clienteId,
+            turnos: {
+              connect: [{ id: turno.turnoId }]
+            }
+          }
+        })
+      );
+      
+      await Promise.all(alquilerPromises);
+      console.log(`   Procesados ${Math.min(i + 50, turnosSeleccionados.length)} de ${turnosSeleccionados.length} alquileres...`);
+    }
+
+        // 14. Crear 10 reseñas por cancha (640 reseñas total)
+    console.log('⭐ Creando 10 reseñas por cancha (640 total)...');
     
     const comentariosPositivos = [
       'Excelente cancha, muy bien mantenida y buena atención al cliente',
@@ -515,7 +478,7 @@ async function main() {
       'Vestuarios limpios y amplios, muy recomendable el lugar',
       'Perfecto para jugar con amigos, ambiente familiar y cálido',
       'Precio justo por la calidad ofrecida, volveremos pronto',
-      'Cancha en perfectas condiciones, muy satisfecho con el servicio',
+      'Cancha en perfectas condiciones, precio justo para la calidad',
       'Excelente servicio, personal muy amable y atento',
       'Instalaciones modernas con todos los servicios necesarios',
       'Muy buena ubicación y fácil acceso, estacionamiento amplio',
@@ -524,178 +487,112 @@ async function main() {
       'Ambiente seguro y bien cuidado, ideal para toda la familia',
       'Superficie de juego excelente, pelotas y arcos en buen estado',
       'Atención personalizada y horarios muy convenientes',
-      'Instalaciones limpias y modernas, muy satisfecho',
-      'Muy buena experiencia, la pasamos genial jugando',
-      'Recomiendo este lugar, canchas de gran calidad',
-      'Excelente relación precio-calidad, sin dudas volveremos',
-      'Muy conforme con las instalaciones y la atención',
-      'Todo perfecto, desde la reserva hasta el final',
-      'Cancha impecable, se nota el cuidado y mantenimiento',
-      'Personal muy atento, nos ayudaron en todo momento',
-      'Instalaciones de primer nivel, nuestro lugar favorito',
-      'Experiencia 10/10, superó nuestras expectativas'
+      'Instalaciones limpias y modernas, muy satisfecho con el servicio'
     ];
 
-    // Obtener alquileres finalizados para usar como base
-    const alquileresFinalizados = await prisma.alquiler.findMany({
-      where: { estado: EstadoAlquiler.FINALIZADO },
-      include: {
-        turnos: {
-          include: { cancha: true }
-        },
-        cliente: true
-      }
-    });
-    
-    console.log(`   📋 Encontrados ${alquileresFinalizados.length} alquileres finalizados como base`);
-    
-    // Crear exactamente 5 reseñas por cancha
+    // Crear datos para reseñas en lotes
     const reseniasData = [];
+    const turnosReseniasData: any[] = [];
+    const alquileresData = [];
+
     let totalResenias = 0;
-    
     for (const cancha of canchas) {
-      console.log(`   🎯 Generando 5 reseñas para cancha ${cancha.id}...`);
-      
-      // Buscar alquileres finalizados para esta cancha
-      const alquileresCancha = alquileresFinalizados.filter(alq => 
-        alq.turnos.some(t => t.cancha.id === cancha.id)
-      );
-      
-      const clientesUsados = new Set();
-      let reseniasCancha = 0;
-      
-      // Usar alquileres existentes si están disponibles
-      for (const alquiler of alquileresCancha) {
-        if (reseniasCancha >= 5) break;
-        if (clientesUsados.has(alquiler.clienteId)) continue; // Un cliente solo puede reseñar una vez por cancha
+      for (let i = 0; i < 10; i++) {
+        // Crear fecha aleatoria en el pasado (últimos 90 días)
+        const fechaAleatoria = new Date(hoy);
+        fechaAleatoria.setDate(hoy.getDate() - Math.floor(Math.random() * 90));
         
-        clientesUsados.add(alquiler.clienteId);
+        // Datos del turno
+        const horaAleatoria = Math.floor(Math.random() * 17) + 7; // Entre 7 y 23
+        const precioAleatorio = Math.floor(Math.random() * (25000 - 10000) + 10000);
+        const clienteAleatorio = clientes[Math.floor(Math.random() * clientes.length)];
         
-        // Distribución de puntajes: 60% cinco estrellas, 30% cuatro, 10% tres
-        let puntaje = 5;
-        const rand = Math.random();
-        if (rand > 0.60 && rand <= 0.90) {
-          puntaje = 4;
-        } else if (rand > 0.90) {
-          puntaje = 3;
-        }
-        
-        const comentario = comentariosPositivos[Math.floor(Math.random() * comentariosPositivos.length)];
-        
-        reseniasData.push({
-          descripcion: comentario,
-          puntaje: puntaje,
-          alquilerId: alquiler.id,
+        turnosReseniasData.push({
+          fecha: fechaAleatoria,
+          horaInicio: new Date(`1970-01-01T${horaAleatoria.toString().padStart(2, '0')}:00:00Z`),
+          precio: precioAleatorio,
+          reservado: true,
+          canchaId: cancha.id,
         });
-        
-        reseniasCancha++;
+
         totalResenias++;
       }
+    }
+
+    // Crear turnos para reseñas en lotes
+    for (let i = 0; i < turnosReseniasData.length; i += 100) {
+      const batch = turnosReseniasData.slice(i, i + 100);
+      await prisma.turno.createMany({ data: batch });
+      console.log(`   Creados ${Math.min(i + 100, turnosReseniasData.length)} de ${turnosReseniasData.length} turnos para reseñas...`);
+    }
+
+    // Obtener los turnos creados para las reseñas
+    const turnosParaResenias = await prisma.turno.findMany({
+      where: {
+        reservado: true,
+        fecha: {
+          lt: hoy
+        }
+      },
+      orderBy: { id: 'desc' },
+      take: totalResenias
+    });
+
+    // Crear alquileres y reseñas
+    for (let i = 0; i < turnosParaResenias.length; i += 50) {
+      const batch = turnosParaResenias.slice(i, i + 50);
       
-      // Si no hay suficientes alquileres, crear alquileres adicionales con turnos simulados
-      while (reseniasCancha < 5) {
-        // Seleccionar un cliente que no haya reseñado esta cancha
-        const clientesDisponibles = todosLosClientes.filter(c => !clientesUsados.has(c.id));
-        if (clientesDisponibles.length === 0) break; // No hay más clientes disponibles
-        
-        const clienteRandom = clientesDisponibles[Math.floor(Math.random() * clientesDisponibles.length)];
-        clientesUsados.add(clienteRandom.id);
-        
-        // Crear un turno en el pasado para esta cancha
-        const fechaPasada = new Date();
-        fechaPasada.setDate(fechaPasada.getDate() - Math.floor(Math.random() * 30) - 1); // Últimos 30 días
-        
-        const horaAleatoria = Math.floor(Math.random() * 16) + 7; // Entre 7 y 22
-        const precioAleatorio = Math.floor(Math.random() * (25000 - 10000) + 10000);
-        
-        // Crear turno simulado
-        const turnoSimulado = await prisma.turno.create({
-          data: {
-            fecha: fechaPasada,
-            horaInicio: new Date(`1970-01-01T${horaAleatoria.toString().padStart(2, '0')}:00:00Z`),
-            precio: precioAleatorio,
-            reservado: true,
-            canchaId: cancha.id,
-          }
-        });
-        
-        // Crear alquiler simulado
-        const alquilerSimulado = await prisma.alquiler.create({
+      // Crear alquileres para este lote
+      const alquilerPromises = batch.map(turno => {
+        const clienteAleatorio = clientes[Math.floor(Math.random() * clientes.length)];
+        return prisma.alquiler.create({
           data: {
             estado: EstadoAlquiler.FINALIZADO,
-            clienteId: clienteRandom.id,
+            clienteId: clienteAleatorio.id,
             turnos: {
-              connect: [{ id: turnoSimulado.id }]
+              connect: [{ id: turno.id }]
             }
           }
         });
-        
-        // Crear reseña
-        let puntaje = 5;
-        const rand = Math.random();
-        if (rand > 0.60 && rand <= 0.90) {
-          puntaje = 4;
-        } else if (rand > 0.90) {
-          puntaje = 3;
-        }
-        
-        const comentario = comentariosPositivos[Math.floor(Math.random() * comentariosPositivos.length)];
-        
-        reseniasData.push({
-          descripcion: comentario,
-          puntaje: puntaje,
-          alquilerId: alquilerSimulado.id,
-        });
-        
-        reseniasCancha++;
-        totalResenias++;
-      }
-    }
-    
-    // Crear todas las reseñas en lotes de 50
-    console.log(`   💫 Creando ${totalResenias} reseñas en la base de datos...`);
-    for (let i = 0; i < reseniasData.length; i += 50) {
-      const batch = reseniasData.slice(i, i + 50);
+      });
       
-      const reseniasPromises = batch.map(reseniaData => 
-        prisma.resenia.create({ data: reseniaData })
-      );
+      const alquileresCreados = await Promise.all(alquilerPromises);
+      
+      // Crear reseñas para este lote
+      const reseniasPromises = alquileresCreados.map(alquiler => {
+        const puntajeResenia = Math.floor(Math.random() * 2) + 4; // Entre 4 y 5 estrellas
+        const comentarioAleatorio = comentariosPositivos[Math.floor(Math.random() * comentariosPositivos.length)];
+        
+        return prisma.resenia.create({
+          data: {
+            descripcion: comentarioAleatorio,
+            puntaje: puntajeResenia,
+            alquilerId: alquiler.id,
+          }
+        });
+      });
       
       await Promise.all(reseniasPromises);
-      console.log(`     ✅ Procesadas ${Math.min(i + 50, reseniasData.length)} de ${reseniasData.length} reseñas...`);
+      console.log(`   Procesadas ${Math.min(i + 50, turnosParaResenias.length)} de ${turnosParaResenias.length} reseñas...`);
     }
-    
-    console.log(`✅ Total de reseñas creadas: ${totalResenias} (5 por cada una de las ${canchas.length} canchas)`);
 
-    // Consultar estadísticas finales
-    const turnosTotal = await prisma.turno.count();
-    const turnosOcupadosTotal = await prisma.turno.count({ where: { reservado: true } });
-    const turnosDisponibles = turnosTotal - turnosOcupadosTotal;
-    const alquileresTotal = await prisma.alquiler.count();
-    const reseniasTotal = await prisma.resenia.count();
-    
-    console.log('✅ Seed equilibrado completado exitosamente!');
+    console.log('✅ Seed nuevo esquema completado exitosamente!');
     console.log(`📊 Datos creados:`);
     console.log(`   - ${localidades.length} localidades`);
-    console.log(`   - ${deportes.length} deportes con iconos`);
-    console.log(`   - ${servicios.length} servicios con iconos`);
+    console.log(`   - ${deportes.length} deportes`);
+    console.log(`   - ${servicios.length} servicios`);
     console.log(`   - 1 administrador del sistema`);
     console.log(`   - 1 usuario administrador`);
-    console.log(`   - ${clientes.length + 20} clientes (3 originales + 20 adicionales)`);
+    console.log(`   - ${clientes.length} clientes`);
     console.log(`   - ${duenios.length} dueños de complejos`);
     console.log(`   - ${usuariosPendientes.length} usuarios con solicitudes pendientes`);
-    console.log(`   - ${complejos.length} complejos deportivos aprobados con servicios`);
+    console.log(`   - ${complejos.length} complejos deportivos aprobados`);
     console.log(`   - 5 solicitudes pendientes`);
     console.log(`   - ${canchas.length} canchas (8 por complejo, una por deporte)`);
-    console.log(`   - ${turnosTotal} turnos TOTALES (90 por cancha)`);
-    console.log(`     • ${turnosDisponibles} turnos disponibles (${Math.round((turnosDisponibles/turnosTotal)*100)}% - objetivo 56%)`);
-    console.log(`     • ${turnosOcupadosTotal} turnos ocupados (${Math.round((turnosOcupadosTotal/turnosTotal)*100)}% - objetivo 44%)`);
-    console.log(`   - ${alquileresTotal} alquileres creados`);
-    console.log(`   - ${reseniasTotal} reseñas (5 por cancha, sin duplicados por cliente-cancha)`);
+    console.log(`   - 640 reseñas (10 por cancha)`);
     console.log(`   - Cronogramas con horarios puntuales (7:00-23:00)`);
-    console.log(`   - Sistema temporal equilibrado: 15 días pasados + 45 días futuros`);
+    console.log(`   - Turnos disponibles con 25% ocupados`);
     console.log(`   - 64 imágenes únicas asignadas`);
-    console.log(`   - Servicios correctamente asignados a cada complejo`);
 
   } catch (error) {
     console.error('❌ Error durante el seed:', error);

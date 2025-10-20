@@ -21,6 +21,9 @@ router.get('/:id', canchaController.obtenerCanchaPorId);
 // Ruta para actualizar una cancha por su ID
 router.put('/:id', validate(updateCanchaSchema), canchaController.actualizarCancha);
 
+// Ruta para actualización parcial de una cancha (ej: solo precioDesde)
+router.patch('/:id', canchaController.actualizarCancha);
+
 // Ruta para eliminar una cancha por su ID
 router.delete('/:id', canchaController.eliminarCancha);
 

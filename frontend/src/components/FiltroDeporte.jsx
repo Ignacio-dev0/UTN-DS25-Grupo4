@@ -10,14 +10,6 @@ function FiltroDeporte({ deporteSeleccionado, onSelectDeporte, deportes = [] }) 
   const listaCompletaDeportes = useMemo(() => {
     // Validar que deportes sea un array antes de mapear
     const deportesArray = Array.isArray(deportes) ? deportes : [];
-    
-    // Debug ocasional
-    if (Math.random() < 0.1) {
-      console.log(`[DEBUG FiltroDeporte] Deportes recibidos:`, deportes);
-      console.log(`[DEBUG FiltroDeporte] Es array:`, Array.isArray(deportes));
-      console.log(`[DEBUG FiltroDeporte] Cantidad:`, deportesArray.length);
-    }
-    
     const deportesFormateados = deportesArray.map(deporte => ({
       id: deporte.id,
       deporte: deporte.nombre,

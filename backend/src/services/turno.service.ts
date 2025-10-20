@@ -1,8 +1,7 @@
 import { number } from 'zod';
 import prisma from '../config/prisma';
 import { Turno} from '@prisma/client';
-import { CreateTurno } from '../types/turno.types';
-import { recalcularPrecioDesde } from './cancha.service';
+import { CreateTurno, UpdateTurno } from '../types/turno.types';
 
 // Cache simple en memoria para turnos por cancha
 interface CacheEntry {
@@ -24,25 +23,36 @@ function cleanExpiredCache() {
 }
 
 // Función para generar turnos basados en el cronograma
+// Genera turnos para los próximos 8 días (7 para clientes + 1 extra para el dueño)
 export async function generarTurnosDesdeHoy() {
     const hoy = new Date();
-    const fechaLimite = new Date();
-    fechaLimite.setDate(hoy.getDate() + 7); // 7 días hacia adelante
+    hoy.setHours(0, 0, 0, 0);
+    const fechaLimite = new Date(hoy);
+    fechaLimite.setDate(hoy.getDate() + 8); // 8 días hacia adelante (incluye hoy)
+
+    console.log(`🔄 Generando turnos desde ${hoy.toISOString()} hasta ${fechaLimite.toISOString()}`);
 
     // Obtener todas las canchas con sus cronogramas
     const canchas = await prisma.cancha.findMany({
+        where: {
+            activa: true // Solo canchas activas
+        },
         include: {
             cronograma: true,
-            complejo: true
+            complejo: true,
+            horariosDeshabilitados: true // Incluir horarios deshabilitados permanentemente
         }
     });
+
+    console.log(`📊 Procesando ${canchas.length} canchas activas`);
 
     const turnosACrear = [];
 
     for (const cancha of canchas) {
-        for (let dia = 0; dia < 7; dia++) {
+        for (let dia = 0; dia < 8; dia++) { // 8 días en total
             const fecha = new Date(hoy);
             fecha.setDate(hoy.getDate() + dia);
+            fecha.setHours(0, 0, 0, 0);
             
             const diaSemana = getDiaSemanaEnum(fecha.getDay());
             
@@ -50,41 +60,60 @@ export async function generarTurnosDesdeHoy() {
             const cronogramasDelDia = cancha.cronograma.filter(c => c.diaSemana === diaSemana);
             
             for (const cronograma of cronogramasDelDia) {
-                // Verificar si el turno ya existe (usando rango de fechas para evitar problemas de timestamp)
-                const fechaSoloFecha = new Date(fecha);
-                fechaSoloFecha.setHours(0, 0, 0, 0);
+                // Verificar si este horario está deshabilitado permanentemente
+                // Convertir horaInicio a string en formato "HH:00"
+                const horaString = `${String(cronograma.horaInicio.getUTCHours()).padStart(2, '0')}:00`;
                 
-                const fechaSiguienteDia = new Date(fechaSoloFecha);
+                const horarioDeshabilitado = cancha.horariosDeshabilitados.find(hd => 
+                    hd.dia === diaSemana && 
+                    hd.hora === horaString
+                );
+                
+                if (horarioDeshabilitado) {
+                    console.log(`⏭️ Saltando turno deshabilitado: Cancha ${cancha.id}, ${diaSemana}, ${horaString}`);
+                    continue; // No crear turno si está deshabilitado permanentemente
+                }
+                
+                // Verificar si el turno ya existe
+                const fechaSiguienteDia = new Date(fecha);
                 fechaSiguienteDia.setDate(fechaSiguienteDia.getDate() + 1);
 
                 const turnoExistente = await prisma.turno.findFirst({
                     where: {
                         canchaId: cancha.id,
                         fecha: {
-                            gte: fechaSoloFecha,
+                            gte: fecha,
                             lt: fechaSiguienteDia
                         },
                         horaInicio: cronograma.horaInicio
                     }
                 });
 
+                // Solo crear turno si NO existe
+                // Si existe pero está deshabilitado temporalmente, NO lo regeneramos (debe permanecer deshabilitado)
                 if (!turnoExistente) {
                     turnosACrear.push({
-                        fecha: fechaSoloFecha,
+                        fecha: fecha,
                         horaInicio: cronograma.horaInicio,
                         precio: cronograma.precio || 5000, // Usar precio del cronograma o defecto
                         reservado: false,
+                        deshabilitado: false, // Por defecto no está deshabilitado temporalmente
                         canchaId: cancha.id
                     });
                 }
+                // Si turnoExistente.deshabilitado === true, NO hacemos nada (respetamos el estado deshabilitado)
             }
         }
     }
 
     if (turnosACrear.length > 0) {
         await prisma.turno.createMany({
-            data: turnosACrear
+            data: turnosACrear,
+            skipDuplicates: true // Evitar duplicados por si acaso
         });
+        console.log(`✅ Se crearon ${turnosACrear.length} nuevos turnos`);
+    } else {
+        console.log(`ℹ️ No hay turnos nuevos para crear`);
     }
 
     return turnosACrear.length;
@@ -107,9 +136,6 @@ export async function createTurno(data: CreateTurno): Promise<Turno>{
             }
         }
     })
-
-    // Recalcular precio desde después de crear el turno
-    await recalcularPrecioDesde(data.canchaId);
 
     return created
 }
@@ -166,6 +192,7 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
                 horaInicio: true,
                 precio: true,
                 reservado: true,
+                deshabilitado: true,
                 alquilerId: true,
                 canchaId: true,
                 cancha: {
@@ -208,19 +235,30 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
     }
 }
 
-export async function updateTurno(id: number, data: Partial<CreateTurno>): Promise<Turno> {
+export async function updateTurno(id: number, data: UpdateTurno): Promise<Turno> {
+    // Construir el objeto de actualización dinámicamente
+    const updateData: any = {};
+    
+    if (data.fecha !== undefined) updateData.fecha = data.fecha;
+    if (data.horaInicio !== undefined) updateData.horaInicio = data.horaInicio;
+    if (data.precio !== undefined) updateData.precio = data.precio;
+    if (data.reservado !== undefined) updateData.reservado = data.reservado;
+    if (data.deshabilitado !== undefined) updateData.deshabilitado = data.deshabilitado;
+    
+    // alquilerId puede ser null, number o undefined
+    if (data.alquilerId !== undefined) {
+        updateData.alquilerId = data.alquilerId;
+    }
+    
+    if (data.canchaId) {
+        updateData.cancha = {
+            connect: { id: data.canchaId }
+        };
+    }
+    
     const updated = await prisma.turno.update({
         where: { id },
-        data: {
-            ...(data.fecha && { fecha: data.fecha }),
-            ...(data.horaInicio && { horaInicio: data.horaInicio }),
-            ...(data.precio && { precio: data.precio }),
-            ...(data.canchaId && { 
-                cancha: {
-                    connect: { id: data.canchaId }
-                }
-            })
-        },
+        data: updateData,
         include: {
             cancha: {
                 include: {
@@ -230,8 +268,10 @@ export async function updateTurno(id: number, data: Partial<CreateTurno>): Promi
         }
     });
     
-    // Recalcular precio desde después de actualizar el turno
-    await recalcularPrecioDesde(updated.canchaId);
+    // Log para debug
+    if (data.deshabilitado !== undefined) {
+        console.log(`✅ Turno ${id} actualizado: deshabilitado = ${data.deshabilitado}`);
+    }
     
     return updated;
 }
@@ -247,42 +287,31 @@ export async function deleteTurno(id: number): Promise<Turno> {
             }
         }
     });
-    
-    // Recalcular precio desde después de eliminar el turno
-    await recalcularPrecioDesde(deleted.canchaId);
-    
     return deleted;
 }
 
-// Función específica para obtener turnos disponibles del día actual posteriores a la hora actual
-export async function getTurnosDisponiblesHoy(canchaId: number): Promise<Turno[]> {
+export async function getTurnosPorSemana(canchaId: number, semanaOffset: number = 0): Promise<Turno[]> {
     try {
-        console.log(`🔍 Buscando turnos disponibles hoy para cancha ${canchaId}`);
+        console.log(`🔍 Servicio getTurnosPorSemana: cancha ${canchaId}, semana offset ${semanaOffset}`);
         
-        const ahora = new Date();
-        const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-        const manana = new Date(hoy);
-        manana.setDate(hoy.getDate() + 1);
+        // Calcular fechas de inicio y fin de la semana
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
         
-        // Crear hora mínima como time (formato HH:MM:SS)
-        const horaActual = ahora.getHours();
-        const horaMinima = new Date();
-        horaMinima.setFullYear(1970, 0, 1); // Año 1970 para Time fields
-        horaMinima.setHours(horaActual + 1, 0, 0, 0);
+        const inicioSemana = new Date(hoy);
+        inicioSemana.setDate(hoy.getDate() + (semanaOffset * 7));
         
-        console.log(`📅 Buscando turnos para hoy (${hoy.toDateString()}) después de las ${horaMinima.toTimeString()}`);
+        const finSemana = new Date(inicioSemana);
+        finSemana.setDate(inicioSemana.getDate() + 7);
+        
+        console.log(`📅 Rango de fechas: ${inicioSemana.toISOString()} hasta ${finSemana.toISOString()}`);
         
         const turnos = await prisma.turno.findMany({
             where: {
-                canchaId: canchaId,
-                reservado: false, // Solo turnos disponibles
+                canchaId,
                 fecha: {
-                    gte: hoy,
-                    lt: manana
-                },
-                // Solo turnos que empiecen al menos 1 hora después de ahora
-                horaInicio: {
-                    gte: horaMinima
+                    gte: inicioSemana,
+                    lt: finSemana
                 }
             },
             select: {
@@ -291,19 +320,39 @@ export async function getTurnosDisponiblesHoy(canchaId: number): Promise<Turno[]
                 horaInicio: true,
                 precio: true,
                 reservado: true,
-                canchaId: true
+                deshabilitado: true,
+                alquilerId: true,
+                canchaId: true,
+                cancha: {
+                    select: {
+                        id: true,
+                        nombre: true,
+                        nroCancha: true,
+                        complejo: {
+                            select: {
+                                id: true,
+                                nombre: true
+                            }
+                        }
+                    }
+                }
             },
-            orderBy: {
-                horaInicio: 'asc'
-            },
-            take: 12 // Limitamos a 12 turnos para mejor rendimiento
+            orderBy: [
+                { fecha: 'asc' },
+                { horaInicio: 'asc' }
+            ]
         });
         
-        console.log(`✅ Encontrados ${turnos.length} turnos disponibles hoy para cancha ${canchaId}`);
+        console.log(`✅ Servicio: Encontrados ${turnos.length} turnos para semana ${semanaOffset}`);
+        if (turnos.length > 0) {
+            console.log(`📅 Primer turno: ${turnos[0].fecha} a las ${turnos[0].horaInicio}`);
+            console.log(`📅 Último turno: ${turnos[turnos.length - 1].fecha} a las ${turnos[turnos.length - 1].horaInicio}`);
+        }
+        
         return turnos as Turno[];
         
     } catch (error) {
-        console.error(`❌ Error obteniendo turnos disponibles hoy para cancha ${canchaId}:`, error);
-        return [];
+        console.error(`❌ Servicio: Error en getTurnosPorSemana:`, error);
+        throw error;
     }
 }

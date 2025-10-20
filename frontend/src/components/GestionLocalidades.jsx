@@ -155,12 +155,12 @@ function GestionLocalidades() {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="bg-primary text-white p-6">
-          <div className="flex justify-between items-center">
+        <div className="bg-white text-primary p-6">
+          <div className="flex justify-between items-center border-b border-gray-200 pb-4">
             <h2 className="text-2xl font-bold">Gestión de Localidades</h2>
             <button
               onClick={() => handleOpenModalLocalidad()}
-              className="bg-secondary hover:bg-accent text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+              className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
             >
               <FaPlus className="text-sm" />
               Agregar Localidad
@@ -171,8 +171,8 @@ function GestionLocalidades() {
         <div className="p-6">
           {localidades.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 text-lg">No hay localidades registradas</p>
-              <p className="text-gray-400 text-sm mt-2">Haz clic en "Agregar Localidad" para crear la primera</p>
+              <p className="text-primary text-lg">No hay localidades registradas</p>
+              <p className="text-primary text-sm mt-2">Haz clic en "Agregar Localidad" para crear la primera</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -186,14 +186,14 @@ function GestionLocalidades() {
                       <h3 className="text-lg font-semibold text-primary mb-1">
                         {localidad.nombre}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-500">
                         ID: {localidad.id}
                       </p>
                     </div>
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleOpenModalLocalidad(localidad)}
-                        className="text-primary hover:text-secondary transition-colors duration-200 p-3 rounded-md hover:bg-blue-100 min-w-[40px] min-h-[40px] flex items-center justify-center"
+                        className="text-secondary hover:text-white transition-colors duration-200 p-3 rounded-md hover:bg-secondary min-w-[40px] min-h-[40px] flex items-center justify-center"
                         title="Editar localidad"
                         type="button"
                       >

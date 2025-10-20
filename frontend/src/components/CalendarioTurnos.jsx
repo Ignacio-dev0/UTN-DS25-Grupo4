@@ -1,83 +1,131 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext'; 
 import { useNavigate } from 'react-router-dom';
 
-const dias = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
-const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+// Mapeo de días con acentos para display
+const diasConAcentos = {
+  'DOMINGO': 'DOMINGO',
+  'LUNES': 'LUNES',
+  'MARTES': 'MARTES',
+  'MIERCOLES': 'MIÉRCOLES',
+  'JUEVES': 'JUEVES',
+  'VIERNES': 'VIERNES',
+  'SABADO': 'SÁBADO'
+};
 
-function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva, loading = false }) {
+function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
   const [turnosSeleccionados, setTurnosSeleccionados] = useState([]);
   const [reservaConfirmada, setReservaConfirmada] = useState(false);
   const { isAuthenticated, user } = useAuth(); 
   const navigate = useNavigate();
 
-  // Debug logging para verificar estado de loading
-  React.useEffect(() => {
-    console.log('[DEBUG CalendarioTurnos] 📊 Recibidos datos:');
-    console.log('- Loading state:', loading);
-    console.log('- Turnos count:', turnosDisponibles?.length || 0);
-    console.log('- TurnosDisponibles es array:', Array.isArray(turnosDisponibles));
-    
-    // Log detallado SIEMPRE de turnos recibidos
+  // Debug: Analizar los turnos que llegan
+  useEffect(() => {
     if (turnosDisponibles && turnosDisponibles.length > 0) {
-      console.log('[DEBUG CalendarioTurnos] ✅ Estructura de turnos recibidos:');
+      console.log('[DEBUG CalendarioTurnos] 📊 Análisis de turnos recibidos:');
       console.log('- Total turnos:', turnosDisponibles.length);
-      console.log('- Ejemplo primeros 3 turnos:');
-      turnosDisponibles.slice(0, 3).forEach((turno, i) => {
-        console.log(`  ${i + 1}. ${JSON.stringify(turno, null, 2)}`);
+      
+      // Agrupar por día
+      const turnosPorDia = {};
+      turnosDisponibles.forEach(turno => {
+        if (!turnosPorDia[turno.dia]) {
+          turnosPorDia[turno.dia] = [];
+        }
+        turnosPorDia[turno.dia].push(turno);
       });
       
-      // Verificar días únicos
-      const diasUnicos = [...new Set(turnosDisponibles.map(t => t.dia))];
-      console.log('- Días únicos encontrados:', diasUnicos);
+      console.log('- Turnos por día:', Object.keys(turnosPorDia).map(dia => `${dia}: ${turnosPorDia[dia].length}`).join(', '));
       
-      // Verificar horas únicas  
-      const horasUnicas = [...new Set(turnosDisponibles.map(t => t.hora))];
-      console.log('- Horas únicas encontradas:', horasUnicas.slice(0, 5));
+      // Verificar si faltan días
+      const diasEsperados = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+      const diasFaltantes = diasEsperados.filter(dia => !turnosPorDia[dia]);
+      if (diasFaltantes.length > 0) {
+        console.log('⚠️ DÍAS FALTANTES:', diasFaltantes.join(', '));
+      }
       
-      // Verificar estados
-      const disponibles = turnosDisponibles.filter(t => t.reservado === false || t.estado === 'disponible');
-      console.log('- Turnos disponibles:', disponibles.length);
-    } else {
-      console.log('[DEBUG CalendarioTurnos] ⚠️ NO HAY TURNOS DISPONIBLES o están vacíos');
-      console.log('- turnosDisponibles:', turnosDisponibles);
+      // Mostrar algunos ejemplos de cada estado
+      const disponibles = turnosDisponibles.filter(t => t.estado === 'disponible').length;
+      const ocupados = turnosDisponibles.filter(t => t.estado === 'ocupado').length;
+      const deshabilitados = turnosDisponibles.filter(t => t.estado === 'deshabilitado').length;
+      const finalizados = turnosDisponibles.filter(t => t.estado === 'finalizado').length;
+      console.log(`- Estados: ${disponibles} disponibles, ${ocupados} ocupados, ${deshabilitados} deshabilitados, ${finalizados} finalizados`);
+      
+      // Debug: ANÁLISIS ESPECÍFICO DEL SÁBADO
+      const turnosSabado = turnosDisponibles.filter(t => t.dia === 'SABADO');
+      if (turnosSabado.length > 0) {
+        console.log('\n🔍 ANÁLISIS ESPECÍFICO DEL SÁBADO:');
+        console.log('- Total turnos SÁBADO:', turnosSabado.length);
+        
+        // Mostrar TODOS los turnos del sábado con sus fechas completas
+        turnosSabado.slice(0, 5).forEach(t => {
+          console.log(`  � SÁBADO ${t.hora}:`);
+          console.log(`     - fecha (string): "${t.fecha}"`);
+          console.log(`     - fechaCompleta: ${t.fechaCompleta}`);
+          console.log(`     - horaCompleta: ${t.horaCompleta}`);
+          console.log(`     - estado: ${t.estado}`);
+          console.log(`     - reservado: ${t.reservado}, alquilerId: ${t.alquilerId}`);
+        });
+        
+        // Ver estados del sábado
+        const sabadoDisponibles = turnosSabado.filter(t => t.estado === 'disponible').length;
+        const sabadoFinalizados = turnosSabado.filter(t => t.estado === 'finalizado').length;
+        const sabadoOcupados = turnosSabado.filter(t => t.estado === 'ocupado').length;
+        console.log(`  Estados: ${sabadoDisponibles} disponibles, ${sabadoFinalizados} finalizados, ${sabadoOcupados} ocupados`);
+      }
+      
+      // Debug: Verificar turnos por día con sus fechas
+      const turnosPorDiaConFecha = {};
+      turnosDisponibles.forEach(turno => {
+        if (!turnosPorDiaConFecha[turno.dia]) {
+          turnosPorDiaConFecha[turno.dia] = [];
+        }
+        turnosPorDiaConFecha[turno.dia].push(turno.fecha);
+      });
+      console.log('\n📅 Fechas de turnos por día:');
+      Object.keys(turnosPorDiaConFecha).forEach(dia => {
+        const fechasUnicas = [...new Set(turnosPorDiaConFecha[dia])];
+        console.log(`  ${dia}: ${fechasUnicas.join(', ')}`);
+      });
+      
+      // NUEVO: Verificar qué horas tienen turnos
+      const horasUnicas = [...new Set(turnosDisponibles.map(t => t.hora))].sort();
+      console.log('\n- Horas con turnos:', horasUnicas.join(', '));
+      console.log('- Total horas únicas:', horasUnicas.length);
     }
-  }, [loading, turnosDisponibles]);
+  }, [turnosDisponibles]);
 
   // Obtener el día y hora actual
-  const hoy = React.useMemo(() => new Date(), []);
-  const diasSemanaJS = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-  const diaActual = diasSemanaJS[hoy.getDay()]; // Este sigue usando el orden JS (DOMINGO=0)
-  const horaActual = hoy.getHours();
-  
-  // Debug del día actual (solo una vez al montar)
-  React.useEffect(() => {
-    console.log(`[DEBUG CalendarioTurnos] 📅 Fecha/hora actual:`);
-    console.log('- Fecha completa:', hoy.toString());
-    console.log('- Día de semana (getDay()):', hoy.getDay());
-    console.log('- Día actual calculado:', diaActual);
-    console.log('- Hora actual:', horaActual);
-  }, [hoy, diaActual, horaActual]);
+  const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
-  // Función para verificar si un horario es para la próxima semana
-  const esSiguienteSemana = (dia, hora) => {
-    const diaIndex = dias.indexOf(dia);
-    const diaActualIndex = dias.indexOf(diaActual);
-    const horaNumero = parseInt(hora.split(':')[0]);
+  // Calcular los 7 días a mostrar (empezando desde hoy)
+  const calcular7Dias = () => {
+    const fechaBase = new Date();
+    fechaBase.setHours(0, 0, 0, 0);
     
-    // Si es el mismo día y la hora ya pasó, es para la siguiente semana
-    if (dia === diaActual && horaNumero <= horaActual) {
-      return true;
+    const diasCalculados = [];
+    for (let i = 0; i < 7; i++) {
+      const fecha = new Date(fechaBase);
+      fecha.setDate(fechaBase.getDate() + i);
+      
+      const diaKey = diasSemana[fecha.getDay()];
+      const diaDisplay = diasConAcentos[diaKey] || diaKey;
+      const diaNumero = fecha.getDate();
+      const mes = fecha.getMonth() + 1; // getMonth() devuelve 0-11
+      
+      diasCalculados.push({
+        key: diaKey,
+        display: diaDisplay,
+        fecha: `${diaNumero}/${mes}`,
+        esHoy: i === 0
+      });
     }
     
-    // Si es un día anterior al actual, es para la siguiente semana
-    if (diaIndex < diaActualIndex) {
-      return true;
-    }
-    
-    return false;
+    return diasCalculados;
   };
+
+  const diasAMostrar = calcular7Dias();
+
   const handleSelectTurno = (dia, hora) => {
     const turno = getTurno(dia, hora);
     if (turno && turno.estado === 'disponible') {
@@ -116,85 +164,47 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva, loading = fal
 
   const getTurno = (dia, hora) => {
     const turno = turnosDisponibles?.find(t => t.dia === dia && t.hora === hora);
-    
-    // Debug logging ocasionalmente
-    if (Math.random() < 0.1 && hora === '07:00' && dia === 'LUNES') {
-      console.log('[DEBUG CalendarioTurnos] Buscando turno para LUNES 07:00:');
-      console.log('- Dia buscado:', dia);
-      console.log('- Hora buscada:', hora);
-      console.log('- Turnos totales:', turnosDisponibles?.length || 0);
-      console.log('- Turno encontrado:', turno);
-      console.log('- Estructura primeros 3 turnos:');
-      turnosDisponibles?.slice(0, 3).forEach((t, i) => {
-        console.log(`  ${i + 1}. dia: "${t.dia}", hora: "${t.hora}", id: ${t.id}, estado: ${t.estado || 'sin estado'}`);
-      });
-    }
-    
     return turno;
   };
 
+  // USAR RANGO COMPLETO DE HORAS (igual que en CalendarioEdicionTurnos)
+  const horasDisponibles = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-bold text-center mb-2 text-primary">Turnos Disponibles</h3>
-      
-      {/* Indicador de semana */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-center">
-        <p className="text-sm text-blue-800">
-          📅 <strong>Semana actual:</strong> {new Date().toLocaleDateString('es-AR', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })} - {new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('es-AR', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </p>
-        <p className="text-xs text-blue-600 mt-1">
-          Los turnos mostrados corresponden a los próximos 7 días
-        </p>
-      </div>
-      
-      {loading ? (
-        <div className="flex flex-col justify-center items-center py-20 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mb-4"></div>
-          <p className="text-lg font-semibold text-gray-600">Cargando turnos disponibles...</p>
-          <p className="text-sm text-gray-500 mt-2">Esto puede tomar unos segundos</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto pb-4">
-          <div className="grid grid-cols-8 gap-1 text-center font-semibold min-w-[800px]">
+      <h3 className="text-xl font-bold text-center mb-4 text-primary">Turnos Disponibles</h3>
+      <div className="overflow-x-auto pb-4">
+        <div className="grid grid-cols-8 gap-1 text-center font-semibold min-w-[800px]">
           <div></div>
-          {dias.map(dia => (
-            <div key={dia} className="py-2 text-sm md:text-base text-gray-700 relative">
-              {dia}
+          {diasAMostrar.map(({ key, display, fecha, esHoy }) => (
+            <div key={key} className="py-2 text-sm md:text-base text-gray-700 relative">
+              <div className="font-bold">{display}</div>
+              <div className="text-xs text-gray-500">{fecha}</div>
               {/* Indicador visual para el día actual - círculo arriba del día */}
-              {dia === diaActual && (
+              {esHoy && (
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary rounded-full"></div>
               )}
             </div>
           ))}
-          {horas.map(hora => (
+          {horasDisponibles.map(hora => (
             <React.Fragment key={hora}>
               <div className="py-3 px-1 text-gray-600 font-bold">{hora}</div>
-              {dias.map(dia => {
+              {diasAMostrar.map(({ key: dia }) => {
                 const turno = getTurno(dia, hora);
                 let estado = 'no-disponible';
                 
                 if (turno) {
-                  // Usar campo reservado en lugar de estado
-                  if (turno.reservado === false || turno.reservado === null || turno.reservado === undefined) {
+                  if (turno.estado === 'disponible') {
                     estado = 'disponible';
-                  } else if (turno.reservado === true) {
+                  } else if (turno.estado === 'finalizado') {
+                    // Los turnos finalizados (pasados) se muestran como "Finalizado" en gris oscuro
+                    estado = 'finalizado';
+                  } else if (turno.estado === 'deshabilitado') {
+                    // Turnos deshabilitados temporalmente se muestran en naranja
+                    estado = 'deshabilitado';
+                  } else if (turno.estado === 'reservado' || turno.estado === 'ocupado') {
+                    // Cualquier turno que esté reservado u ocupado se muestra como "Ocupado"
                     estado = 'reservado';
-                  }
-                  
-                  // Debug ocasional para verificar estados
-                  if (Math.random() < 0.02 && dia === 'LUNES' && hora === '07:00') {
-                    console.log(`[DEBUG CalendarioTurnos] Estado calculado para ${dia} ${hora}:`);
-                    console.log('- Turno encontrado:', !!turno);
-                    console.log('- turno.reservado:', turno.reservado);
-                    console.log('- Estado final:', estado);
                   }
                 }
                 
@@ -203,6 +213,10 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva, loading = fal
                 let clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 ";
                 if (estado === 'no-disponible') {
                   clasesBoton += "bg-gray-200 cursor-not-allowed opacity-50";
+                } else if (estado === 'finalizado') {
+                  clasesBoton += "bg-gray-400 cursor-not-allowed opacity-75";
+                } else if (estado === 'deshabilitado') {
+                  clasesBoton += "bg-orange-400 cursor-not-allowed opacity-75";
                 } else if (estado === 'reservado') {
                   clasesBoton += "bg-red-200 cursor-not-allowed opacity-75";
                 } else if (estado === 'disponible') {
@@ -225,7 +239,19 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva, loading = fal
                         {estado === 'disponible' && turno && (
                           <>
                             <div className="w-3 h-3 bg-green-500 rounded-full mb-1"></div>
-                            <span className="text-xs font-bold">${(turno.precio / 1000).toFixed(0)}k</span>
+                            <span className="text-xs font-bold">${turno.precio.toLocaleString('es-AR')}</span>
+                          </>
+                        )}
+                        {estado === 'finalizado' && (
+                          <>
+                            <div className="w-3 h-3 bg-gray-600 rounded-full mb-1"></div>
+                            <span className="text-xs text-gray-700 font-bold">Finalizado</span>
+                          </>
+                        )}
+                        {estado === 'deshabilitado' && (
+                          <>
+                            <div className="w-3 h-3 bg-orange-500 rounded-full mb-1"></div>
+                            <span className="text-xs text-orange-700 font-bold">TEMP</span>
                           </>
                         )}
                         {estado === 'reservado' && (
@@ -244,10 +270,8 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva, loading = fal
               })}
             </React.Fragment>
           ))}
-          </div>
         </div>
-      )}
-      
+      </div>
       <div className="text-center mt-8 min-h-[100px] flex flex-col justify-center items-center">
         {reservaConfirmada ? (
           <div className="bg-accent border-l-4 border-secondary text-primary p-4 rounded-md shadow-lg w-full max-w-lg" role="alert">
@@ -273,20 +297,17 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva, loading = fal
                         <div className="text-sm space-y-1 mt-2">
                             {turnosSeleccionados
                                 .sort((a, b) => {
-                                    const diaA = dias.indexOf(a.dia);
-                                    const diaB = dias.indexOf(b.dia);
+                                    // Ordenar por día (usando diasAMostrar para orden cronológico)
+                                    const diaA = diasAMostrar.findIndex(d => d.key === a.dia);
+                                    const diaB = diasAMostrar.findIndex(d => d.key === b.dia);
                                     if (diaA !== diaB) return diaA - diaB;
-                                    return horas.indexOf(a.hora) - horas.indexOf(b.hora);
+                                    return horasDisponibles.indexOf(a.hora) - horasDisponibles.indexOf(b.hora);
                                 })
                                 .map((turno, idx) => (
                                     <p key={idx}>• {turno.dia} a las {turno.hora} hs</p>
                                 ))
                             }
                         </div>
-                    )}
-                    
-                    {turnosSeleccionados.some(turno => esSiguienteSemana(turno.dia, turno.hora)) && (
-                      <p className="text-sm text-orange-600 font-bold">Algunos turnos son para la próxima semana</p>
                     )}
                     
                     <p className="font-bold text-2xl text-secondary mt-1">

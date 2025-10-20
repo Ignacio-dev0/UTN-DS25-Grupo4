@@ -13,18 +13,8 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
     : 'bg-secondary hover:shadow-2xl transform hover:-translate-y-1'
   }`;
 
-  // Función para calcular el precio más barato de la cancha
-  const precioDesde = React.useMemo(() => {
-    if (!cancha.cronograma || !Array.isArray(cancha.cronograma) || cancha.cronograma.length === 0) {
-      return null;
-    }
-    
-    const precios = cancha.cronograma
-      .map(c => Number(c.precio))
-      .filter(precio => !isNaN(precio) && precio > 0);
-    
-    return precios.length > 0 ? Math.min(...precios) : null;
-  }, [cancha.cronograma]);
+  // ✅ Usar el precioDesde que viene del backend (ya está actualizado por recalcularPrecioDesde)
+  const precioDesde = cancha.precioDesde > 0 ? cancha.precioDesde : null;
 
   return (
     <div className={cardClasses}>

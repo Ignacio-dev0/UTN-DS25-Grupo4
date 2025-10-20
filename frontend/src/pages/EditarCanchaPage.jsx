@@ -32,25 +32,34 @@ function EditarCanchaPage() {
         const canchaData = await canchaResponse.json();
         const canchaInfo = canchaData.cancha || canchaData;
         
-        // Cargar turnos reales (como en ReservaPage)
-        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`);
+        // Cargar turnos reales usando el mismo endpoint que reservas (solo futuros)
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
         if (!turnosResponse.ok) {
           console.error('Error en respuesta de turnos:', {
             status: turnosResponse.status,
             statusText: turnosResponse.statusText,
-            url: `${API_BASE_URL}/turnos/cancha/${canchaId}`
+            url: `${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`
           });
           throw new Error(`Error al cargar turnos: ${turnosResponse.status} ${turnosResponse.statusText}`);
         }
         const turnosData = await turnosResponse.json();
         console.log('Datos de turnos recibidos:', turnosData);
         
-        // Función auxiliar para obtener el día de la semana en español
+        // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
         const obtenerDiaSemana = (fecha) => {
-          const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-          const fechaObj = new Date(fecha);
-          // CORREGIR: Usar getUTCDay() en lugar de getDay() para evitar problemas de timezone
-          return diasSemana[fechaObj.getUTCDay()];
+          const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+          
+          // Si la fecha viene como string "2025-10-22", parsearlo correctamente
+          let fechaStr = fecha;
+          if (fechaStr.includes('T')) {
+            fechaStr = fechaStr.split('T')[0]; // Extraer solo la fecha
+          }
+          
+          // Usar Date con componentes individuales para evitar problemas de timezone
+          const [year, month, day] = fechaStr.split('-').map(Number);
+          const fechaObj = new Date(year, month - 1, day); // month es 0-indexed
+          
+          return diasSemana[fechaObj.getDay()]; // getDay() usa timezone local
         };
 
         // Función auxiliar para formatear hora desde ISO string
@@ -63,18 +72,25 @@ function EditarCanchaPage() {
         };
         
         // Formatear turnos reales (igual que en ReservaPage)
-        console.log('Procesando turnos...', { turnosArray: turnosData.turnos || turnosData || [] });
+        console.log('📊 Turnos recibidos del backend:', turnosData.turnos || turnosData || []);
         const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
-          console.log('Procesando turno individual:', turno);
-          return {
+          const turnoFormateado = {
             id: turno.id,
             dia: obtenerDiaSemana(turno.fecha),
             hora: formatearHora(turno.horaInicio),
             precio: turno.precio,
             reservado: turno.reservado, // Mantener el campo reservado como booleano
             alquilerId: turno.alquilerId, // Para distinguir entre ocupado manualmente vs reservado por usuario
+            deshabilitado: turno.deshabilitado || false, // IMPORTANTE: incluir estado de deshabilitado temporal
             fecha: turno.fecha
           };
+          
+          // Log solo si está deshabilitado
+          if (turno.deshabilitado) {
+            console.log('⚠️ Turno DESHABILITADO encontrado:', turnoFormateado);
+          }
+          
+          return turnoFormateado;
         });
         
         // Separar imagen principal de otras imágenes
@@ -218,8 +234,37 @@ function EditarCanchaPage() {
         />
         <CalendarioEdicionTurnos 
           turnos={cancha.turnos} 
-          onTurnosChange={(nuevosTurnos) => setCancha({...cancha, turnos: nuevosTurnos})} 
+          onTurnosChange={(nuevosTurnos) => setCancha(prev => ({...prev, turnos: nuevosTurnos}))} 
           canchaId={cancha.id}
+          onPrecioDesdeChange={async (nuevoPrecioDesde) => {
+            console.log('💰 Nuevo precio desde calculado:', nuevoPrecioDesde);
+            
+            // Actualizar estado local inmediatamente (optimistic update)
+            setCancha(prev => ({...prev, precioDesde: nuevoPrecioDesde, precioHora: nuevoPrecioDesde}));
+            
+            // Actualizar en el backend
+            try {
+              const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  precioDesde: nuevoPrecioDesde,
+                  precioHora: nuevoPrecioDesde
+                })
+              });
+              
+              if (!response.ok) {
+                throw new Error('Error al actualizar precio desde');
+              }
+              
+              console.log('✅ Precio desde actualizado en backend:', nuevoPrecioDesde);
+            } catch (error) {
+              console.error('❌ Error al actualizar precio desde:', error);
+              // Aquí podrías revertir el cambio local si el backend falla
+            }
+          }}
         />
       </div>
     </div>

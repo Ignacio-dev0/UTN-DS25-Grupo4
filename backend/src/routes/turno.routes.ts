@@ -11,7 +11,7 @@ const router = Router()
 router.post('/regenerar/:canchaId', turnoAutomaticoController.regenerarTurnosSemanales);
 router.put('/individual/:turnoId', turnoAutomaticoController.actualizarTurnoIndividual);
 router.post('/individual', turnoAutomaticoController.crearTurnoIndividual);
-router.delete('/individual/:turnoId', turnoAutomaticoController.eliminarTurnoIndividual);
+router.delete('/individual/:id', validate(turnoIdSchema), turnoController.deleteTurno);
 
 // Generar turnos automáticamente (LEGACY)
 router.post('/generar', turnoController.generarTurnos);
@@ -21,7 +21,13 @@ router.post('/', validate(crearTurnoSchema), turnoController.createTurno);
 router.get('/', turnoController.getAllTurnos);
 router.get('/:id', validate(turnoIdSchema), turnoController.getTurnoById);
 router.get('/cancha/:canchaId', deduplicateRequests, validate(turnosCanchaSchema), turnoController.getTurnosByCancha);
-router.get('/cancha/:canchaId/disponibles-hoy', deduplicateRequests, validate(turnosCanchaSchema), turnoController.getTurnosDisponiblesHoy);
+// Rutas para obtener turnos por semana (deben estar ANTES de las rutas con :id)
+router.get('/cancha/:canchaId/semana/:offset', turnoController.getTurnosPorSemana);
+router.get('/cancha/:canchaId/disponibles/semana/:offset', turnoController.getTurnosDisponiblesPorSemana);
+router.get('/cancha/:canchaId/disponibles/hoy', turnoController.getTurnosDisponiblesHoy);
+// Rutas para deshabilitar/habilitar turnos
+router.post('/:id/deshabilitar', validate(turnoIdSchema), turnoController.deshabilitarTurno);
+router.post('/:id/habilitar', validate(turnoIdSchema), turnoController.habilitarTurno);
 router.put('/:id', validate(turnoIdSchema), validate(actualizarTurnoSchema), turnoController.updateTurno);
 router.delete('/:id', validate(turnoIdSchema), turnoController.deleteTurno);
 

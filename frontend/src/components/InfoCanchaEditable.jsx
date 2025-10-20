@@ -37,7 +37,7 @@ function InfoCanchaEditable({ cancha, complejo }) {
             <span className="text-3xl">{deporteIcono}</span>
           </div>
         )}
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-bold font-lora text-gray-800">
             {complejo.nombre} - Cancha N°{cancha.nroCancha}
           </h2>
@@ -49,6 +49,11 @@ function InfoCanchaEditable({ cancha, complejo }) {
               <span className="text-gray-500">Sin reseñas aún</span>
             )}
           </button>
+          {cancha.precioDesde !== undefined && cancha.precioDesde > 0 && (
+            <div className="mt-2 text-lg font-semibold text-primary">
+              Desde ${cancha.precioDesde.toLocaleString('es-AR')} / hora
+            </div>
+          )}
         </div>
       </div>
       

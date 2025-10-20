@@ -225,7 +225,7 @@ function GestionUsuarios() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg">
+    <div className="bg-white rounded-lg shadow-lg mb-8">
       <div className="border-b border-gray-200 p-6">
         <div className="flex justify-between items-center">
           <div>
@@ -247,7 +247,7 @@ function GestionUsuarios() {
             
             <button
               onClick={() => handleOpenModalUsuario()}
-              className="bg-secondary hover:bg-accent text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+              className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
             >
               <FaPlus className="text-sm" />
               Agregar Usuario

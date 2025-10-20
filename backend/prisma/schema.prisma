@@ -96,6 +96,7 @@ model Cancha {
   deporte     Deporte             @relation(fields: [deporteId], references: [id])
   cronograma  HorarioCronograma[]
   turnos      Turno[]
+  horariosDeshabilitados HorarioDeshabilitado[]
 
   @@unique([complejoId, nroCancha])
 }
@@ -111,15 +112,16 @@ model HorarioCronograma {
 }
 
 model Turno {
-  id         Int       @id @default(autoincrement())
-  fecha      DateTime  @db.Date
-  horaInicio DateTime  @db.Time(6)
-  precio     Float
-  reservado  Boolean   @default(false)
-  alquilerId Int?
-  canchaId   Int
-  alquiler   Alquiler? @relation(fields: [alquilerId], references: [id])
-  cancha     Cancha    @relation(fields: [canchaId], references: [id])
+  id            Int       @id @default(autoincrement())
+  fecha         DateTime  @db.Date
+  horaInicio    DateTime  @db.Time(6)
+  precio        Float
+  reservado     Boolean   @default(false)
+  deshabilitado Boolean   @default(false)  // Turno temporalmente deshabilitado por el administrador
+  alquilerId    Int?
+  canchaId      Int
+  alquiler      Alquiler? @relation(fields: [alquilerId], references: [id])
+  cancha        Cancha    @relation(fields: [canchaId], references: [id])
   @@index([canchaId, fecha, horaInicio], name: "idx_turno_cancha_fecha_hora")
   @@index([canchaId, reservado], name: "idx_turno_cancha_reservado")
 }
@@ -177,6 +179,19 @@ model ComplejoServicio {
   servicio   Servicio @relation(fields: [servicioId], references: [id])
 
   @@unique([complejoId, servicioId])
+}
+
+model HorarioDeshabilitado {
+  id        Int       @id @default(autoincrement())
+  canchaId  Int
+  dia       DiaSemana
+  hora      String    // Formato "HH:00" (ej: "14:00")
+  motivo    String?   // Opcional: razón de la deshabilitación
+  creadoEn  DateTime  @default(now())
+  cancha    Cancha    @relation(fields: [canchaId], references: [id], onDelete: Cascade)
+
+  @@unique([canchaId, dia, hora])
+  @@index([canchaId])
 }
 
 enum MetodoPago {

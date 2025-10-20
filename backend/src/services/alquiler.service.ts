@@ -342,6 +342,10 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 			}, 
 			pago: true 
 		},
+		orderBy: {
+			createdAt: 'desc' // Más recientes primero
+		},
+		take: 100 // Limitar a los últimos 100 alquileres
 	});
 
 	if (!alquiler) {

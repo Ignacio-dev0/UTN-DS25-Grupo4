@@ -8,7 +8,6 @@ function ComplejoDetallePage() {
   const { complejoId } = useParams();
   const [complejo, setComplejo] = useState(null);
   const [canchas, setCanchas] = useState([]);
-  const [reseñasComplejo, setReseñasComplejo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -44,18 +43,6 @@ function ComplejoDetallePage() {
         }));
         
         setCanchas(canchasAdaptadas);
-
-        // Obtener reseñas del complejo
-        try {
-          const reseñasResponse = await fetch(`${API_BASE_URL}/resenas/complejo/${complejoId}`);
-          if (reseñasResponse.ok) {
-            const reseñasData = await reseñasResponse.json();
-            setReseñasComplejo(reseñasData.resenas || reseñasData || []);
-          }
-        } catch (reseñasError) {
-          console.warn('Error cargando reseñas del complejo:', reseñasError);
-          // No es crítico si fallan las reseñas
-        }
         
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -71,13 +58,7 @@ function ComplejoDetallePage() {
   }, [complejoId]);
 
   if (loading) {
-    return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
+    return <div className="text-center p-10">Cargando información del complejo...</div>;
   }
 
   if (error || !complejo) {
@@ -97,22 +78,6 @@ function ComplejoDetallePage() {
           <FaArrowLeft /> Volver al inicio
         </Link>
         <h1 className="text-4xl font-bold font-lora text-primary">{complejo.nombre}</h1>
-        
-        {/* Reseñas del complejo */}
-        {reseñasComplejo.length > 0 && (
-          <div className="flex items-center mt-3 mb-2">
-            <div className="text-yellow-400 text-lg">
-              {(() => {
-                const promedio = reseñasComplejo.reduce((sum, r) => sum + r.puntaje, 0) / reseñasComplejo.length;
-                return '★'.repeat(Math.floor(promedio)) + '☆'.repeat(5 - Math.floor(promedio));
-              })()}
-            </div>
-            <span className="text-sm text-gray-600 ml-2">
-              {(reseñasComplejo.reduce((sum, r) => sum + r.puntaje, 0) / reseñasComplejo.length).toFixed(1)} ({reseñasComplejo.length} reseñas)
-            </span>
-          </div>
-        )}
-        
         {complejo.descripcion && (
           <p className="text-base text-gray-700 mt-3 mb-2">
             {complejo.descripcion}

@@ -71,13 +71,16 @@ function MiComplejoPage() {
       if (canchasResponse.ok) {
         const canchasData = await canchasResponse.json();
         console.log('✅ Canchas cargadas del backend:', canchasData);
-        const canchasConEstado = (canchasData.canchas || []).map(cancha => ({
-          ...cancha,
-          activa: cancha.activa !== false,
-          estado: (cancha.activa !== false) ? 'habilitada' : 'deshabilitada',
-          // Mantener el objeto deporte completo para tener acceso al icono
-          deporte: cancha.deporte || { nombre: 'No especificado', icono: '⚽' }
-        }));
+        const canchasConEstado = (canchasData.canchas || []).map(cancha => {
+          console.log(`💰 Cancha ${cancha.nroCancha} - precioDesde: ${cancha.precioDesde}, precioHora: ${cancha.precioHora}`);
+          return {
+            ...cancha,
+            activa: cancha.activa !== false,
+            estado: (cancha.activa !== false) ? 'habilitada' : 'deshabilitada',
+            // Mantener el objeto deporte completo para tener acceso al icono
+            deporte: cancha.deporte || { nombre: 'No especificado', icono: '⚽' }
+          };
+        });
         console.log('📊 Canchas procesadas:', canchasConEstado);
         setCanchas(canchasConEstado);
       } else {

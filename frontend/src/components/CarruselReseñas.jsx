@@ -40,34 +40,34 @@ function CarruselReseñas({ reseñas }) {
 
   const totalReseñas = reseñas.length;
   
-  const itemWidth = 256 + 24; // ancho de tarjeta + gap
+  const CARD_WIDTH = 256; // ancho de tarjeta
+  const GAP = 24; // espacio entre tarjetas
+  
   // Si hay menos o igual a RESEÑAS_VISIBLES, mostrar todas sin scroll
-  // Si hay más, usar el ancho fijo para poder hacer scroll
   const reseñasAMostrar = Math.min(totalReseñas, RESEÑAS_VISIBLES);
-  const windowWidth = (reseñasAMostrar * 256) + ((reseñasAMostrar - 1) * 24);
+  
+  // Calcular el ancho de la ventana basado en las reseñas visibles
+  const windowWidth = (reseñasAMostrar * CARD_WIDTH) + ((reseñasAMostrar - 1) * GAP);
 
   const handleAnterior = () => {
-    if (totalReseñas <= RESEÑAS_VISIBLES) return; // No hacer nada si todas las reseñas son visibles
+    // Si hay pocas reseñas, no hacer nada
+    if (totalReseñas <= RESEÑAS_VISIBLES) return;
     
     setIndiceActual((prevIndice) => {
-      // Si estamos en el principio, vamos al final
-      if (prevIndice === 0) {
-        const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
-        return maxIndex;
-      }
-      return prevIndice - 1;
+      const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
+      // Loop infinito: si estamos en el inicio (0), volver al final
+      return prevIndice === 0 ? maxIndex : prevIndice - 1;
     });
   };
 
   const handleSiguiente = () => {
-    if (totalReseñas <= RESEÑAS_VISIBLES) return; // No hacer nada si todas las reseñas son visibles
+    // Si hay pocas reseñas, no hacer nada
+    if (totalReseñas <= RESEÑAS_VISIBLES) return;
     
     setIndiceActual((prevIndice) => {
       const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
-      if (prevIndice >= maxIndex) {
-        return 0;
-      }
-      return prevIndice + 1;
+      // Loop infinito: si estamos en el final, volver al inicio (0)
+      return prevIndice >= maxIndex ? 0 : prevIndice + 1;
     });
   };
 
@@ -75,21 +75,22 @@ function CarruselReseñas({ reseñas }) {
     <div className="mt-12">
       <h3 className="text-2xl font-bold font-lora text-gray-800 mb-6 text-center">Opiniones de otros jugadores</h3>
       <div className="flex items-center justify-center gap-2">
-        {/* Botón Anterior */}
-        <button 
-          onClick={handleAnterior}
-          disabled={totalReseñas <= RESEÑAS_VISIBLES}
-          className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronLeftIcon className="w-6 h-6 text-secondary" />
-        </button>
+        {/* Botón Anterior - solo mostrar si hay más reseñas que el límite visible */}
+        {totalReseñas > RESEÑAS_VISIBLES && (
+          <button 
+            onClick={handleAnterior}
+            className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+          >
+            <ChevronLeftIcon className="w-6 h-6 text-secondary" />
+          </button>
+        )}
 
         {/* Ventana del Carrusel */}
         <div className="overflow-hidden" style={{ width: `${windowWidth}px` }}>
           {/* Track del Carrusel */}
           <div
             className="flex gap-6 transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${indiceActual * itemWidth}px)` }}
+            style={{ transform: `translateX(-${indiceActual * (CARD_WIDTH + GAP)}px)` }}
           >
             {reseñas.map((reseña) => (
               // Contenedor de cada tarjeta de reseña
@@ -105,14 +106,15 @@ function CarruselReseñas({ reseñas }) {
           </div>
         </div>
 
-        {/* Botón Siguiente */}
-        <button 
-          onClick={handleSiguiente}
-          disabled={totalReseñas <= RESEÑAS_VISIBLES}
-          className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRightIcon className="w-6 h-6 text-secondary" />
-        </button>
+        {/* Botón Siguiente - solo mostrar si hay más reseñas que el límite visible */}
+        {totalReseñas > RESEÑAS_VISIBLES && (
+          <button 
+            onClick={handleSiguiente}
+            className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+          >
+            <ChevronRightIcon className="w-6 h-6 text-secondary" />
+          </button>
+        )}
       </div>
     </div>
   );

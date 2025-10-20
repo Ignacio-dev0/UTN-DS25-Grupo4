@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
 import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
@@ -74,7 +73,6 @@ function ReservaPage() {
   const [reseñasDeLaCancha, setReseñasDeLaCancha] = useState([]);
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingTurnos, setLoadingTurnos] = useState(true);
   const [_error, setError] = useState(null);
   const [serviciosCompleto, setServiciosCompleto] = useState([]);
 
@@ -110,9 +108,9 @@ function ReservaPage() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [cargarReseñas]);
 
-  // Cargar datos básicos de la cancha primero (rápido)
+  // Cargar datos dinámicos desde el backend
   useEffect(() => {
-    const cargarDatosBasicos = async () => {
+    const cargarDatos = async () => {
       if (!canchaId) return;
       
       try {
@@ -133,33 +131,18 @@ function ReservaPage() {
           const complejoData = await complejoResponse.json();
           setComplejo(complejoData.complejo || complejoData);
         }
-        
-      } catch (error) {
-        console.error('Error cargando datos básicos:', error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    cargarDatosBasicos();
-  }, [canchaId]);
-
-  // Cargar datos adicionales después (más lento)
-  useEffect(() => {
-    const cargarDatosAdicionales = async () => {
-      if (!cancha?.complejoId) return;
-      
-      try {
         // Cargar servicios del complejo desde la API
-        const serviciosResponse = await fetch(`${API_BASE_URL}/servicios`);
-        if (serviciosResponse.ok) {
-          const serviciosData = await serviciosResponse.json();
-          const serviciosDelComplejo = serviciosData.servicios
-            .filter(servicio => 
-              servicio.complejos.some(cs => cs.complejoId === cancha.complejoId && cs.disponible)
-            );
-          setServiciosCompleto(serviciosDelComplejo);
+        if (cancha.complejoId) {
+          const serviciosResponse = await fetch(`${API_BASE_URL}/servicios`);
+          if (serviciosResponse.ok) {
+            const serviciosData = await serviciosResponse.json();
+            const serviciosDelComplejo = serviciosData.servicios
+              .filter(servicio => 
+                servicio.complejos.some(cs => cs.complejoId === cancha.complejoId && cs.disponible)
+              );
+            setServiciosCompleto(serviciosDelComplejo);
+          }
         }
         
         // Cargar datos del deporte para obtener imágenes
@@ -174,55 +157,32 @@ function ReservaPage() {
         // Cargar reseñas de la cancha
         await cargarReseñas();
         
-      } catch (error) {
-        console.error('Error cargando datos adicionales:', error);
-      }
-    };
-
-    cargarDatosAdicionales();
-  }, [cancha?.complejoId, cancha?.deporteId, cargarReseñas]);
-
-  // Cargar turnos por separado para mostrar loader independiente
-  useEffect(() => {
-    const cargarTurnos = async () => {
-      if (!canchaId) {
-        console.log('[DEBUG ReservaPage] No hay canchaId, saltando carga de turnos');
-        return;
-      }
-      
-      try {
-        console.log(`[DEBUG ReservaPage] Iniciando carga de turnos para cancha ${canchaId}, setting loadingTurnos=true`);
-        setLoadingTurnos(true);
-        
-        // Mantener loader visible por al menos 1 segundo para mejor UX
-        console.log(`[DEBUG ReservaPage] Fetching turnos de: ${API_BASE_URL}/turnos/cancha/${canchaId}`);
-        const [turnosResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}`),
-          new Promise(resolve => setTimeout(resolve, 1000)) // Mínimo 1 segundo
-        ]);
-        
-        console.log('[DEBUG ReservaPage] Response status:', turnosResponse.status);
-        if (!turnosResponse.ok) {
-          console.error('[DEBUG ReservaPage] Error en response:', turnosResponse.status, turnosResponse.statusText);
-          throw new Error('Error al cargar turnos');
-        }
+        // USAR ENDPOINT DE SEMANA en lugar de todos los turnos
+        // Esto trae solo los turnos de los próximos 7 días (hoy + 6)
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
+        if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
         const turnosData = await turnosResponse.json();
-        console.log('[DEBUG ReservaPage] Turnos raw del backend:', turnosData);
-        console.log('[DEBUG ReservaPage] Cantidad de turnos recibidos:', turnosData.turnos?.length || 0);
         
-        // Función auxiliar para obtener el día de la semana en español
-        // IMPORTANTE: Usar mismo orden que CalendarioTurnos.jsx (LUNES primero)
+        console.log('📊 Turnos recibidos del backend:', {
+          total: turnosData.turnos?.length || 0,
+          primerosTres: turnosData.turnos?.slice(0, 3)
+        });
+        
+        // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
         const obtenerDiaSemana = (fecha) => {
-          const diasCalendario = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
-          const fechaObj = new Date(fecha);
-          const diaIndex = fechaObj.getUTCDay(); // 0=Domingo, 1=Lunes, etc.
+          const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
           
-          // Convertir a formato de calendario (LUNES=0, DOMINGO=6)
-          if (diaIndex === 0) { // Domingo
-            return 'DOMINGO';
-          } else { // Lunes-Sábado
-            return diasCalendario[diaIndex - 1];
+          // Si la fecha viene como string "2025-10-22", parsearlo correctamente
+          let fechaStr = fecha;
+          if (fechaStr.includes('T')) {
+            fechaStr = fechaStr.split('T')[0]; // Extraer solo la fecha
           }
+          
+          // Usar Date con componentes individuales para evitar problemas de timezone
+          const [year, month, day] = fechaStr.split('-').map(Number);
+          const fechaObj = new Date(year, month - 1, day); // month es 0-indexed
+          
+          return diasSemana[fechaObj.getDay()]; // getDay() usa timezone local
         };
 
         // Función auxiliar para formatear hora desde ISO string
@@ -234,56 +194,113 @@ function ReservaPage() {
           return `${horas}:${minutos}`;
         };
         
-        const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => ({
-          id: turno.id,
-          dia: obtenerDiaSemana(turno.fecha),
-          hora: formatearHora(turno.horaInicio),
-          precio: turno.precio,
-          estado: turno.reservado ? 'reservado' : 'disponible',
-          reservado: turno.reservado, // Agregar campo reservado también
-          fecha: turno.fecha
-        }));
+        // Función para determinar el estado del turno
+        // IMPORTANTE: Los turnos antes de la hora actual SIEMPRE deben estar finalizados
+        const determinarEstadoTurno = (turno) => {
+          // 🔴 PRIMERO: Verificar si el turno está en el pasado (MÁXIMA PRIORIDAD)
+          try {
+            const ahora = new Date();
+            const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+            
+            // Parsear la fecha del turno
+            let fechaTurnoStr = turno.fecha;
+            if (typeof fechaTurnoStr === 'object' && fechaTurnoStr.toISOString) {
+              fechaTurnoStr = fechaTurnoStr.toISOString().split('T')[0];
+            } else if (fechaTurnoStr.includes('T')) {
+              fechaTurnoStr = fechaTurnoStr.split('T')[0];
+            }
+            
+            const [year, month, day] = fechaTurnoStr.split('-').map(Number);
+            const fechaTurno = new Date(year, month - 1, day);
+            
+            // Si el turno es de una fecha anterior a hoy, está finalizado
+            if (fechaTurno < hoy) {
+              return 'finalizado';
+            }
+            
+            // Si el turno es de hoy, verificar la hora
+            if (fechaTurno.getTime() === hoy.getTime()) {
+              const horaTurno = new Date(turno.horaInicio);
+              const horas = horaTurno.getUTCHours();
+              const minutos = horaTurno.getUTCMinutes();
+              
+              const horaActual = ahora.getHours();
+              const minutosActuales = ahora.getMinutes();
+              
+              // Si la hora ya pasó, está finalizado SIN EXCEPCIÓN
+              if (horas < horaActual || (horas === horaActual && minutos < minutosActuales)) {
+                return 'finalizado';
+              }
+            }
+          } catch (error) {
+            console.warn('Error determinando si turno está en el pasado:', error, turno);
+          }
+          
+          // 🟡 SEGUNDO: Verificar estados especiales (solo para turnos futuros)
+          // Si está deshabilitado temporalmente
+          if (turno.deshabilitado) {
+            return 'deshabilitado';
+          }
+          
+          // Si está reservado por un cliente
+          if (turno.reservado) {
+            return 'reservado';
+          }
+          
+          // Si está ocupado manualmente por el dueño (alquilerId sin reservado)
+          if (turno.alquilerId && !turno.reservado) {
+            return 'ocupado';
+          }
+          
+          // Si está disponible
+          return 'disponible';
+        };
         
-        // Debug logging SIEMPRE para verificar formato
-        console.log('[DEBUG ReservaPage] Turnos formateados correctamente:');
-        console.log('- Total:', turnosFormateados.length);
-        if (turnosFormateados.length > 0) {
-          console.log('- Ejemplo primer turno:', turnosFormateados[0]);
-          console.log('- Días únicos:', [...new Set(turnosFormateados.map(t => t.dia))]);
-          console.log('- Horas únicas (primeras 5):', [...new Set(turnosFormateados.map(t => t.hora))].slice(0, 5));
-        } else {
-          console.log('- ⚠️ NO HAY TURNOS FORMATEADOS');
-        }
+        const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
+          const estado = determinarEstadoTurno(turno);
+          
+          return {
+            id: turno.id,
+            dia: obtenerDiaSemana(turno.fecha),
+            hora: formatearHora(turno.horaInicio),
+            precio: turno.precio,
+            estado,
+            fecha: turno.fecha,
+            reservado: turno.reservado,
+            deshabilitado: turno.deshabilitado,
+            alquilerId: turno.alquilerId
+          };
+        });
+        
+        console.log('📊 Resumen de turnos formateados:', {
+          total: turnosFormateados.length,
+          disponibles: turnosFormateados.filter(t => t.estado === 'disponible').length,
+          reservados: turnosFormateados.filter(t => t.estado === 'reservado').length,
+          ocupados: turnosFormateados.filter(t => t.estado === 'ocupado').length,
+          finalizados: turnosFormateados.filter(t => t.estado === 'finalizado').length,
+          deshabilitados: turnosFormateados.filter(t => t.estado === 'deshabilitado').length
+        });
         
         setTurnos(turnosFormateados);
-        console.log('[DEBUG ReservaPage] ✅ Turnos CARGADOS y PASADOS a CalendarioTurnos:');
-        console.log('- Total turnos:', turnosFormateados.length);
-        console.log('- Estados disponibles:', turnosFormateados.filter(t => t.estado === 'disponible').length);
-        console.log('- Estados reservados:', turnosFormateados.filter(t => t.estado === 'reservado').length);
-        console.log('[DEBUG ReservaPage] Setting loadingTurnos=false');
         
       } catch (error) {
-        console.error('[ERROR ReservaPage] ❌ Error cargando turnos:', error);
-        console.error('[ERROR ReservaPage] Stack:', error.stack);
+        console.error('Error cargando datos:', error);
+        setError(error.message);
       } finally {
-        console.log('[DEBUG ReservaPage] Setting loadingTurnos=false (finally block)');
-        setLoadingTurnos(false);
+        setLoading(false);
       }
     };
 
-    cargarTurnos();
-  }, [canchaId]);
+    cargarDatos();
+  }, [canchaId, cargarReseñas]);
 
   const canchaMostrada = useMemo(() => {
     if (!cancha || !complejo) return null;
     
-    // Usar reseñas reales si están disponibles, sino valores por defecto
-    const infoReseñas = reseñasDeLaCancha.length > 0 
-      ? {
-          promedio: reseñasDeLaCancha.reduce((acc, r) => acc + r.puntaje, 0) / reseñasDeLaCancha.length,
-          cantidad: reseñasDeLaCancha.length
-        }
-      : { promedio: 0, cantidad: 0 };
+    // Usar el puntaje y cantidad de reseñas del backend directamente (fuente de verdad)
+    // El campo cancha.puntaje viene actualizado del backend
+    const puntajeCancha = cancha.puntaje || 0;
+    const cantidadReseñasCancha = reseñasDeLaCancha.length;
     
     // Adaptar datos para compatibilidad con componentes
     const coordenadas = getCoordinatesForLocation(complejo?.domicilio);
@@ -319,8 +336,8 @@ function ReservaPage() {
       ...cancha,
       id: parseInt(canchaId),
       nroCancha: cancha.nroCancha, // Asegurar que use el campo correcto
-      puntaje: infoReseñas.promedio,
-      cantidadReseñas: infoReseñas.cantidad,
+      puntaje: puntajeCancha, // Usar puntaje del backend
+      cantidadReseñas: cantidadReseñasCancha,
       imageUrl: imageUrl,
       otrasImagenes: otrasImagenes, // Agregar otras imágenes
       turnos: turnos,
@@ -412,6 +429,8 @@ function ReservaPage() {
       });
 
       console.log('🎯 Enviando turnosIds:', turnosIds);
+      console.log('👤 Usuario actual:', user);
+      console.log('🆔 Usuario ID que se enviará:', parseInt(user.id));
 
       // Llamar al backend para crear el alquiler/reserva
       const response = await fetch(`${API_BASE_URL}/alquileres`, {
@@ -521,14 +540,7 @@ function ReservaPage() {
         <InfoCancha cancha={canchaMostrada} complejo={canchaMostrada.complejo} deporte={deporte?.nombre} />
         
         {/* Mostrar calendario para todos los usuarios */}
-        <CalendarioTurnos 
-          turnosDisponibles={turnos || []} 
-          onConfirmarReserva={handleConfirmarReserva} 
-          canchaId={canchaId}
-          loading={loadingTurnos}
-        />
-        
-
+        <CalendarioTurnos turnosDisponibles={turnos || []} onConfirmarReserva={handleConfirmarReserva} canchaId={canchaId} />
         
         <CarruselReseñas reseñas={reseñasDeLaCancha} />
       </div>
