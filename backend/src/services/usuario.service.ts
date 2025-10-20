@@ -1,7 +1,7 @@
 // backend/src/services/usuario.service.ts
 import prisma from '../config/prisma';
 import { Prisma, Usuario} from '@prisma/client';
-import { CreateUsuarioRequest, UpdateUsuarioRequest } from '../types/usuario.type';
+import { CrearUsuarioData, ActualizarUsuarioData } from '../validations/usuario.validation';
 import bcrypt from 'bcrypt';
 
 export async function getAllUsuarios(): Promise<Usuario[]> {
@@ -45,7 +45,7 @@ export async function getUsuarioById(id: number): Promise<Usuario | null>{
 export async function getUsuarioByEmail(email: string): Promise<Usuario | null>{
     // Primero buscar en Usuario (campo 'correo')
     let usuario = await prisma.usuario.findUnique({ 
-        where: { correo: email }
+        where: { email }
     });
     
     // Si no se encuentra, buscar en Administrador
@@ -84,26 +84,15 @@ export async function getUsuarioByDni(dni: string): Promise<Usuario | null>{
     return usuario;
 }
 
-export async function createUsuario(data: CreateUsuarioRequest): Promise<Usuario>{
+export async function createUsuario(data: CrearUsuarioData): Promise<Usuario>{
     // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    
-    const created = await prisma.usuario.create({
-        data: {
-            apellido: data.lastname,
-            nombre: data.name,
-            dni: data.dni, // Ya es string
-            correo: data.correo,
-            password: hashedPassword,
-            telefono: data.telefono,
-            rol: data.rol || 'CLIENTE',
-            image: data.image
-        },
-    });
+    data.password = hashedPassword;
+    const created = await prisma.usuario.create({ data });
     return created;
 }
 
-export async function updateUsuario(id: number, updateData: UpdateUsuarioRequest): Promise<Usuario>{
+export async function updateUsuario(id: number, updateData: ActualizarUsuarioData): Promise<Usuario>{
     try {
         // Si se actualiza la contraseña, hashearla
         const dataToUpdate: any = { ...updateData };

@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 // Schema específico para registro público (más flexible)
 export const registroSchema = z.object({
-  body: z.object({
     nombre: z.string()
       .min(1, "El nombre es requerido")
       .max(100, "El nombre no puede exceder 100 caracteres")
@@ -15,7 +14,7 @@ export const registroSchema = z.object({
       .regex(/^\d+$/, 'El DNI debe contener solo números')
       .min(7, "El DNI debe tener al menos 7 dígitos")
       .max(8, "El DNI no puede exceder 8 dígitos"),
-    email: z.string()
+    email: z
       .email("Debe ser un email válido")
       .max(150, "El email no puede exceder 150 caracteres"),
     password: z.string()
@@ -24,7 +23,7 @@ export const registroSchema = z.object({
     telefono: z.string()
       .max(30, "El teléfono no puede exceder 30 caracteres")
       .optional(),
-    tipoUsuario: z.enum(["CLIENTE", "DUENIO"]).optional(),
+    rol: z.enum(["CLIENTE", "DUENIO"]).optional(),
     solicitudComplejo: z.object({
       cuit: z.string()
         .min(11, "El CUIT debe tener 11 dígitos")
@@ -45,15 +44,12 @@ export const registroSchema = z.object({
         .positive("El ID de localidad debe ser un número positivo"),
       imagen: z.string().optional()
     }).optional()
-  })
-});
+  });
 
 export const loginSchema = z.object({
-  body: z.object({
-    email: z.string(),
-    password: z.string()
-  })
+  email: z.string(),
+  password: z.string()
 });
 
-export type RegistroUsuarioBody = z.infer<typeof registroSchema>['body'];
-export type LoginUsuarioBody = z.infer<typeof loginSchema>['body'];
+export type RegistroUsuarioBody = z.infer<typeof registroSchema>;
+export type LoginUsuarioBody = z.infer<typeof loginSchema>;

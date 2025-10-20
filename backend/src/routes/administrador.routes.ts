@@ -6,23 +6,22 @@ const router = Router();
 
 router.get(
   '/',
-  authenticate,
-  authorize('ADMINISTRADOR'),
   administradorController.obtenerAdministradores
 );
 
 router.get(
   '/:id',
-  authenticate,
-  authorize('ADMINISTRADOR'),
   administradorController.obtenerAdministradorPorId
 );
 
 router.post(
   '/',
-  authenticate,
-  authorize('ADMINISTRADOR'),
   administradorController.crearAdministrador
+);
+
+router.delete(
+  '/:id',
+  administradorController.eliminarAdministrador
 );
 
 export default router;

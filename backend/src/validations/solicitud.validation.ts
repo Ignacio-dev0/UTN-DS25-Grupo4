@@ -1,18 +1,7 @@
 import { z } from "zod";
 import { EstadoSolicitud } from "@prisma/client";
 
-export const estadoSolicitudSchema = z.enum([
-    EstadoSolicitud.APROBADA,
-    EstadoSolicitud.PENDIENTE,
-    EstadoSolicitud.RECHAZADA
-]);
-
 export const updateSolicitudSchema = z.object({
-    params: z.object({
-        id: z.coerce.number().int().positive()
-    }),
-    body: z.object({
-        estado: estadoSolicitudSchema.optional(),
-        adminId: z.int().positive('El id del Administrador eber ser un numero positivo').optional()
-    })
+  estado: z.enum(EstadoSolicitud).optional(),
+  adminId: z.int().positive('El id del Administrador eber ser un numero positivo').optional()
 });

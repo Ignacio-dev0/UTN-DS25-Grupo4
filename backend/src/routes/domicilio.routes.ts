@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as domicilioController from "../controllers/domicilio.controller";
-import { validate } from "../middlewares/validate";
+import validate from "../middlewares/validate";
 import { crearDomicilioShema, actualizarDomicilioShema } from "../validations/domicilio.validation";
 
 const router = Router();

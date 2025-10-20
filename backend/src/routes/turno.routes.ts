@@ -1,9 +1,9 @@
 import { Router } from "express";
 import * as turnoController from "../controllers/turno.controllers";
 import * as turnoAutomaticoController from "../controllers/turnoAutomatico.controller";
-import { validate } from "../middlewares/validate";
+import validate from "../middlewares/validate";
 import { deduplicateRequests } from "../middlewares/deduplicateRequests";
-import { crearTurnoSchema, actualizarTurnoSchema, turnoIdSchema, turnosCanchaSchema } from "../validations/turno.validation";
+import { crearTurnoSchema, actualizarTurnoSchema } from "../validations/turno.validation";
 import { authenticate, authorize } from "../middlewares/auth.middleware";
 
 const router = Router()
@@ -59,7 +59,6 @@ router.get(
   '/:id',
   authenticate,
   authorize('DUENIO', 'ADMINISTRADOR'),
-  validate(turnoIdSchema),
   turnoController.getTurnoById
 );
 
@@ -77,7 +76,6 @@ router.put(
   '/:id',
   authenticate,
   authorize('DUENIO'),
-  validate(turnoIdSchema),
   validate(actualizarTurnoSchema),
   turnoController.updateTurno
 );
@@ -86,7 +84,6 @@ router.delete(
   '/:id',
   authenticate,
   authorize('DUENIO'),
-  validate(turnoIdSchema),
   turnoController.deleteTurno
 );
 

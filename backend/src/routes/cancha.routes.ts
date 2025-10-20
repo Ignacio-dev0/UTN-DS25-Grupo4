@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { validate } from '../middlewares/validate';
-import { createCanchaSchema, updateCanchaSchema } from '../validations/cancha.validation';
+import validate from '../middlewares/validate';
+import * as canchaSchema from '../validations/cancha.validation';
 import { authenticate, authorize } from "../middlewares/auth.middleware";
 import * as canchaController from '../controllers/cancha.controller';
 
@@ -17,7 +17,7 @@ router.post(
   '/',
   authenticate,
   authorize('DUENIO'),
-  validate(createCanchaSchema),
+  validate(canchaSchema.createCancha),
   canchaController.crearCancha
 );
 
@@ -38,7 +38,7 @@ router.put(
   '/:id',
   authenticate,
   authorize('DUENIO'),
-  validate(updateCanchaSchema),
+  validate(canchaSchema.updateCancha),
   canchaController.actualizarCancha
 );
 

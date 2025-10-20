@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validate } from '../middlewares/validate';
+import validate from '../middlewares/validate';
 import { authenticate, authorize } from "../middlewares/auth.middleware";
 import { crearPagoShema, actulizarPagoShema } from '../validations/pago.validation';
 import * as pagoController from "../controllers/pago.controller";

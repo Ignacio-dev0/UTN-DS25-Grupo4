@@ -1,6 +1,6 @@
 // backend/src/routes/complejo.routes.ts
 import { Router } from 'express';
-import { validate } from '../middlewares/validate';
+import validate from '../middlewares/validate';
 import { authenticate, authorize } from "../middlewares/auth.middleware";
 import * as complejoController from '../controllers/complejo.controller';
 import * as validationComplejo from "../validations/complejo.validation";
@@ -35,7 +35,6 @@ router.get(
   '/:id',
   authenticate,
   authorize('DUENIO', 'ADMINISTRADOR', 'CLIENTE'),
-  validate(validationComplejo.getComplejoByIdSchema),
   complejoController.obtenerComplejoPorId
 );
 
@@ -52,8 +51,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  authorize('DUENIO'),
-  validate(validationComplejo.getComplejoByIdSchema),
+  authorize('ADMINNISTRADOR'),
   complejoController.eliminarComplejo
 );
 

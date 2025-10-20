@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { validate } from "../middlewares/validate";
-import { createAlquilerSchema, updateAlquilerSchema, pagarAlquilerSchema } from "../validations/alquiler.validation";
+import validate from "../middlewares/validate";
+import * as alquilerSchema from "../validations/alquiler.validation";
 import { authenticate, authorize } from "../middlewares/auth.middleware";
 import * as alquilerController from "../controllers/alquiler.controller";
 
@@ -28,16 +28,17 @@ router.get(
 );
 
 router.post(
-  '/',authenticate,
+  '/',
+  authenticate,
   authorize('CLIENTE'),
-  validate(createAlquilerSchema),
+  validate(alquilerSchema.crearAlquiler),
   alquilerController.crearAlquiler
 );
 
 router.post(
   '/:id/pagar',authenticate,
   authorize('CLIENTE'),
-  validate(pagarAlquilerSchema),
+  validate(alquilerSchema.pagarAlquiler),
   alquilerController.pagarAlquiler
 );
 
@@ -45,7 +46,7 @@ router.patch(
   '/:id',
   authenticate,
   authorize('ADMINISTRADOR'),
-  validate(updateAlquilerSchema),
+  validate(alquilerSchema.actualizarAlquiler),
   alquilerController.actualizarAlquiler
 );
 

@@ -1,69 +1,10 @@
 // backend/src/services/cancha.service.ts
 import prisma from '../config/prisma';
-import { CreateCanchaRequest, UpdateCanchaRequest } from '../types/cancha.types'
-import { EstadoAlquiler } from '@prisma/client';
+import { CanchaFull } from '../types/cancha.types'
+import { Prisma, EstadoAlquiler } from '@prisma/client';
+import { CreateCanchaData, UpdateCanchaData } from '../validations/cancha.validation';
 
-// Función para calcular el puntaje promedio de una cancha basado en sus reseñas
-export async function calcularPuntajeCancha(canchaId: number): Promise<number> {
-  try {
-    const resenias = await prisma.resenia.findMany({
-      where: {
-        alquiler: {
-          turnos: {
-            some: {
-              canchaId: canchaId
-            }
-          }
-        }
-      },
-      select: {
-        puntaje: true
-      }
-    });
-
-    if (resenias.length === 0) {
-      return 0; // Sin reseñas, puntaje 0
-    }
-
-    const sumaTotal = resenias.reduce((sum, resenia) => sum + resenia.puntaje, 0);
-    return Math.round((sumaTotal / resenias.length) * 10) / 10; // Redondear a 1 decimal
-  } catch (error) {
-    console.error('Error calculando puntaje de cancha:', error);
-    return 0;
-  }
-}
-
-// Función para calcular el puntaje promedio de un complejo basado en todas las reseñas de sus canchas
-export async function calcularPuntajeComplejo(complejoId: number): Promise<number> {
-  try {
-    const resenias = await prisma.resenia.findMany({
-      where: {
-        alquiler: {
-          turnos: {
-            some: {
-              cancha: {
-                complejoId: complejoId
-              }
-            }
-          }
-        }
-      },
-      select: {
-        puntaje: true
-      }
-    });
-
-    if (resenias.length === 0) {
-      return 0; // Sin reseñas, puntaje 0
-    }
-
-    const sumaTotal = resenias.reduce((sum, resenia) => sum + resenia.puntaje, 0);
-    return Math.round((sumaTotal / resenias.length) * 10) / 10; // Redondear a 1 decimal
-  } catch (error) {
-    console.error('Error calculando puntaje de complejo:', error);
-    return 0;
-  }
-}
+// Los puntajes de cancha y complejo se actualizan cada vez que se instancia una reseña
 
 // Función para recalcular el precio "desde" de una cancha
 export async function recalcularPrecioDesde(canchaId: number) {
@@ -124,7 +65,7 @@ export async function recalcularPrecioDesde(canchaId: number) {
     }
 }
 
-export async function crearCancha(canchaData: any) {
+export async function crearCancha(canchaData: CreateCanchaData) {
 	try {
 		console.log('🔧 CANCHA SERVICE - crearCancha called with data:', JSON.stringify(canchaData, null, 2));
 		
@@ -202,9 +143,13 @@ export async function obtenerCanchas(incluirInactivas: boolean = false) {
     return obtenerCanchasConFiltros(incluirInactivas, {});
 }
 
-export async function obtenerCanchasConFiltros(incluirInactivas: boolean = false, filtros: any = {}) {
+export async function obtenerCanchasConFiltros(
+  incluirInactivas: boolean = false,
+  filtros: any = {}
+): Promise<CanchaFull[]> {
+
     // Construir filtros dinámicos
-    const where: any = {
+    const where: Prisma.CanchaWhereInput = {
         ...(incluirInactivas ? {} : { activa: true })
     };
 
@@ -234,50 +179,8 @@ export async function obtenerCanchasConFiltros(incluirInactivas: boolean = false
 
     const canchas = await prisma.cancha.findMany({
         where,
-        select: {
-            id: true,
-            nombre: true,
-            nroCancha: true,
-            descripcion: true,
-            puntaje: true,
-            precioDesde: true,
-            image: true,
-            activa: true,
-            precioHora: true,
-            deporte: {
-                select: {
-                    id: true,
-                    nombre: true,
-                    icono: true
-                }
-            },
-            complejo: {
-                select: {
-                    id: true,
-                    nombre: true,
-                    domicilio: {
-                        select: {
-                            id: true,
-                            calle: true,
-                            altura: true,
-                            localidad: {
-                                select: {
-                                    id: true,
-                                    nombre: true
-                                }
-                            }
-                        }
-                    }
-                }
-            },
+        include: {
             cronograma: {
-                select: {
-                    id: true,
-                    diaSemana: true,
-                    horaInicio: true,
-                    horaFin: true,
-                    precio: true
-                },
                 orderBy: {
                     precio: 'asc'
                 },
@@ -513,75 +416,21 @@ export async function obtenerCanchaPorId(id: number, permitirInactiva: boolean =
 		throw error;
 	}
 
-	// Calcular puntajes dinámicos
-	const puntajeCancha = await calcularPuntajeCancha(cancha.id);
-	const puntajeComplejo = await calcularPuntajeComplejo(cancha.complejo.id);
-
-	return {
-		...cancha,
-		puntaje: puntajeCancha, // Puntaje dinámico de la cancha
-		complejo: {
-			...cancha.complejo,
-			puntaje: puntajeComplejo // Puntaje dinámico del complejo
-		}
-	};
+	return cancha;
 };
 
-export async function obtenerCanchasPorComplejoId(complejoId: number, incluirInactivas: boolean = false) {
+export async function obtenerCanchasPorComplejoId(
+  complejoId: number,
+  incluirInactivas: boolean = false
+): Promise<CanchaFull[]> {
   const canchas = await prisma.cancha.findMany({
     where: {
-      complejoId: complejoId,
+      complejoId,
       ...(incluirInactivas ? {} : { activa: true })
     },
-    select: {
-      id: true,
-      nombre: true,
-      nroCancha: true,
-      descripcion: true,
-      puntaje: true,
-      image: true,
-      activa: true,
-      precioHora: true,
-      deporte: {
-        select: {
-          id: true,
-          nombre: true,
-          icono: true
-        }
-      },
-      complejo: {
-        select: {
-          id: true,
-          nombre: true,
-          domicilio: {
-            select: {
-              id: true,
-              calle: true,
-              altura: true,
-              localidad: {
-                select: {
-                  id: true,
-                  nombre: true
-                }
-              }
-            }
-          }
-        }
-      },
-      cronograma: {
-        select: {
-          id: true,
-          diaSemana: true,
-          horaInicio: true,
-          horaFin: true,
-          precio: true
-        },
-        orderBy: {
-          precio: 'asc'
-        },
-        take: 5
-      }
-    },
+    include: {
+      cronograma: true
+    }
   });
 
   // Agregar precio mínimo de cada cancha (solo del día actual)
@@ -606,7 +455,7 @@ export async function obtenerCanchasPorComplejoId(complejoId: number, incluirIna
   return canchasConPrecios;
 };
 
-export async function actualizarCancha (id: number, data: UpdateCanchaRequest) {
+export async function actualizarCancha (id: number, data: UpdateCanchaData) {
 	const { deporteId, ...cancha } = data;
   
   const updateData: any = { ...cancha };
@@ -663,3 +512,7 @@ export async function eliminarCancha(id: number) {
   });
 };
 
+export async function esDuenioDeCancha(canchaId: number, usuarioId: number): Promise<boolean> {
+  const cancha = await obtenerCanchaPorId(canchaId);
+  return cancha.complejo.usuarioId === usuarioId;
+}

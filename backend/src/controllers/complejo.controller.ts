@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as complejoService from '../services/complejo.service';
 
 export const crearComplejo = async (req: Request, res: Response, next:NextFunction) => {
-try {
+  try {
     // Aquí podrías agregar validaciones de los datos que vienen en req.body
     const nuevoComplejo = await complejoService.createComplejo(req.body);
     res.status(201).json(nuevoComplejo);
@@ -74,16 +74,13 @@ export const obtenerComplejoPorId = async (req: Request, res: Response, next:Nex
 
 export const actualizarComplejo = async (req: Request, res: Response, next:NextFunction) => {
   try {
-    console.log('=== ACTUALIZANDO COMPLEJO ===');
-    console.log('ID del complejo:', req.params.id);
-    console.log('Datos recibidos en req.body:', JSON.stringify(req.body, null, 2));
-    console.log('Tipo de datos:');
-    Object.keys(req.body).forEach(key => {
-      console.log(`  ${key}: ${typeof req.body[key]} = ${req.body[key]}`);
-    });
-    
-    const id = parseInt(req.params.id);
-    const complejoActualizado = await complejoService.updateComplejo(id, req.body);
+    const complejoId = Number(req.params.id);
+
+    if(!await complejoService.esDuenioDeComplejo(complejoId, req.usuario.id)) {
+      throw new Error('No tienes permiso para actualizar este complejo.');
+    }
+
+    const complejoActualizado = await complejoService.updateComplejo(complejoId, req.body);
     res.status(200).json({
       complejoActualizado,
       message:('complejo actualizado')
@@ -100,7 +97,7 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
 
 export const eliminarComplejo = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number(req.params.id);
     console.log(`🗑️ [${new Date().toISOString()}] Attempting to delete complejo with ID: ${id}`);
     
     await complejoService.deleteComplejo_sol_dom(id);

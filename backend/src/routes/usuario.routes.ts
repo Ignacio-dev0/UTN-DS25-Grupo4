@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as usuarioController from "../controllers/usuario.controller";
-import { validate } from "../middlewares/validate";
+import validate from "../middlewares/validate";
 import * as usuarioSchema from "../validations/usuario.validation";
 import multer from 'multer';
 import path from 'path';
@@ -45,8 +45,6 @@ const uploadPerfil = multer({ storage: perfilStorage });
 // Rutas CRUD para usuarios
 router.post(
   '/',
-  authenticate,
-  authorize('ADMINISTRADOR'),
   validate(usuarioSchema.crearUsuario),
   usuarioController.crearUsuario
 );
@@ -58,13 +56,11 @@ router.get(
 
 router.get(
   "/:id",
-  validate(usuarioSchema.getUsuarioById),
   usuarioController.obtenerUsuarioPorId
 );
 
 router.get(
   "/email/:email",
-  validate(usuarioSchema.getUsuarioByEmail),
   usuarioController.obtenerUsuarioPorEmail
 );
 
@@ -78,7 +74,6 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  validate(usuarioSchema.getUsuarioById),
   usuarioController.eliminarUsuario
 );
 

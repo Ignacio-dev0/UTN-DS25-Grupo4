@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as localidadController from "../controllers/localidad.controller";
-import { validate } from "../middlewares/validate";
+import validate from "../middlewares/validate";
 import { actualizarLocalidad, crearLocalidad } from "../validations/localidad.validation";
 import { authenticate, authorize } from "../middlewares/auth.middleware";
 
