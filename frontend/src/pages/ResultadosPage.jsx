@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 import Buscador from '../components/Buscador.jsx';
 import CanchaCard from '../components/CanchaCard.jsx';
 import { getCanchasConFiltros } from '../services/search.js';
+
+const CANCHAS_POR_PAGINA = 8;
 
 function ResultadosPage() {
   const [searchParams] = useSearchParams();
   const [canchas, setCanchas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   const localidadQuery = searchParams.get('localidad');
   const deporteQuery = searchParams.get('deporte');
@@ -19,6 +23,7 @@ function ResultadosPage() {
     const cargarCanchas = async () => {
       try {
         setLoading(true);
+        setPaginaActual(1); // Resetear a página 1 cuando cambian los filtros
         
         // Preparar filtros para enviar al backend
         const filtros = {};
@@ -47,6 +52,26 @@ function ResultadosPage() {
     cargarCanchas();
   }, [localidadQuery, deporteQuery, fechaQuery, horaQuery]);
 
+  // Calcular paginación
+  const totalPaginas = Math.ceil(canchas.length / CANCHAS_POR_PAGINA);
+  const indiceInicio = (paginaActual - 1) * CANCHAS_POR_PAGINA;
+  const indiceFin = indiceInicio + CANCHAS_POR_PAGINA;
+  const canchasPaginadas = canchas.slice(indiceInicio, indiceFin);
+
+  const irAPaginaAnterior = () => {
+    if (paginaActual > 1) {
+      setPaginaActual(paginaActual - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const irAPaginaSiguiente = () => {
+    if (paginaActual < totalPaginas) {
+      setPaginaActual(paginaActual + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <div className="pb-4">
@@ -72,9 +97,9 @@ function ResultadosPage() {
                 {localidadQuery && ` en ${localidadQuery}`}
                 {deporteQuery && ` para ${deporteQuery}`}
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
-                {canchas.length > 0 ? (
-                  canchas.map(cancha => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-6">
+                {canchasPaginadas.length > 0 ? (
+                  canchasPaginadas.map(cancha => (
                     <CanchaCard key={cancha.id} cancha={cancha} />
                   ))
                 ) : (
@@ -84,6 +109,43 @@ function ResultadosPage() {
                   </div>
                 )}
               </div>
+
+              {/* Paginación */}
+              {totalPaginas > 1 && (
+                <div className="flex items-center justify-center gap-4 mt-8">
+                  <button
+                    onClick={irAPaginaAnterior}
+                    disabled={paginaActual === 1}
+                    className={`p-2 rounded-full transition-all ${
+                      paginaActual === 1
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-white shadow-lg hover:bg-gray-100 active:bg-gray-200 border-2 border-secondary'
+                    }`}
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeftIcon className="w-6 h-6" />
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-semibold text-gray-700">
+                      Página {paginaActual} de {totalPaginas}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={irAPaginaSiguiente}
+                    disabled={paginaActual === totalPaginas}
+                    className={`p-2 rounded-full transition-all ${
+                      paginaActual === totalPaginas
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-white shadow-lg hover:bg-gray-100 active:bg-gray-200 border-2 border-secondary'
+                    }`}
+                    aria-label="Página siguiente"
+                  >
+                    <ChevronRightIcon className="w-6 h-6" />
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

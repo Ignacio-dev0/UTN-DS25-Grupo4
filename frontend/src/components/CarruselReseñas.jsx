@@ -79,9 +79,10 @@ function CarruselReseñas({ reseñas }) {
         {totalReseñas > RESEÑAS_VISIBLES && (
           <button 
             onClick={handleAnterior}
-            className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+            className="p-3 rounded-full bg-white shadow-lg hover:bg-gray-100 active:bg-gray-200 transition-all flex-shrink-0 border-2 border-secondary"
+            aria-label="Anterior"
           >
-            <ChevronLeftIcon className="w-6 h-6 text-secondary" />
+            <ChevronLeftIcon className="w-8 h-8 text-secondary" />
           </button>
         )}
 
@@ -110,9 +111,10 @@ function CarruselReseñas({ reseñas }) {
         {totalReseñas > RESEÑAS_VISIBLES && (
           <button 
             onClick={handleSiguiente}
-            className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0"
+            className="p-3 rounded-full bg-white shadow-lg hover:bg-gray-100 active:bg-gray-200 transition-all flex-shrink-0 border-2 border-secondary"
+            aria-label="Siguiente"
           >
-            <ChevronRightIcon className="w-6 h-6 text-secondary" />
+            <ChevronRightIcon className="w-8 h-8 text-secondary" />
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
@@ -6,6 +7,7 @@ import { API_BASE_URL } from '../config/api.js';
 
 function EstadoSolicitudPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [solicitud, setSolicitud] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,6 +19,18 @@ function EstadoSolicitudPage() {
           const data = await response.json();
           const solicitudUsuario = data.solicitudes?.find(s => s.usuarioId === user.id);
           setSolicitud(solicitudUsuario);
+
+          // Si la solicitud está aprobada y ya fue vista antes, redirigir a Mi Complejo
+          if (solicitudUsuario?.estado === 'APROBADA' && solicitudUsuario?.complejo) {
+            const solicitudVistaKey = `solicitud_vista_${user.id}`;
+            const yaVista = localStorage.getItem(solicitudVistaKey);
+            
+            if (yaVista === 'true') {
+              // Redirigir directamente a Mi Complejo
+              navigate(`/micomplejo/${solicitudUsuario.complejo.id}`);
+              return;
+            }
+          }
         }
       } catch (error) {
         console.error('Error cargando solicitud:', error);
@@ -28,7 +42,7 @@ function EstadoSolicitudPage() {
     if (user?.id) {
       fetchSolicitud();
     }
-  }, [user?.id]);
+  }, [user?.id, navigate]);
 
   if (loading) {
     return <LoadingSpinner message="Verificando estado de solicitud..." />;
@@ -122,7 +136,13 @@ function EstadoSolicitudPage() {
 
         {solicitud.estado === 'APROBADA' && (
           <button
-            onClick={() => window.location.href = `/micomplejo/${solicitud.complejo.id}`}
+            onClick={() => {
+              // Marcar la solicitud como vista
+              const solicitudVistaKey = `solicitud_vista_${user.id}`;
+              localStorage.setItem(solicitudVistaKey, 'true');
+              // Navegar a Mi Complejo
+              navigate(`/micomplejo/${solicitud.complejo.id}`);
+            }}
             className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors"
           >
             Gestionar Mi Complejo
