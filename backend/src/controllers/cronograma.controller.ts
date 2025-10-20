@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
-import { recalcularPrecioDesde } from '../services/cancha.service';
+// import { recalcularPrecioDesde } from '../services/cancha.service';
 
 export const obtenerCronogramaCancha = async (req: Request, res: Response) => {
     try {
@@ -171,7 +171,7 @@ export const actualizarCronogramaCancha = async (req: Request, res: Response) =>
             });
             
             // Recalcular el precio "desde" de la cancha después de actualizar cronograma
-            await recalcularPrecioDesde(canchaIdNum);
+            // await recalcularPrecioDesde(canchaIdNum);
             
         } catch (transactionError) {
             console.error('❌ Error en la transacción de cronograma:', transactionError);

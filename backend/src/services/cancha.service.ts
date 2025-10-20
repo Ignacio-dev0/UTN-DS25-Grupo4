@@ -138,6 +138,122 @@ export async function obtenerCanchas(incluirInactivas: boolean = false) {
     });
 }
 
+interface FiltrosCanchas {
+    localidad?: string;
+    deporte?: string;
+    fecha?: string;
+    hora?: string;
+}
+
+export async function obtenerCanchasConFiltros(filtros: FiltrosCanchas, incluirInactivas: boolean = false) {
+    const where: any = {
+        ...(incluirInactivas ? {} : { activa: true }),
+        cronograma: {
+            some: {}
+        }
+    };
+
+    // Filtro por deporte
+    if (filtros.deporte) {
+        where.deporte = {
+            nombre: {
+                equals: filtros.deporte,
+                mode: 'insensitive'
+            }
+        };
+    }
+
+    // Filtro por localidad
+    if (filtros.localidad) {
+        where.complejo = {
+            domicilio: {
+                localidad: {
+                    nombre: {
+                        equals: filtros.localidad,
+                        mode: 'insensitive'
+                    }
+                }
+            }
+        };
+    }
+
+    // Filtro por fecha y hora (buscar canchas con turnos disponibles)
+    if (filtros.fecha && filtros.hora) {
+        const fechaBusqueda = new Date(filtros.fecha);
+        const horaMatch = filtros.hora.match(/(\d+):(\d+)/);
+        
+        if (horaMatch) {
+            const hora = parseInt(horaMatch[1]);
+            const minutos = parseInt(horaMatch[2]);
+            
+            // Buscar canchas que tengan turnos disponibles para esa fecha y hora
+            where.turnos = {
+                some: {
+                    fecha: fechaBusqueda,
+                    horaInicio: {
+                        gte: new Date(`1970-01-01T${hora.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:00.000Z`),
+                        lt: new Date(`1970-01-01T${(hora + 1).toString().padStart(2, '0')}:00:00.000Z`)
+                    },
+                    reservado: false
+                }
+            };
+        }
+    }
+
+    return prisma.cancha.findMany({
+        where,
+        select: {
+            id: true,
+            nombre: true,
+            nroCancha: true,
+            descripcion: true,
+            puntaje: true,
+            image: true,
+            activa: true,
+            precioHora: true,
+            deporte: {
+                select: {
+                    id: true,
+                    nombre: true,
+                    icono: true
+                }
+            },
+            complejo: {
+                select: {
+                    id: true,
+                    nombre: true,
+                    domicilio: {
+                        select: {
+                            id: true,
+                            calle: true,
+                            altura: true,
+                            localidad: {
+                                select: {
+                                    id: true,
+                                    nombre: true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            cronograma: {
+                select: {
+                    id: true,
+                    diaSemana: true,
+                    horaInicio: true,
+                    horaFin: true,
+                    precio: true
+                },
+                orderBy: {
+                    precio: 'asc'
+                },
+                take: 5
+            }
+        },
+    });
+}
+
 export async function obtenerCanchaPorId(id: number, permitirInactiva: boolean = false) {
 	const cancha = await prisma.cancha.findUnique({
 		where: { id },

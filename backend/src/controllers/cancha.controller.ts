@@ -31,7 +31,7 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
     // Verificar si se solicita incluir canchas inactivas (para dueños gestionando su complejo)
     const incluirInactivas = req.query.incluirInactivas === 'true';
     
-    // Obtener filtros adicionales para búsqueda (para implementación futura)
+    // Obtener filtros adicionales para búsqueda
     const filtros = {
       localidad: req.query.localidad as string,
       deporte: req.query.deporte as string,
@@ -39,9 +39,14 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
       hora: req.query.hora as string
     };
     
+    // Si hay filtros de búsqueda, usar la función con filtros
+    const tieneFiltros = filtros.localidad || filtros.deporte || filtros.fecha || filtros.hora;
+    
 		const canchas = complejoId ?
 			await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas) :
-			await canchaService.obtenerCanchas(incluirInactivas);
+			tieneFiltros ?
+				await canchaService.obtenerCanchasConFiltros(filtros, incluirInactivas) :
+				await canchaService.obtenerCanchas(incluirInactivas);
 
 		return res.status(200).json({
 				canchas,
