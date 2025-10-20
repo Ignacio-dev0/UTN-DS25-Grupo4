@@ -40,7 +40,7 @@ function CarruselReseñas({ reseñas }) {
 
   const totalReseñas = reseñas.length;
   
-  const CARD_WIDTH = 256; // ancho de tarjeta
+  const CARD_WIDTH = 280; // ancho de tarjeta (aumentado)
   const GAP = 24; // espacio entre tarjetas
   
   // Si hay menos o igual a RESEÑAS_VISIBLES, mostrar todas sin scroll
@@ -95,13 +95,15 @@ function CarruselReseñas({ reseñas }) {
           >
             {reseñas.map((reseña) => (
               // Contenedor de cada tarjeta de reseña
-              <div key={reseña.id} className="flex-shrink-0 w-64 h-48 bg-accent p-6 rounded-lg shadow-md flex flex-col justify-center">
+              <div key={reseña.id} className="flex-shrink-0 w-70 min-h-[12rem] bg-accent p-6 rounded-lg shadow-md flex flex-col justify-between">
                 {/* Contenido de la tarjeta */}
-                <p className="font-bold text-primary text-lg">{reseña.nombre}</p>
-                <div className="my-2">
-                  <StarRating puntaje={reseña.puntaje} />
+                <div>
+                  <p className="font-bold text-primary text-lg mb-2">{reseña.nombre}</p>
+                  <div className="mb-3">
+                    <StarRating puntaje={reseña.puntaje} />
+                  </div>
                 </div>
-                <p className="text-gray-700 italic text-sm leading-tight">"{reseña.comentario}"</p>
+                <p className="text-gray-700 italic text-sm leading-relaxed">"{reseña.comentario}"</p>
               </div>
             ))}
           </div>
