@@ -66,12 +66,78 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validar tamaño del archivo (máx 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen es demasiado grande. Por favor selecciona una imagen menor a 5MB.');
+        return;
+      }
+
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido.');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        onComplejoChange({ ...complejo, image: reader.result });
+        // Comprimir la imagen
+        compressImage(reader.result, (compressedImage) => {
+          onComplejoChange({ ...complejo, image: compressedImage });
+        });
+      };
+      reader.onerror = () => {
+        alert('Error al leer el archivo. Por favor intenta con otra imagen.');
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const compressImage = (base64Str, callback) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // Reducir aún más el tamaño máximo
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = img.width;
+      let height = img.height;
+
+      // Calcular nuevas dimensiones manteniendo la proporción
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      // Mejorar la calidad del redimensionamiento
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Comprimir más agresivamente a JPEG con 70% de calidad
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+      
+      // Verificar el tamaño final
+      const sizeInKB = (compressedBase64.length * 0.75) / 1024;
+      console.log(`📸 Imagen comprimida: ${sizeInKB.toFixed(2)} KB`);
+      
+      if (sizeInKB > 500) {
+        console.warn('⚠️ La imagen sigue siendo grande. Considere usar una imagen más pequeña.');
+      }
+      
+      callback(compressedBase64);
+    };
   };
   
   const handleInputChange = (e) => {
@@ -118,17 +184,23 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
         <img 
           src={
             complejo.image 
-              ? (complejo.image.startsWith('http') 
-                  ? `${complejo.image}?t=${Date.now()}` 
-                  : `${API_BASE_URL}${complejo.image}?t=${Date.now()}`)
+              ? (complejo.image.startsWith('data:image') 
+                  ? complejo.image  // Base64 directo
+                  : complejo.image.startsWith('http') 
+                    ? `${complejo.image}?t=${Date.now()}` 
+                    : `${API_BASE_URL}${complejo.image}?t=${Date.now()}`)
               : "/images/placeholder.png"
           } 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
           onClick={handleImageClick}
+          loading="lazy"
           onError={(e) => {
-            console.log('Error cargando imagen:', complejo.image);
-            e.target.src = "/images/placeholder.png";
+            console.error('❌ Error cargando imagen del complejo');
+            // Evitar loop infinito de errores
+            if (e.target.src !== "/images/placeholder.png") {
+              e.target.src = "/images/placeholder.png";
+            }
           }}
         />
         {isEditing && (

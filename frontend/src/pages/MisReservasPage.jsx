@@ -11,7 +11,7 @@ import { API_BASE_URL } from '../config/api.js';
 
 function MisReservasPage() {
     const navigate = useNavigate();
-    const { isAuthenticated, updateUser } = useAuth();
+    const { isAuthenticated, updateUser, user: contextUser } = useAuth();
     
     const [usuario, setUsuario] = useState({
         id: 1,
@@ -33,6 +33,8 @@ function MisReservasPage() {
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
     const [reservaParaPagar, setReservaParaPagar] = useState(null);
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const [profileLoaded, setProfileLoaded] = useState(false); // Track if profile was initially loaded
+    const [filtroEstado, setFiltroEstado] = useState('Todas'); // Estado para el filtro
 
     // Verificar autenticación al montar el componente
     useEffect(() => {
@@ -45,7 +47,8 @@ function MisReservasPage() {
 
     // Cargar datos del usuario al montar el componente
     useEffect(() => {
-        if (!isAuthenticated || isUpdatingProfile) return; // No cargar datos si no está autenticado o si estamos actualizando perfil
+        // Solo cargar perfil una vez al montar, no durante actualizaciones
+        if (!isAuthenticated || profileLoaded || isUpdatingProfile) return;
         
         const cargarPerfilUsuario = async () => {
             try {
@@ -67,6 +70,9 @@ function MisReservasPage() {
                     
                     // Cargar reservas reales del backend
                     await cargarReservas(response.user.id);
+                    
+                    // Marcar que el perfil fue cargado exitosamente
+                    setProfileLoaded(true);
                 } else if (!isUpdatingProfile) {
                     console.error('Error al cargar perfil:', response.error);
                     // Solo redirigir al login si no estamos actualizando perfil
@@ -83,22 +89,81 @@ function MisReservasPage() {
         };
 
         cargarPerfilUsuario();
-    }, [isAuthenticated, navigate, isUpdatingProfile]);
+    }, [isAuthenticated, navigate, isUpdatingProfile, profileLoaded]);
 
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
         try {
+            console.log('🔍 CARGANDO RESERVAS - Usuario ID:', usuarioId);
+            console.log('🔍 URL de consulta:', `${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
             const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
+            console.log('📡 Respuesta del servidor - Status:', response.status, 'OK:', response.ok);
             if (response.ok) {
                 const data = await response.json();
-                const reservasFormateadas = (data.alquileres || []).map(alquiler => {
+                console.log('📦 Datos recibidos:', data);
+                console.log('📊 Total de alquileres:', data.alquileres?.length || 0);
+                
+                // DEBUG: Ver estructura de UN alquiler completo
+                if (data.alquileres && data.alquileres.length > 0) {
+                    const primerAlquiler = data.alquileres[0];
+                    console.log('🔍 ESTRUCTURA DE ALQUILER:', primerAlquiler);
+                    if (primerAlquiler.turnos && primerAlquiler.turnos.length > 0) {
+                        console.log('🔍 ESTRUCTURA DE TURNO:', primerAlquiler.turnos[0]);
+                        console.log('  - horaInicio:', primerAlquiler.turnos[0].horaInicio, 'tipo:', typeof primerAlquiler.turnos[0].horaInicio);
+                        console.log('  - horaFin:', primerAlquiler.turnos[0].horaFin, 'tipo:', typeof primerAlquiler.turnos[0].horaFin);
+                    }
+                }
+                
+                // Filtrar solo alquileres que tengan turnos
+                const alquileresConTurnos = (data.alquileres || []).filter(alquiler => 
+                    alquiler.turnos && alquiler.turnos.length > 0
+                );
+                console.log('✅ Alquileres con turnos:', alquileresConTurnos.length);
+                
+                const reservasFormateadas = alquileresConTurnos.map(alquiler => {
                     const primerTurno = alquiler.turnos[0];
+                    
+                    // Validación adicional por si acaso
+                    if (!primerTurno || !primerTurno.fecha || !primerTurno.cancha) {
+                        console.warn('⚠️ Alquiler con datos incompletos:', alquiler.id);
+                        return null;
+                    }
+                    
                     const fecha = new Date(primerTurno.fecha);
-                    // Usar UTC para evitar problemas de timezone
-                    const fechaInicio = new Date(primerTurno.horaInicio);
-                    const horaInicio = `${fechaInicio.getUTCHours().toString().padStart(2, '0')}:${fechaInicio.getUTCMinutes().toString().padStart(2, '0')}`;
-                    const fechaFin = new Date(primerTurno.horaFin);
-                    const horaFin = `${fechaFin.getUTCHours().toString().padStart(2, '0')}:${fechaFin.getUTCMinutes().toString().padStart(2, '0')}`;
+                    
+                    // Parsear horaInicio (viene como DateTime ISO: "1970-01-01T20:00:00.000Z")
+                    let horaInicio, horaFin;
+                    
+                    if (typeof primerTurno.horaInicio === 'string') {
+                        // Si es string ISO, extraer la hora de la parte de tiempo
+                        // Formato: "1970-01-01T20:00:00.000Z" -> extraer "20:00"
+                        const timeMatch = primerTurno.horaInicio.match(/T(\d{2}:\d{2})/);
+                        if (timeMatch) {
+                            horaInicio = timeMatch[1]; // "20:00"
+                        } else {
+                            // Fallback: parsear como Date
+                            const d = new Date(primerTurno.horaInicio);
+                            horaInicio = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                        }
+                    } else if (primerTurno.horaInicio instanceof Date || primerTurno.horaInicio) {
+                        // Si es Date object, formatear a HH:MM
+                        const d = new Date(primerTurno.horaInicio);
+                        horaInicio = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                    } else {
+                        horaInicio = '00:00';
+                    }
+                    
+                    // DEBUG: Ver qué hora se parseó (solo para el primer alquiler)
+                    if (alquiler.id === data.alquileres[0]?.id) {
+                        console.log('🔍 DEBUG HORA INICIO:');
+                        console.log('  - primerTurno.horaInicio RAW:', primerTurno.horaInicio);
+                        console.log('  - horaInicio parseada:', horaInicio);
+                    }
+                    
+                    // Calcular horaFin sumando 1 hora a horaInicio (duración estándar de turno)
+                    const [horaInicioNum, minInicioNum] = horaInicio.split(':').map(Number);
+                    const horaFinNum = (horaInicioNum + 1) % 24; // Sumar 1 hora
+                    horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minInicioNum.toString().padStart(2, '0')}`;
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';
@@ -110,16 +175,26 @@ function MisReservasPage() {
                         estado = 'Finalizada';
                     }
 
-                    // Auto-finalizar turnos pasados que estaban confirmados
-                    const fechaActual = new Date();
-                    fechaActual.setHours(0, 0, 0, 0); // Solo comparar fechas, no horas
-                    const fechaTurno = new Date(fecha);
-                    fechaTurno.setHours(0, 0, 0, 0);
+                    // Auto-finalizar turnos pasados (comparando fecha Y hora)
+                    const ahora = new Date();
                     
-                    if (estado === 'Confirmada' && fechaTurno < fechaActual) {
+                    // Crear fecha/hora completa del turno de finalización
+                    const anio = fecha.getFullYear();
+                    const mes = fecha.getMonth();
+                    const dia = fecha.getDate();
+                    
+                    // Parsear hora de fin (formato "HH:MM")
+                    const [horaFinParsed, minFinParsed] = horaFin.split(':').map(Number);
+                    
+                    // Construir fecha/hora de fin del turno
+                    const fechaHoraFinTurno = new Date(anio, mes, dia, horaFinParsed, minFinParsed);
+                    
+                    console.log(`⏰ Turno ${alquiler.id}: Fin=${fechaHoraFinTurno.toLocaleString()}, Ahora=${ahora.toLocaleString()}, Estado=${estado}`);
+                    
+                    // Si el turno ya terminó (hora de fin pasó), marcar como finalizado
+                    if ((estado === 'Confirmada' || estado === 'Pendiente') && ahora > fechaHoraFinTurno) {
                         estado = 'Finalizada';
-                        // TODO: Aquí se podría hacer una llamada al backend para actualizar el estado
-                        // del alquiler a FINALIZADO si se requiere persistir el cambio
+                        console.log(`🏁 ✅ Turno auto-finalizado: ${alquiler.id}`);
                     }
 
                     // Formatear fecha a DD/MM/YYYY
@@ -140,8 +215,12 @@ function MisReservasPage() {
                     };
                 });
                 
+                // Filtrar los null (alquileres con datos incompletos)
+                const reservasValidas = reservasFormateadas.filter(r => r !== null);
+                console.log('✅ Reservas válidas después de formatear:', reservasValidas.length);
+                
                 // Ordenar reservas por estado (pendientes primero) y luego por fecha más reciente
-                const reservasOrdenadas = reservasFormateadas.sort((a, b) => {
+                const reservasOrdenadas = reservasValidas.sort((a, b) => {
                     // Definir prioridad de estados
                     const prioridades = {
                         'Pendiente': 1,
@@ -167,7 +246,7 @@ function MisReservasPage() {
                 setReservas(reservasOrdenadas);
                 
                 // Calcular turnos finalizados para el sistema de niveles
-                const finalizadas = reservasFormateadas.filter(r => r.estado === 'Finalizada').length;
+                const finalizadas = reservasValidas.filter(r => r.estado === 'Finalizada').length;
                 setTurnosFinalizados(finalizadas);
             }
         } catch (error) {
@@ -357,36 +436,51 @@ function MisReservasPage() {
                 console.log('Actualizando usuario local con:', updatedUserData);
                 setUsuario(updatedUserData);
                 
-                // Actualizar también el contexto de autenticación
+                // Mapear el rol del backend al formato del frontend
+                const mapearRol = (rolBackend) => {
+                    const roleMap = {
+                        'ADMINISTRADOR': 'admin',
+                        'DUENIO': 'owner',
+                        'CLIENTE': 'normal'
+                    };
+                    return roleMap[rolBackend] || contextUser.rol; // Mantener el rol actual si no encuentra match
+                };
+                
+                // Actualizar también el contexto de autenticación con TODOS los datos necesarios
+                const rolMapeado = mapearRol(response.user.rol);
                 const contextUserData = {
-                    ...response.user,
-                    role: response.user.rol,
-                    email: response.user.correo,
+                    ...contextUser, // Mantener todos los datos del contexto actual
+                    ...response.user, // Sobrescribir con los datos actualizados del servidor
+                    rol: rolMapeado, // Usar el rol mapeado al formato del frontend
+                    role: rolMapeado, // También mantener 'role' para compatibilidad
+                    correo: response.user.correo || contextUser.email || contextUser.correo,
+                    email: response.user.correo || contextUser.email || contextUser.correo,
                     profileImageUrl: nuevaImagenUrl,
-                    // Mantener los campos necesarios del contexto
-                    id: response.user.id || usuario.id,
                     nombre: response.user.nombre || datosActualizados.nombre,
-                    apellido: response.user.apellido || usuario.apellido,
-                    dni: response.user.dni || usuario.dni,
                     telefono: response.user.telefono || datosActualizados.telefono,
                     direccion: response.user.direccion || datosActualizados.direccion
                 };
                 
+                console.log('✅ Actualizando contexto con:', contextUserData);
                 updateUser(contextUserData);
                 
                 // Mostrar mensaje de éxito
-                console.log('Perfil actualizado exitosamente');
-                alert('Perfil actualizado exitosamente');
+                console.log('✅ Perfil actualizado exitosamente');
+                alert('✅ Perfil actualizado exitosamente');
+                
+                // Resetear flag inmediatamente después del éxito - no recargaremos el perfil
+                setIsUpdatingProfile(false);
             } else {
                 console.error('Error al actualizar perfil:', response.error);
                 alert('Error al actualizar el perfil: ' + response.error);
+                setIsUpdatingProfile(false);
             }
         } catch (error) {
             console.error('Error al guardar perfil:', error);
             alert('Error de conexión al actualizar el perfil');
+            setIsUpdatingProfile(false);
         } finally {
             setLoading(false);
-            setIsUpdatingProfile(false);
         }
     };
 
@@ -431,6 +525,20 @@ function MisReservasPage() {
         }
     };
 
+    // Función para filtrar reservas según el estado seleccionado
+    const reservasFiltradas = filtroEstado === 'Todas' 
+        ? reservas 
+        : reservas.filter(reserva => reserva.estado === filtroEstado);
+
+    // Obtener conteo de reservas por estado
+    const conteoEstados = {
+        'Todas': reservas.length,
+        'Pendiente': reservas.filter(r => r.estado === 'Pendiente').length,
+        'Confirmada': reservas.filter(r => r.estado === 'Confirmada').length,
+        'Finalizada': reservas.filter(r => r.estado === 'Finalizada').length,
+        'Cancelada': reservas.filter(r => r.estado === 'Cancelada').length,
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-6 md:p-8 rounded-lg relative z-10">
             {loading ? (
@@ -444,11 +552,14 @@ function MisReservasPage() {
                 <div className="flex flex-col md:flex-row -mx-4">
                     <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
                     <ListaReservas 
-                        reservas={reservas} 
+                        reservas={reservasFiltradas} 
                         onCancelReserva={handleCancelReserva}
                         onDejarReseña={handleOpenReseñaModal}
                         onPagarReserva={handleOpenPagoModal}
                         onVerDetalle={handleVerDetalle}
+                        filtroEstado={filtroEstado}
+                        setFiltroEstado={setFiltroEstado}
+                        conteoEstados={conteoEstados}
                     />
                 </div>
             )}

@@ -5,6 +5,7 @@ import * as deportesService  from '../services/deportes.service';
 export async function getAllDeportes (req: Request, res: Response<DeporteListResponse>, next: NextFunction) {
     try {
         const deportes = await deportesService.getAllDeportes();
+        console.log('🔍 DEBUG - deportes[0]:', JSON.stringify(deportes[0]));
         res.json({
             deportes,
             total: deportes.length

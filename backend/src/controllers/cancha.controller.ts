@@ -39,9 +39,14 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
       hora: req.query.hora as string
     };
     
+    // Si hay filtros de búsqueda, usar la función con filtros
+    const tieneFiltros = filtros.localidad || filtros.deporte || filtros.fecha || filtros.hora;
+    
 		const canchas = complejoId ?
 			await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas) :
-			await canchaService.obtenerCanchasConFiltros(incluirInactivas, filtros);
+			tieneFiltros ?
+				await canchaService.obtenerCanchasConFiltros(filtros, incluirInactivas) :
+				await canchaService.obtenerCanchas(incluirInactivas);
 
 		return res.status(200).json({
 				canchas,

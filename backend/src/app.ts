@@ -10,13 +10,13 @@ import solicitudRoutes from './routes/solicitud.routes'
 import resenaRoutes from './routes/resenas.routes';
 import canchaRoutes from './routes/cancha.routes';
 import horarioRoutes from './routes/horario.routes'
+import horarioDeshabilitadoRoutes from './routes/horarioDeshabilitado.routes';
 import localidadRoutes from "./routes/localidad.routes"
 import turnoRoutes from './routes/turno.routes';
 import cronogramaRoutes from './routes/cronograma.routes';
 import alquilerRoutes from './routes/alquiler.routes';
 import servicioRoutes from './routes/servicio.routes';
 import migrationRoutes from './routes/migration.routes';
-import turnoManagementRoutes from './routes/turnoManagement';
 import { resetearTurnosDiarios } from './controllers/turnoAutomatico.controller';
 // import ownerRoutes from "./routes/owner.routes"
 // import domicilioRoutes from './routes/domicilio.routes';
@@ -31,8 +31,6 @@ const allowedOrigins = [
     'http://localhost:5173',           // Desarrollo local
     'http://localhost:5174',           // Desarrollo local (puerto alternativo de Vite)
     'http://localhost:3000',           // Desarrollo local alternativo
-    'http://localhost:63558',          // Puerto del frontend
-    'http://localhost:63649',          // Puerto alternativo del frontend
     'https://canchaya.onrender.com',   // Frontend en producción
     'https://front-canchaya.up.railway.app', // Frontend en Railway
 ];
@@ -42,22 +40,7 @@ if (process.env.FRONTEND_URL) {
 }
 
 app.use(cors({
-    origin: (origin, callback) => {
-        // Permitir requests sin origin (como Postman)
-        if (!origin) return callback(null, true);
-        
-        // Permitir todos los localhost durante desarrollo
-        if (origin.startsWith('http://localhost:')) {
-            return callback(null, true);
-        }
-        
-        // Verificar origins específicos en producción
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        
-        return callback(new Error('No permitido por CORS'));
-    },
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -116,13 +99,13 @@ app.use('/api/complejos',         complejoRoutes);
 app.use('/api/canchas',           canchaRoutes);
 app.use('/api/admin/solicitudes', solicitudRoutes);   // ---> Se ve horrible identado en columnas jaja
 app.use('/api/horarios',          horarioRoutes);
+app.use('/api/horarios-deshabilitados', horarioDeshabilitadoRoutes);
 app.use('/api/turnos',            turnoRoutes);
 app.use('/api/cronograma',        cronogramaRoutes);
 app.use('/api/servicios',         servicioRoutes);
 app.use('/api/localidades',       localidadRoutes);
 app.use('/api/alquileres',        alquilerRoutes);
 app.use('/api/admin',             migrationRoutes);
-app.use('/api/turno-management',  turnoManagementRoutes);
 // app.use('/api/owners',            ownerRoutes);
 // app.use('/api/domicilios',        domicilioRoutes);
 // app.use('/api/pagos',             pagoRoutes);

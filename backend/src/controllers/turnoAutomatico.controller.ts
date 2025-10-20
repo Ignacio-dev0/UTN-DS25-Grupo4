@@ -211,7 +211,8 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         const precioNum = Number(precio);
 
         // Convertir día y hora a fecha dentro de los próximos 7 días
-        const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+        // IMPORTANTE: Sin acentos para coincidir con el enum DiaSemana de Prisma
+        const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
         const indiceDia = diasSemana.indexOf(dia.toUpperCase());
         
         if (indiceDia === -1) {

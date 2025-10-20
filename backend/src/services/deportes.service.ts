@@ -1,23 +1,30 @@
 // backend/src/services/deportes.service.ts
-import prisma from '../config/prisma'; 
+import prisma from '../config/prisma';
 import { Deporte } from '@prisma/client';
 import { CreateDeporteResquest, UpdateDeporteResquest } from "../types/deporte.types";
 
 export async function getAllDeportes(): Promise<Deporte[]> {
     const deportes = await prisma.deporte.findMany({
-        orderBy: { id: 'asc'},
-    })
+        select: {
+            id: true,
+            nombre: true,
+            icono: true
+        },
+        orderBy: { id: 'asc'}
+    });
+    console.log('🔍 [DEPORTES SERVICE] Deportes from DB:', JSON.stringify(deportes.slice(0, 2), null, 2));
     return deportes;
 }
 
 export async function getDeporteById(id: number): Promise<Deporte> {
-    const deporte = await prisma.deporte.findUnique({ where: {id }});
-
+    const deporte = await prisma.deporte.findUnique({ where: { id } });
+    
     if (!deporte) {
         const error = new Error('Deporte not Found');
         (error as any).statusCode = 404;
         throw error;
     }
+    
     return deporte;
 }
 
@@ -27,26 +34,25 @@ export async function createDeporte(data: CreateDeporteResquest): Promise<Deport
         (error as any).statusCode = 400;
         throw error;
     }
-    const created = await prisma.deporte.create({
+    
+    return await prisma.deporte.create({
         data: {
             nombre: data.name,
-            icono: data.icono || '⚽',
-        },
+            icono: data.icono || '⚽'
+        }
     });
-    return created;
 }
 
 export async function updateDeporte(id:number, updateData: UpdateDeporteResquest): Promise<Deporte>{
     try {
-        const updated= await prisma.deporte.update({
-            where: {id},
+        return await prisma.deporte.update({
+            where: { id },
             data: {
-                ...(updateData.name !== undefined ? {nombre: updateData.name} : {}),
-                ...(updateData.icono !== undefined ? {icono: updateData.icono} : {}),
-            },
+                ...(updateData.name !== undefined ? { nombre: updateData.name } : {}),
+                ...(updateData.icono !== undefined ? { icono: updateData.icono } : {})
+            }
         });
-        return updated;
-    } catch (e : any) {
+    } catch (e: any) {
         if (e.code === 'P2025') {
             const error = new Error('Deporte not found');
             (error as any).statusCode = 404;
@@ -58,11 +64,10 @@ export async function updateDeporte(id:number, updateData: UpdateDeporteResquest
 
 export async function deleteDeporte(id: number): Promise<Deporte>{
     try {
-        const deleted = await prisma.deporte.delete({
-            where: {id},
+        return await prisma.deporte.delete({
+            where: { id }
         });
-        return deleted;
-    } catch (e : any) {
+    } catch (e: any) {
         if (e.code === 'P2025') {
             const error = new Error('Deporte not found');
             (error as any).statusCode = 404;

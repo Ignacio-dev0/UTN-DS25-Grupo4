@@ -24,10 +24,14 @@ const StarRating = ({ puntaje }) => {
   return <div className="flex">{estrellas}</div>;
 };
 
-const RESEÑAS_VISIBLES = 4; 
+const CARD_WIDTH = 300; // ancho de tarjeta optimizado
+const GAP = 24; // espacio entre tarjetas
+const RESEÑAS_VISIBLES = 3; // Mostrar 3 reseñas a la vez
 
 function CarruselReseñas({ reseñas }) {
   const [indiceActual, setIndiceActual] = useState(0);
+  const [animando, setAnimando] = useState(false);
+  const [direccion, setDireccion] = useState('siguiente');
 
   if (!reseñas || reseñas.length === 0) {
     return (
@@ -39,80 +43,96 @@ function CarruselReseñas({ reseñas }) {
   }
 
   const totalReseñas = reseñas.length;
-  
-  const itemWidth = 256 + 24; // ancho de tarjeta + gap
-  // Si hay menos o igual a RESEÑAS_VISIBLES, mostrar todas sin scroll
-  // Si hay más, usar el ancho fijo para poder hacer scroll
-  const reseñasAMostrar = Math.min(totalReseñas, RESEÑAS_VISIBLES);
-  const windowWidth = (reseñasAMostrar * 256) + ((reseñasAMostrar - 1) * 24);
 
   const handleAnterior = () => {
-    if (totalReseñas <= RESEÑAS_VISIBLES) return; // No hacer nada si todas las reseñas son visibles
+    if (totalReseñas <= 1 || animando) return;
+    setDireccion('anterior');
+    setAnimando(true);
     
-    setIndiceActual((prevIndice) => {
-      // Si estamos en el principio, vamos al final
-      if (prevIndice === 0) {
-        const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
-        return maxIndex;
-      }
-      return prevIndice - 1;
-    });
+    setTimeout(() => {
+      setIndiceActual((prevIndice) => 
+        prevIndice === 0 ? totalReseñas - 1 : prevIndice - 1
+      );
+      setAnimando(false);
+    }, 100);
   };
 
   const handleSiguiente = () => {
-    if (totalReseñas <= RESEÑAS_VISIBLES) return; // No hacer nada si todas las reseñas son visibles
+    if (totalReseñas <= 1 || animando) return;
+    setDireccion('siguiente');
+    setAnimando(true);
     
-    setIndiceActual((prevIndice) => {
-      const maxIndex = Math.max(0, totalReseñas - RESEÑAS_VISIBLES);
-      if (prevIndice >= maxIndex) {
-        return 0;
-      }
-      return prevIndice + 1;
-    });
+    setTimeout(() => {
+      setIndiceActual((prevIndice) => 
+        prevIndice === totalReseñas - 1 ? 0 : prevIndice + 1
+      );
+      setAnimando(false);
+    }, 100);
   };
 
   return (
-    <div className="mt-12">
+    <div className="mt-12 w-full px-4">
       <h3 className="text-2xl font-bold font-lora text-gray-800 mb-6 text-center">Opiniones de otros jugadores</h3>
-      <div className="flex items-center justify-center gap-2">
-        {/* Botón Anterior */}
-        <button 
-          onClick={handleAnterior}
-          disabled={totalReseñas <= RESEÑAS_VISIBLES}
-          className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronLeftIcon className="w-6 h-6 text-secondary" />
-        </button>
-
-        {/* Ventana del Carrusel */}
-        <div className="overflow-hidden" style={{ width: `${windowWidth}px` }}>
-          {/* Track del Carrusel */}
-          <div
-            className="flex gap-6 transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${indiceActual * itemWidth}px)` }}
+      <div className="relative flex items-center justify-center gap-4 w-full max-w-7xl mx-auto">
+        {/* Botón Anterior - mostrar siempre que haya más de 1 reseña */}
+        {totalReseñas > 1 && (
+          <button 
+            onClick={handleAnterior}
+            className="p-3 rounded-full bg-secondary shadow-lg hover:bg-primary active:scale-95 transition-all flex-shrink-0 z-10"
+            aria-label="Anterior"
           >
-            {reseñas.map((reseña) => (
-              // Contenedor de cada tarjeta de reseña
-              <div key={reseña.id} className="flex-shrink-0 w-64 h-48 bg-accent p-6 rounded-lg shadow-md flex flex-col justify-center">
-                {/* Contenido de la tarjeta */}
-                <p className="font-bold text-primary text-lg">{reseña.nombre}</p>
-                <div className="my-2">
-                  <StarRating puntaje={reseña.puntaje} />
+            <ChevronLeftIcon className="w-6 h-6 text-white" />
+          </button>
+        )}
+
+        {/* Ventana del Carrusel - muestra 3 reseñas a la vez */}
+        <div className="overflow-hidden w-full max-w-5xl">
+          {/* Track del Carrusel */}
+          <div className={`flex gap-6 transition-all duration-500 ease-in-out ${
+            animando 
+              ? direccion === 'siguiente' 
+                ? 'translate-x-[-50px] opacity-80' 
+                : 'translate-x-[50px] opacity-80'
+              : 'translate-x-0 opacity-100'
+          }`}>
+            {/* Renderizar 3 reseñas visibles con loop infinito */}
+            {[0, 1, 2].map((offset) => {
+              const index = (indiceActual + offset) % totalReseñas;
+              const reseña = reseñas[index];
+              
+              return (
+                <div 
+                  key={`${reseña.id}-${offset}`}
+                  className={`flex-shrink-0 w-[300px] h-[200px] bg-accent p-6 rounded-lg shadow-md flex flex-col justify-between transition-all duration-500 ${
+                    animando 
+                      ? 'scale-95'
+                      : 'scale-100'
+                  }`}
+                >
+                  {/* Contenido de la tarjeta */}
+                  <div>
+                    <p className="font-bold text-primary text-lg">{reseña.nombre}</p>
+                    <div className="mt-2">
+                      <StarRating puntaje={reseña.puntaje} />
+                    </div>
+                  </div>
+                  <p className="text-gray-700 italic text-sm leading-relaxed line-clamp-3 overflow-hidden">"{reseña.comentario}"</p>
                 </div>
-                <p className="text-gray-700 italic text-sm leading-tight">"{reseña.comentario}"</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Botón Siguiente */}
-        <button 
-          onClick={handleSiguiente}
-          disabled={totalReseñas <= RESEÑAS_VISIBLES}
-          className="p-2 rounded-full hover:bg-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRightIcon className="w-6 h-6 text-secondary" />
-        </button>
+        {/* Botón Siguiente - mostrar siempre que haya más de 1 reseña */}
+        {totalReseñas > 1 && (
+          <button 
+            onClick={handleSiguiente}
+            className="p-3 rounded-full bg-secondary shadow-lg hover:bg-primary active:scale-95 transition-all flex-shrink-0 z-10"
+            aria-label="Siguiente"
+          >
+            <ChevronRightIcon className="w-6 h-6 text-white" />
+          </button>
+        )}
       </div>
     </div>
   );

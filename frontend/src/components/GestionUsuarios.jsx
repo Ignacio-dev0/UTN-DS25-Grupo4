@@ -45,16 +45,32 @@ function GestionUsuarios() {
   const getUsuarioImageUrl = (usuario) => {
     // Para usuarios dueños, intentar usar la imagen del complejo si existe
     if (usuario.rol === 'DUENIO' && usuario.complejo?.image) {
-      return usuario.complejo.image.startsWith('http') 
-        ? `${usuario.complejo.image}?t=${Date.now()}` 
-        : `${API_BASE_URL}${usuario.complejo.image}?t=${Date.now()}`;
+      const imageUrl = usuario.complejo.image;
+      // Si es base64, devolverlo directamente
+      if (imageUrl.startsWith('data:image')) {
+        return imageUrl;
+      }
+      // Si es URL HTTP completa
+      if (imageUrl.startsWith('http')) {
+        return `${imageUrl}?t=${Date.now()}`;
+      }
+      // Si es ruta relativa
+      return `${API_BASE_URL}${imageUrl}?t=${Date.now()}`;
     }
     
     // Para otros usuarios o dueños sin complejo, usar su imagen personal
     if (usuario.image) {
-      return usuario.image.startsWith('http') 
-        ? `${usuario.image}?t=${Date.now()}` 
-        : `${API_BASE_URL}${usuario.image}?t=${Date.now()}`;
+      const imageUrl = usuario.image;
+      // Si es base64, devolverlo directamente
+      if (imageUrl.startsWith('data:image')) {
+        return imageUrl;
+      }
+      // Si es URL HTTP completa
+      if (imageUrl.startsWith('http')) {
+        return `${imageUrl}?t=${Date.now()}`;
+      }
+      // Si es ruta relativa
+      return `${API_BASE_URL}${imageUrl}?t=${Date.now()}`;
     }
     
     return null;
@@ -225,7 +241,7 @@ function GestionUsuarios() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg">
+    <div className="bg-white rounded-lg shadow-lg mb-8">
       <div className="border-b border-gray-200 p-6">
         <div className="flex justify-between items-center">
           <div>
@@ -247,7 +263,7 @@ function GestionUsuarios() {
             
             <button
               onClick={() => handleOpenModalUsuario()}
-              className="bg-secondary hover:bg-accent text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+              className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
             >
               <FaPlus className="text-sm" />
               Agregar Usuario

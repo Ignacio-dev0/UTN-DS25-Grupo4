@@ -1,10 +1,50 @@
 // Configuración de la API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// TEMPORAL: Hardcodeamos la URL de producción para Railway
+const PRODUCTION_API_URL = 'https://utn-ds25-grupo4-canchaya.up.railway.app/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
+
+// Debug log temporal - remover después
+console.log('🚀 Frontend Config:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_BASE_URL,
+  VITE_APP_ENV: import.meta.env.VITE_APP_ENV,
+  HARDCODED_URL: PRODUCTION_API_URL
+});
+
+// Función para validar y sanitizar imágenes base64
+export const validateBase64Image = (base64String) => {
+  if (!base64String) return null;
+  
+  // Si no es base64, retornar tal cual
+  if (!base64String.startsWith('data:image')) return base64String;
+  
+  try {
+    // Calcular tamaño en KB
+    const sizeInKB = (base64String.length * 0.75) / 1024;
+    
+    // Si es muy grande (>1MB), retornar null para usar placeholder
+    if (sizeInKB > 1024) {
+      console.warn(`⚠️ Imagen base64 demasiado grande: ${sizeInKB.toFixed(2)} KB. Usando placeholder.`);
+      return null;
+    }
+    
+    return base64String;
+  } catch (error) {
+    console.error('Error validando imagen base64:', error);
+    return null;
+  }
+};
 
 // Función helper para construir URLs de imágenes
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  if (imagePath.startsWith('http') || imagePath.startsWith('data:')) return imagePath;
+  
+  // Validar y sanitizar imágenes base64
+  if (imagePath.startsWith('data:')) {
+    return validateBase64Image(imagePath);
+  }
+  
+  if (imagePath.startsWith('http')) return imagePath;
   
   // Si la ruta ya incluye /images/, construir la URL completa con la API
   if (imagePath.startsWith('/images/')) {

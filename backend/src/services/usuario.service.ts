@@ -165,7 +165,7 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
 
         console.log(`📊 [${new Date().toISOString()}] User relationships:`, {
             hasComplejo: !!usuario.complejo,
-            solicitudesCount: Array.isArray(usuario.solicitudes) ? usuario.solicitudes.length : 0,
+            hasSolicitud: !!usuario.solicitudes,
             reservasCount: usuario.reservas.length
         });
 
@@ -211,19 +211,20 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
                 }
             }
 
-            // Eliminar solicitudes (si las hay y no están asociadas a complejos)
-            if (Array.isArray(usuario.solicitudes) && usuario.solicitudes.length > 0) {
-                console.log(`🗑️ [${new Date().toISOString()}] Deleting ${usuario.solicitudes.length} solicitudes`);
-                for (const solicitud of usuario.solicitudes) {
-                    // Solo eliminar solicitudes que no estén asociadas a complejos
-                    const complejoAssociated = await tx.complejo.findFirst({
-                        where: { solicitudId: solicitud.id }
+            // Eliminar solicitud (si existe y no está asociada a complejo)
+            if (usuario.solicitudes) {
+                console.log(`🗑️ [${new Date().toISOString()}] Checking solicitud ID: ${usuario.solicitudes.id}`);
+                // Solo eliminar solicitud si no está asociada a un complejo
+                const complejoAssociated = await tx.complejo.findFirst({
+                    where: { solicitudId: usuario.solicitudes.id }
+                });
+                if (!complejoAssociated) {
+                    console.log(`🗑️ [${new Date().toISOString()}] Deleting solicitud ID: ${usuario.solicitudes.id}`);
+                    await tx.solicitud.delete({
+                        where: { id: usuario.solicitudes.id }
                     });
-                    if (!complejoAssociated) {
-                        await tx.solicitud.delete({
-                            where: { id: solicitud.id }
-                        });
-                    }
+                } else {
+                    console.log(`⚠️ [${new Date().toISOString()}] Cannot delete solicitud - associated with complejo ID: ${complejoAssociated.id}`);
                 }
             }
 
