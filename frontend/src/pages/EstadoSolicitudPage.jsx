@@ -29,6 +29,9 @@ function EstadoSolicitudPage() {
               // Redirigir directamente a Mi Complejo
               navigate(`/micomplejo/${solicitudUsuario.complejo.id}`);
               return;
+            } else {
+              // Marcar como vista automáticamente cuando se muestra por primera vez
+              localStorage.setItem(solicitudVistaKey, 'true');
             }
           }
         }
@@ -137,10 +140,7 @@ function EstadoSolicitudPage() {
         {solicitud.estado === 'APROBADA' && (
           <button
             onClick={() => {
-              // Marcar la solicitud como vista
-              const solicitudVistaKey = `solicitud_vista_${user.id}`;
-              localStorage.setItem(solicitudVistaKey, 'true');
-              // Navegar a Mi Complejo
+              // Navegar a Mi Complejo (ya está marcado como visto en el useEffect)
               navigate(`/micomplejo/${solicitud.complejo.id}`);
             }}
             className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors"

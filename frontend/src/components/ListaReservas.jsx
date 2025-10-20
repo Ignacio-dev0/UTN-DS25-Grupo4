@@ -12,7 +12,7 @@ const getStatusClass = (estado) => {
   }
 };
 
-function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReserva, onVerDetalle }) {
+function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReserva, onVerDetalle, filtroEstado, setFiltroEstado, conteoEstados }) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [reservaToCancel, setReservaToCancel] = useState(null);
 
@@ -31,7 +31,35 @@ function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReser
 
   return (
     <div className="w-full md:w-2/3 p-4">
-      <h2 className="text-xl font-bold text-gray-800 mb-6">Mis Reservas</h2>
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Mis Reservas</h2>
+      
+      {/* Botones de Filtro - Mismos colores que las etiquetas */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {['Todas', 'Pendiente', 'Confirmada', 'Cancelada', 'Finalizada'].map((estado) => {
+          const esActivo = filtroEstado === estado;
+          const cantidad = conteoEstados[estado];
+          
+          // Usar exactamente los mismos colores que las etiquetas de estado
+          const colores = {
+            'Todas': 'bg-gray-200 text-gray-800',
+            'Pendiente': 'bg-canchaYellow text-white',
+            'Confirmada': 'bg-secondary text-white',
+            'Cancelada': 'bg-canchaRed text-white',
+            'Finalizada': 'bg-gray-200 text-gray-800',
+          };
+          
+          return (
+            <button
+              key={estado}
+              onClick={() => setFiltroEstado(estado)}
+              className={`px-4 py-2 rounded-full font-bold text-sm transition-all duration-200 ${colores[estado]} ${esActivo ? 'ring-2 ring-offset-2 ring-primary shadow-md' : 'opacity-70 hover:opacity-100'}`}
+            >
+              {estado} {cantidad}
+            </button>
+          );
+        })}
+      </div>
+      
       <div className="space-y-4">
         {reservas.length > 0 ? (
           reservas.map(reserva => (

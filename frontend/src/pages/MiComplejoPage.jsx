@@ -223,6 +223,27 @@ function MiComplejoPage() {
     const handleToggleEdit = async () => {
     if(isEditing) {
       try {
+        // Mostrar indicador de carga
+        const loadingAlert = document.createElement('div');
+        loadingAlert.id = 'loading-alert';
+        loadingAlert.innerHTML = `
+          <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                      background: white; padding: 20px 40px; border-radius: 10px; 
+                      box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 9999; text-align: center;">
+            <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; 
+                        border-radius: 50%; width: 40px; height: 40px; 
+                        animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+            <p style="margin: 0; font-weight: 600; color: #333;">Guardando cambios...</p>
+          </div>
+          <style>
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          </style>
+        `;
+        document.body.appendChild(loadingAlert);
+
         // Preparar datos para actualizar - servicios ya vienen como IDs
         const datosParaActualizar = {
           nombre: infoDelComplejo.nombre?.trim() || "",
@@ -233,6 +254,7 @@ function MiComplejoPage() {
         };
         
         console.log('Datos a enviar:', datosParaActualizar);
+        console.log('Tamaño de la imagen:', datosParaActualizar.image ? `${(datosParaActualizar.image.length / 1024).toFixed(2)} KB` : 'Sin imagen');
         
         const response = await fetch(`${API_BASE_URL}/complejos/${complejoId}`, {
           method: 'PUT',
@@ -242,10 +264,14 @@ function MiComplejoPage() {
           body: JSON.stringify(datosParaActualizar),
         });
         
+        // Remover indicador de carga
+        const loadingEl = document.getElementById('loading-alert');
+        if (loadingEl) loadingEl.remove();
+        
         if (response.ok) {
           const responseData = await response.json();
           console.log("Datos del complejo guardados correctamente:", responseData);
-          alert('Información del complejo actualizada correctamente');
+          alert('✅ Información del complejo actualizada correctamente');
           
           // Actualizar el estado local con los datos guardados
           setInfoDelComplejo(prev => ({
@@ -258,8 +284,23 @@ function MiComplejoPage() {
           throw new Error(errorData.message || 'Error al actualizar el complejo');
         }
       } catch (error) {
+        // Remover indicador de carga en caso de error
+        const loadingEl = document.getElementById('loading-alert');
+        if (loadingEl) loadingEl.remove();
+        
         console.error('Error guardando datos del complejo:', error);
-        alert('Error al guardar los cambios: ' + error.message);
+        
+        // Mensajes de error más específicos
+        let errorMessage = 'Error al guardar los cambios';
+        if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
+          errorMessage = '❌ Error de conexión. Por favor verifica tu conexión a internet e intenta nuevamente.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = '❌ La operación tardó demasiado. La imagen puede ser muy grande. Intenta con una imagen más pequeña.';
+        } else {
+          errorMessage = `❌ ${error.message}`;
+        }
+        
+        alert(errorMessage);
       }
     }
     setIsEditing(!isEditing);

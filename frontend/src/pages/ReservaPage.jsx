@@ -266,6 +266,8 @@ function ReservaPage() {
             precio: turno.precio,
             estado,
             fecha: turno.fecha,
+            fechaCompleta: turno.fecha, // Agregar para debugging
+            horaCompleta: turno.horaInicio, // Agregar para debugging
             reservado: turno.reservado,
             deshabilitado: turno.deshabilitado,
             alquilerId: turno.alquilerId

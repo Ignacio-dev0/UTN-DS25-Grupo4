@@ -80,11 +80,9 @@ export async function crearCancha(data: CreateCanchaRequest) {
 export async function obtenerCanchas(incluirInactivas: boolean = false) {
     return prisma.cancha.findMany({
         where: {
-            ...(incluirInactivas ? {} : { activa: true }),
-            // Solo incluir canchas que tienen al menos un cronograma definido
-            cronograma: {
-                some: {}
-            }
+            ...(incluirInactivas ? {} : { activa: true })
+            // Removemos el filtro de cronograma para mostrar todas las canchas
+            // incluso las que aún no tienen horarios configurados
         },
         select: {
             id: true,
@@ -147,10 +145,8 @@ interface FiltrosCanchas {
 
 export async function obtenerCanchasConFiltros(filtros: FiltrosCanchas, incluirInactivas: boolean = false) {
     const where: any = {
-        ...(incluirInactivas ? {} : { activa: true }),
-        cronograma: {
-            some: {}
-        }
+        ...(incluirInactivas ? {} : { activa: true })
+        // Removemos el filtro de cronograma para mostrar todas las canchas
     };
 
     // Filtro por deporte

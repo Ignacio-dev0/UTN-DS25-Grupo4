@@ -193,6 +193,32 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                 const turno = getTurno(dia, hora);
                 let estado = 'no-disponible';
                 
+                // Verificar si la hora ya pasó (incluso sin turno creado)
+                const esPasado = (() => {
+                  const ahora = new Date();
+                  const diaIndex = diasSemana.indexOf(dia);
+                  const hoy = new Date();
+                  hoy.setHours(0, 0, 0, 0);
+                  
+                  // Calcular la fecha del día en cuestión
+                  const diasDesdeHoy = diaIndex - hoy.getDay();
+                  const fechaDia = new Date(hoy);
+                  fechaDia.setDate(hoy.getDate() + (diasDesdeHoy < 0 ? diasDesdeHoy + 7 : diasDesdeHoy));
+                  
+                  // Si es un día anterior a hoy, es pasado
+                  if (fechaDia < hoy) {
+                    return true;
+                  }
+                  
+                  // Si es hoy, verificar la hora
+                  if (fechaDia.getTime() === hoy.getTime()) {
+                    const [horaInt] = hora.split(':').map(Number);
+                    return horaInt < ahora.getHours();
+                  }
+                  
+                  return false;
+                })();
+                
                 if (turno) {
                   if (turno.estado === 'disponible') {
                     estado = 'disponible';
@@ -206,6 +232,9 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                     // Cualquier turno que esté reservado u ocupado se muestra como "Ocupado"
                     estado = 'reservado';
                   }
+                } else if (esPasado) {
+                  // Si no hay turno pero la hora ya pasó, mostrar como finalizado
+                  estado = 'finalizado';
                 }
                 
                 const estaSeleccionado = turnosSeleccionados.some(t => t.dia === dia && t.hora === hora);

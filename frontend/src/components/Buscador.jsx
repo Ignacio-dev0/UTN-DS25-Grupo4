@@ -9,11 +9,22 @@ function Buscador() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
+  // Función para calcular hora actual + 1
+  const obtenerHoraPredeterminada = () => {
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+    const horaSiguiente = horaActual + 1;
+    
+    // Si es después de las 23hs, volver a 7hs
+    const horaFinal = horaSiguiente > 23 ? 7 : horaSiguiente;
+    return `${horaFinal}:00hs`;
+  };
+  
   // Inicializar con valores de la URL si existen
   const [localidad, setLocalidad] = useState(searchParams.get('localidad') || '');
   const [deporte, setDeporte] = useState(searchParams.get('deporte') || '');
   const [fecha, setFecha] = useState(searchParams.get('fecha') ? new Date(searchParams.get('fecha')) : new Date());
-  const [hora, setHora] = useState(searchParams.get('hora') || '15:00hs');
+  const [hora, setHora] = useState(searchParams.get('hora') || obtenerHoraPredeterminada());
   
   // Estados para datos del backend
   const [deportes, setDeportes] = useState([]);

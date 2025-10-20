@@ -226,9 +226,13 @@ function CanchaCard({ cancha }) {
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
           src={getImageUrl(cancha.image?.[0]) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)}
+          loading="lazy"
           onError={(e) => {
             // Fallback a imagen por defecto del deporte
-            e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
+            const fallbackSrc = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
+            if (e.target.src !== fallbackSrc) {
+              e.target.src = fallbackSrc;
+            }
           }}
           alt={`Cancha de ${cancha.deporte?.nombre}`}
         />
