@@ -36,10 +36,17 @@ function ResultadosPage() {
         
         const response = await getCanchasConFiltros(filtros);
         
+        console.log('🔍 [ResultadosPage] Response completa:', response);
+        console.log('🔍 [ResultadosPage] response.ok:', response.ok);
+        console.log('🔍 [ResultadosPage] response.canchas:', response.canchas);
+        console.log('🔍 [ResultadosPage] response.canchas.length:', response.canchas?.length);
+        
         if (response.ok) {
           setCanchas(response.canchas);
+          console.log('✅ [ResultadosPage] Canchas actualizadas en estado, total:', response.canchas.length);
         } else {
           setError(response.error);
+          console.error('❌ [ResultadosPage] Error en response:', response.error);
         }
       } catch (err) {
         setError('Error al cargar las canchas');

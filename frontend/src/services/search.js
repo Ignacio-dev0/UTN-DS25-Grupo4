@@ -66,6 +66,8 @@ export const getCanchas = async () => {
  */
 export const getCanchasConFiltros = async (filtros = {}) => {
   try {
+    console.log('🔍 [FRONTEND] getCanchasConFiltros llamado con filtros:', filtros);
+    
     // Construir query parameters
     const queryParams = new URLSearchParams();
     
@@ -75,6 +77,7 @@ export const getCanchasConFiltros = async (filtros = {}) => {
     if (filtros.hora) queryParams.append('hora', filtros.hora);
     
     const url = `${API_BASE_URL}/canchas?${queryParams.toString()}`;
+    console.log('🔍 [FRONTEND] URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -83,24 +86,30 @@ export const getCanchasConFiltros = async (filtros = {}) => {
       },
     });
 
+    console.log('🔍 [FRONTEND] Response status:', response.status);
+
     if (!response.ok) {
       throw new Error('Error al obtener las canchas con filtros');
     }
 
     const data = await response.json();
+    console.log('🔍 [FRONTEND] Data recibida:', data);
+    console.log('🔍 [FRONTEND] Tipo de data:', typeof data, Array.isArray(data));
     
     // Asegurar que data es un array
     const canchasArray = Array.isArray(data) ? data : (data.canchas || []);
+    console.log('🔍 [FRONTEND] canchasArray length:', canchasArray.length);
     
     // Transformar datos con mapeo de imágenes
     const transformedData = canchasArray.map(cancha => transformCanchaData(cancha));
+    console.log('🔍 [FRONTEND] transformedData length:', transformedData.length);
     
     return {
       ok: true,
       canchas: transformedData || []
     };
   } catch (error) {
-    console.error('Error en getCanchasConFiltros:', error);
+    console.error('❌ [FRONTEND] Error en getCanchasConFiltros:', error);
     return {
       ok: false,
       error: 'Error de conexión'

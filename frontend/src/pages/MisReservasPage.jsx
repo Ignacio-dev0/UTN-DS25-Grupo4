@@ -96,7 +96,13 @@ function MisReservasPage() {
         try {
             console.log('🔍 CARGANDO RESERVAS - Usuario ID:', usuarioId);
             console.log('🔍 URL de consulta:', `${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
-            const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             console.log('📡 Respuesta del servidor - Status:', response.status, 'OK:', response.ok);
             if (response.ok) {
                 const data = await response.json();
@@ -354,9 +360,11 @@ function MisReservasPage() {
 
     const handleCancelReserva = async (reservaId) => {
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/alquileres/${reservaId}`, {
                 method: 'PATCH',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ estado: 'CANCELADO' }),
@@ -491,9 +499,11 @@ function MisReservasPage() {
 
     const handleConfirmarPago = async (datosPago) => {
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/alquileres/${reservaParaPagar.id}/pagar`, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({

@@ -147,11 +147,15 @@ export async function obtenerCanchasConFiltros(
   incluirInactivas: boolean = false,
   filtros: any = {}
 ): Promise<CanchaFull[]> {
+    console.log('🔍 CANCHA SERVICE - obtenerCanchasConFiltros llamado');
+    console.log('   incluirInactivas:', incluirInactivas);
+    console.log('   filtros:', JSON.stringify(filtros, null, 2));
 
     // Construir filtros dinámicos
     const where: Prisma.CanchaWhereInput = {
         ...(incluirInactivas ? {} : { activa: true })
     };
+    console.log('   where inicial:', JSON.stringify(where, null, 2));
 
     // Filtro por deporte
     if (filtros.deporte) {
@@ -180,6 +184,16 @@ export async function obtenerCanchasConFiltros(
     const canchas = await prisma.cancha.findMany({
         where,
         include: {
+            deporte: true,
+            complejo: {
+                include: {
+                    domicilio: {
+                        include: {
+                            localidad: true
+                        }
+                    }
+                }
+            },
             cronograma: {
                 orderBy: {
                     precio: 'asc'
@@ -188,6 +202,11 @@ export async function obtenerCanchasConFiltros(
             }
         },
     });
+
+    console.log(`✅ CANCHA SERVICE - Encontradas ${canchas.length} canchas en la DB`);
+    if (canchas.length > 0) {
+        console.log('   Primera cancha:', JSON.stringify(canchas[0], null, 2));
+    }
 
     // Filtros adicionales para fecha y hora (requieren lógica especial)
     let canchasFiltradas = canchas;

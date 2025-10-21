@@ -50,7 +50,7 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
 		const canchas: CanchaFull[] = complejoId ?
 			await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas) :
 			tieneFiltros ?
-				await canchaService.obtenerCanchasConFiltros(filtros, incluirInactivas) :
+				await canchaService.obtenerCanchasConFiltros(incluirInactivas, filtros) :
 				await canchaService.obtenerCanchas(incluirInactivas);
 
 		return res.status(200).json({

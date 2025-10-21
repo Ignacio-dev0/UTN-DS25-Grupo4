@@ -30,11 +30,9 @@ router.post(
   complejoController.crearComplejo
 );
 
-// Ruta para obtener un único complejo por su ID
+// Ruta para obtener un único complejo por su ID (pública)
 router.get(
   '/:id',
-  authenticate,
-  authorize('DUENIO', 'ADMINISTRADOR', 'CLIENTE'),
   complejoController.obtenerComplejoPorId
 );
 

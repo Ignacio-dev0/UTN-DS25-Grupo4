@@ -91,7 +91,12 @@ export async function getSolById(req:Request, res:Response) {
             message:('request retrieved succesfully')
         });
     }catch(error:any){
-        console.log(error);
+        console.error('Error en getSolById:', error);
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({ 
+            error: error.message || 'Error al obtener solicitud',
+            solicitud: null
+        });
     }
 }
 
@@ -103,7 +108,12 @@ export async function getAllSol(req:Request, res:Response){
             total: solicitudes.length
         })
     }catch(error:any){
-        console.log(error);
+        console.error('Error en getAllSol:', error);
+        res.status(500).json({ 
+            error: error.message || 'Error al obtener solicitudes',
+            solicitudes: [],
+            total: 0
+        });
     }
 }
 

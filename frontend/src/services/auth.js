@@ -44,6 +44,11 @@ export const login = async (email, password, rememberMe = false) => {
         rol: mapBackendRoleToFrontend(data.user.rol || data.user.role)
       };
 
+      // Guardar token en localStorage (siempre)
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
       // Guardar en localStorage si rememberMe está activado
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(user));
@@ -53,7 +58,8 @@ export const login = async (email, password, rememberMe = false) => {
 
       return {
         ok: true,
-        user
+        user,
+        token: data.token
       };
     }
 

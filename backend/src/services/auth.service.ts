@@ -5,22 +5,32 @@ import { Prisma, Usuario, Administrador } from '@prisma/client';
 import { LoginUsuarioBody, RegistroUsuarioBody } from '../validations/auth.validation';
 
 export async function login(data: LoginUsuarioBody) {
-  // 1. Buscar usuario
+  // 1. Buscar usuario (Usuario usa 'correo', Administrador usa 'email')
   const { email, password } = data;
-  const usuario = await prisma.usuario.findUnique({ where: { email } })
+  const usuario = await prisma.usuario.findUnique({ where: { correo: email } })
     || await prisma.administrador.findUnique({ where: { email } });
 
-  if (!usuario) throw new Error('correo no registrado');
+  if (!usuario) {
+    const error = new Error('correo no registrado');
+    (error as any).statusCode = 401;
+    throw error;
+  }
 
   // 2. Verificar password
   const validPassword = await bcrypt.compare(password, usuario.password);
-  if (!validPassword) throw new Error('contraseña incorrecta')
+  if (!validPassword) {
+    const error = new Error('contraseña incorrecta');
+    (error as any).statusCode = 401;
+    throw error;
+  }
   
-  // 3. Generar JWT
+  // 3. Generar JWT (Usuario tiene 'correo', Administrador tiene 'email')
+  const userEmail = 'correo' in usuario ? usuario.correo : usuario.email;
+  
   const token = jwt.sign(
     {
       id: usuario.id,
-      email: usuario.email,
+      email: userEmail,
       rol: usuario.rol
     },
     process.env.JWT_SECRET!,
@@ -43,9 +53,14 @@ export async function register(data: RegistroUsuarioBody) {
       where: { email: data.email }
     })
     if(isAdminEmail) throw new Error('correo ya registrado');
+    
+    // Separar email del resto de los datos
+    const { email, ...restData } = data;
+    
     const usuario = await prisma.usuario.create({
       data: {
-        ...data,
+        ...restData,
+        correo: email, // Mapear email del body a correo en la DB
         password: hashedPassword
       }
     })
@@ -54,7 +69,7 @@ export async function register(data: RegistroUsuarioBody) {
     const token = jwt.sign(
       {
         id: usuario.id,
-        email: usuario.email,
+        email: usuario.correo,
         rol: usuario.rol
       },
       process.env.JWT_SECRET!,

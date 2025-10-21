@@ -42,10 +42,10 @@ export async function getUsuarioById(id: number): Promise<Usuario | null>{
     return usuario;
 }
 
-export async function getUsuarioByEmail(email: string): Promise<Usuario | null>{
+export async function getUsuarioByEmail(email: string): Promise<Usuario | any>{
     // Primero buscar en Usuario (campo 'correo')
     let usuario = await prisma.usuario.findUnique({ 
-        where: { email }
+        where: { correo: email }
     });
     
     // Si no se encuentra, buscar en Administrador
@@ -55,21 +55,20 @@ export async function getUsuarioByEmail(email: string): Promise<Usuario | null>{
         });
         
         if (admin) {
-            // Convertir administrador a formato Usuario para compatibilidad
-            usuario = {
+            // Devolver el administrador con formato compatible
+            return {
                 id: admin.id,
-                apellido: 'Admin',
-                nombre: 'Administrador',
-                dni: '00000000',
                 correo: admin.email,
                 email: admin.email,
                 password: admin.password,
+                rol: admin.rol,
+                nombre: 'Admin',
+                apellido: 'Sistema',
+                dni: '00000000',
                 telefono: null,
                 direccion: null,
-                rol: admin.rol,
-                role: admin.rol,
                 image: null
-            } as any;
+            };
         }
     }
     
@@ -87,8 +86,17 @@ export async function getUsuarioByDni(dni: string): Promise<Usuario | null>{
 export async function createUsuario(data: CrearUsuarioData): Promise<Usuario>{
     // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    data.password = hashedPassword;
-    const created = await prisma.usuario.create({ data });
+    
+    // Separar email del resto de los datos y mapear a correo
+    const { email, ...restData } = data;
+    
+    const created = await prisma.usuario.create({ 
+        data: {
+            ...restData,
+            correo: email, // Mapear email del body a correo en la DB
+            password: hashedPassword
+        }
+    });
     return created;
 }
 

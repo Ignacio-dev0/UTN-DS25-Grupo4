@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 // TEMPORALMENTE usando mock en lugar del servicio real
 import * as usuarioService from "../services/usuario.service";
-import { CreateUsuarioRequest, UsuarioListResponse, UpdateUsuarioRequest, UsuarioResponse } from "../types/usuario.type";
+import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
 
-export async function crearUsuario(req: Request<{}, UsuarioResponse, CreateUsuarioRequest>, res: Response<UsuarioResponse>) {
+export async function crearUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
     const newUsuario = await usuarioService.createUsuario(req.body);
     res.status(201).json({
@@ -81,7 +81,7 @@ export async function obtenerUsuarioPorEmail(req: Request<{email: string}>, res:
   }
 }
 
-export async function actualizarUsuario(req: Request<{id: string}, UsuarioResponse, UpdateUsuarioRequest>, res: Response<UsuarioResponse>) {
+export async function actualizarUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
     const { id } = req.params;
     const updateUsuario = await usuarioService.updateUsuario(parseInt(id), req.body);
@@ -167,16 +167,29 @@ export async function login(req: Request, res: Response) {
       });
     }
 
+    // Generar token JWT
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      {
+        id: usuario.id,
+        email: usuario.correo || usuario.email,
+        rol: usuario.rol
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: Number(process.env.JWT_EXPIRES_IN) || '24h' }
+    );
+
     // Login exitoso
     res.json({
       ok: true,
       user: {
         id: usuario.id,
-        email: usuario.correo, // Usar correo del schema
+        email: usuario.correo || usuario.email, // Compatibilidad Usuario/Administrador
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         role: usuario.rol // Usar rol del schema
       },
+      token,
       message: 'Login exitoso'
     });
 
@@ -226,10 +239,10 @@ export async function register(req: Request, res: Response) {
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: email,
+      email: email,
       password, // En producción, hashear con bcrypt
-      name: nombre,
-      lastname: apellido,
+      nombre: nombre,
+      apellido: apellido,
       dni: dni, // Mantener como string según el tipo
       telefono,
       rol: rol
@@ -269,7 +282,7 @@ export async function register(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.correo,
+            email: newUsuario.email,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -287,7 +300,7 @@ export async function register(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.correo,
+          email: newUsuario.email,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
@@ -370,10 +383,10 @@ export async function registerWithImage(req: Request, res: Response) {
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: userEmail,
+      email: userEmail,
       password,
-      name: nombre,
-      lastname: apellido,
+      nombre: nombre,
+      apellido: apellido,
       dni: dni,
       telefono,
       rol: finalRole,
@@ -408,7 +421,7 @@ export async function registerWithImage(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.correo,
+            email: newUsuario.email,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -430,7 +443,7 @@ export async function registerWithImage(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.correo,
+          email: newUsuario.email,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol

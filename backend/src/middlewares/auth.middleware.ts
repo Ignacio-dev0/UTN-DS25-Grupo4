@@ -47,6 +47,9 @@ export function authorize(...roles: string[]) {
     try {
       if (!req.usuario) throw new Error('Se requiere autenticación')
       if (!roles.includes(req.usuario.rol)) throw new Error('No tiene permiso para esta acción')
-    } catch (e) { next(e); }
+      next(); // ✅ Agregado: continuar si todo está bien
+    } catch (e) { 
+      next(e); 
+    }
   }
 }

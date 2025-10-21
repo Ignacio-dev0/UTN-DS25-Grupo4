@@ -1,13 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodObject } from 'zod';
+import { ZodSchema } from 'zod';
 
-export default function validate(schema: ZodObject) {
-  return async (req: Request<unknown>, res: Response, next: NextFunction) => {
-    if (req.body) {
-      const result = schema.parse(req.body);
-      if (!result.success) next(result.error);
-      req.body = result.data;
+export default function validate(schema: ZodSchema) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (req.body) {
+        req.body = schema.parse(req.body);
+      }
+      next();
+    } catch (error) {
+      next(error);
     }
-    next();
   }
 }

@@ -86,9 +86,9 @@ export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitud
             estado: data.estado,
         }
         
-        // Solo agregar evaluadorId si se proporciona
+        // Solo agregar adminId si se proporciona
         if (data.evaluadorId) {
-            soliUpdate.evaluador = data.evaluadorId;
+            soliUpdate.adminId = data.evaluadorId;
         }
         
         const solicitudActualizada = await tx.solicitud.update({

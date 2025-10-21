@@ -14,7 +14,7 @@ model Usuario {
   apellido    String
   nombre      String
   dni         String     @unique
-  email      String     @unique
+  correo      String     @unique @map("correo")
   password    String
   telefono    String?
   rol         Rol        @default(CLIENTE)
@@ -23,6 +23,8 @@ model Usuario {
   reservas    Alquiler[]
   complejo    Complejo?
   solicitudes Solicitud?
+  
+  @@map("Usuario")
 }
 
 model Administrador {
@@ -31,6 +33,8 @@ model Administrador {
   rol                  Rol         @default(ADMINISTRADOR)
   email                String      @unique
   solicitudesEvaluadas Solicitud[]
+  
+  @@map("Administrador")
 }
 
 model Solicitud {

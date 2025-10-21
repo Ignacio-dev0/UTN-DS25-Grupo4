@@ -62,8 +62,11 @@ app.use((req, res, next) => {
 // Servir archivos estáticos (imágenes) desde la carpeta del frontend
 app.use('/images', express.static(path.join(__dirname, '../../frontend/public/images')));
 
-// Servir archivos estáticos (imágenes subidas) desde la carpeta del backend - CORREGIDO para /api/images/
+// Servir archivos estáticos (imágenes subidas) desde la carpeta del backend
 const imagesPath = process.env.STATIC_FILES_PATH || path.join(__dirname, '../public/images');
+
+// Servir imágenes subidas también desde /images (para compatibilidad con rutas guardadas en DB)
+app.use('/images', express.static(imagesPath));
 
 // Logging para debugging en Railway (debe ir ANTES del middleware estático)
 app.use('/api/images', (req, res, next) => {

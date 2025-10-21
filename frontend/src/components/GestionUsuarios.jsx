@@ -54,6 +54,11 @@ function GestionUsuarios() {
       if (imageUrl.startsWith('http')) {
         return `${imageUrl}?t=${Date.now()}`;
       }
+      // Corregir rutas mal formadas (ej: /apifutbol5_07.jpg -> /api/images/solicitudes/futbol5_07.jpg)
+      if (imageUrl.startsWith('/api')) {
+        const correctedUrl = imageUrl.replace(/^\/api/, '/api/images/solicitudes/');
+        return `${API_BASE_URL}${correctedUrl}?t=${Date.now()}`;
+      }
       // Si es ruta relativa
       return `${API_BASE_URL}${imageUrl}?t=${Date.now()}`;
     }

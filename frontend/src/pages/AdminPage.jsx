@@ -20,7 +20,13 @@ function AdminPage() {
   const fetchSolicitudes = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/admin/solicitudes`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         const solicitudesPendientes = (data.solicitudes || data || [])
@@ -70,9 +76,11 @@ function AdminPage() {
 
   const handleApprove = async (solicitudId) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/admin/solicitudes/${solicitudId}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ estado: 'APROBADA' }),
@@ -98,9 +106,11 @@ function AdminPage() {
     if (!confirm('¿Estás seguro de rechazar esta solicitud?')) return;
     
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/admin/solicitudes/${solicitudId}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ estado: 'RECHAZADA' }),
