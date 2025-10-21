@@ -1,19 +1,53 @@
 import { Router } from "express";
+import validate from "../middlewares/validate";
+import * as alquilerSchema from "../validations/alquiler.validation";
+import { authenticate, authorize } from "../middlewares/auth.middleware";
 import * as alquilerController from "../controllers/alquiler.controller";
-import { validate } from "../middlewares/validate";
-import { createAlquilerSchema, updateAlquilerSchema, pagarAlquilerSchema } from "../validations/alquiler.validation";
+
 const router = Router();
 
-router.get('/', alquilerController.obtenerAlquileres);
+router.get(
+  '/',
+  authenticate,
+  authorize('CLIENTE', 'ADMINISTRADOR', 'DUENIO'),
+  alquilerController.obtenerAlquileres
+);
 
-router.get('/complejo/:complejoId', alquilerController.obtenerAlquileresPorComplejo);
+router.get(
+  '/complejo/:complejoId',
+  authenticate,
+  authorize('CLIENTE', 'ADMINISTRADOR', 'DUENIO'),
+  alquilerController.obtenerAlquileresPorComplejo
+);
 
-router.get('/:id', alquilerController.obtenerAlquilerPorId);
+router.get(
+  '/:id',
+  authenticate,
+  authorize('CLIENTE', 'ADMINISTRADOR', 'DUENIO'),
+  alquilerController.obtenerAlquilerPorId
+);
 
-router.post('/', validate(createAlquilerSchema) ,alquilerController.crearAlquiler);
+router.post(
+  '/',
+  authenticate,
+  authorize('CLIENTE'),
+  validate(alquilerSchema.crearAlquiler),
+  alquilerController.crearAlquiler
+);
 
-router.post('/:id/pagar', validate(pagarAlquilerSchema), alquilerController.pagarAlquiler);
+router.post(
+  '/:id/pagar',authenticate,
+  authorize('CLIENTE'),
+  validate(alquilerSchema.pagarAlquiler),
+  alquilerController.pagarAlquiler
+);
 
-router.patch('/:id', validate(updateAlquilerSchema), alquilerController.actualizarAlquiler);
+router.patch(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  validate(alquilerSchema.actualizarAlquiler),
+  alquilerController.actualizarAlquiler
+);
 
 export default router;

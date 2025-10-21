@@ -288,3 +288,8 @@ export const deleteComplejo_sol_dom = async (id: number) => {
         throw error;
     }
 }
+
+export async function esDuenioDeComplejo(complejoId: number, usuarioId: number): Promise<boolean> {
+  const complejo = await getComplejoById(complejoId);
+  return complejo.usuarioId === usuarioId;
+}

@@ -1,6 +1,7 @@
 import prisma from '../config/prisma';
 import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
+import { CrearAlquilerData } from '../validations/alquiler.validation';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	return await prisma.alquiler.findMany({
@@ -27,14 +28,10 @@ export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	});
 }
 
-export async function crearAlquiler(data: CreateAlquilerRequest) {
-	console.log('🔍 CREAR ALQUILER - Datos recibidos:', JSON.stringify(data, null, 2));
-	
-	const { usuarioId, turnosIds } = data;
-	
-	console.log('📋 CREAR ALQUILER - Usuario ID:', usuarioId, 'Turnos IDs:', turnosIds);
-	
-	if (turnosIds.length < 1) {
+export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) {
+  const { turnosIds } = data;
+
+  if (turnosIds.length < 1) {
 		throw new Error('Se debe seleccionar al menos un turno');
 	}
 	if (turnosIds.length > 3) {
@@ -44,8 +41,6 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 	// Si se envía el mismo turno múltiples veces, interpretamos que quiere bloques consecutivos
 	const turnoBase = turnosIds[0];
 	const cantidadBloques = turnosIds.length;
-	
-	console.log('🎯 TURNO BASE:', turnoBase, 'BLOQUES SOLICITADOS:', cantidadBloques);
 	
 	// Verificar que todos los turnos sean el mismo (si envían múltiples)
 	const todosIguales = turnosIds.every(id => id === turnoBase);
@@ -161,7 +156,7 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 				select: {
 					nombre: true,
 					apellido: true,
-					correo: true
+					email: true
 				}
 			}
 		}
@@ -261,7 +256,7 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 				select: {
 					nombre: true,
 					apellido: true,
-					correo: true
+					email: true
 				}
 			}
 		}

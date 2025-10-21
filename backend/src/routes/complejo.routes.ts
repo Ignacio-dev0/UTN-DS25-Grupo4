@@ -1,26 +1,58 @@
 // backend/src/routes/complejo.routes.ts
 import { Router } from 'express';
+import validate from '../middlewares/validate';
+import { authenticate, authorize } from "../middlewares/auth.middleware";
 import * as complejoController from '../controllers/complejo.controller';
-import { validate } from '../middlewares/validate';
-import * as validationComplejo from "../validations/complejo.validation"
+import * as validationComplejo from "../validations/complejo.validation";
+
 const router = Router();
 
 // Ruta para obtener todos los complejos
-router.get('/', complejoController.obtenerComplejos);
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  complejoController.obtenerComplejos
+);
 
-// Ruta para obtener solo complejos aprobados
-router.get('/aprobados', complejoController.obtenerComplejosAprobados);
+// Ruta para obtener solo complejos aprobados (pública)
+router.get(
+  '/aprobados',
+  complejoController.obtenerComplejosAprobados
+);
 
 // Ruta para crear un nuevo complejo
-router.post('/', validate(validationComplejo.crearComplejoSchema) , complejoController.crearComplejo);
+router.post(
+  '/',
+  authenticate,
+  authorize('DUENIO'),
+  validate(validationComplejo.crearComplejoSchema),
+  complejoController.crearComplejo
+);
 
 // Ruta para obtener un único complejo por su ID
-router.get('/:id', validate(validationComplejo.getComplejoByIdSchema) , complejoController.obtenerComplejoPorId);
+router.get(
+  '/:id',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR', 'CLIENTE'),
+  complejoController.obtenerComplejoPorId
+);
 
 // Ruta para actualizar un complejo por su ID
-router.put('/:id',  validate(validationComplejo.updateComplejoSchema) ,complejoController.actualizarComplejo);
+router.put(
+  '/:id',
+  authenticate,
+  authorize('DUENIO'),
+  validate(validationComplejo.updateComplejoSchema),
+  complejoController.actualizarComplejo
+);
 
 // Ruta para eliminar un complejo por su ID
-router.delete('/:id', validate(validationComplejo.getComplejoByIdSchema) ,complejoController.eliminarComplejo);
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('ADMINNISTRADOR'),
+  complejoController.eliminarComplejo
+);
 
 export default router;

@@ -40,3 +40,15 @@ export async function obtenerAdministradores(req: Request, res: Response<Adminis
     next(error);
   }
 }
+
+export async function eliminarAdministrador(req: Request, res: Response<{ message: string }>, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    await administradorService.eliminarAdministrador(Number(id));
+    res.status(200).json({
+      message: 'Administrador eliminado',
+    });
+  } catch (error) {
+    next(error);
+  }
+}

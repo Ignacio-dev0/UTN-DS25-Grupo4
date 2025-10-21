@@ -4,9 +4,7 @@ import * as alquilerService from "../services/alquiler.service";
 
 export async function crearAlquiler(req: Request, res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
-		console.log('🔍 CREAR ALQUILER - Datos recibidos:', JSON.stringify(req.body, null, 2));
-		const alquiler = await alquilerService.crearAlquiler(req.body);
-		console.log('✅ CREAR ALQUILER - Alquiler creado exitosamente:', alquiler.id);
+		const alquiler = await alquilerService.crearAlquiler(req.usuario.id, req.body);
 		res.status(201).json({
 			alquiler,
 			message: 'Alquiler creado exitosamente',
@@ -50,9 +48,9 @@ export async function obtenerAlquilerPorId(req: Request, res: Response<AlquilerR
 export async function obtenerAlquileres(req: Request, res: Response<AlquilerListResponse>, next: NextFunction) {
 	try {
 		const { clienteId } = req.query;
-		const alquileres = clienteId ?
-			await alquilerService.obtenerAlquileresPorClienteId(Number(clienteId)) :
-			await alquilerService.obtenerAlquileres();
+		const alquileres = clienteId
+			? await alquilerService.obtenerAlquileresPorClienteId(Number(clienteId))
+      : await alquilerService.obtenerAlquileres();
 
 		res.status(200).json({
 			alquileres,
