@@ -19,6 +19,15 @@ function GestionUsuarios() {
     setImagenesError(prev => new Set([...prev, usuario.id]));
   };
 
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
   // Componente para mostrar la imagen o avatar del usuario
   const UsuarioAvatar = ({ usuario }) => {
     const imageUrl = getUsuarioImageUrl(usuario);
@@ -124,17 +133,19 @@ function GestionUsuarios() {
         
         if (isFormData) {
           // Para FormData (con imagen)
+          const token = localStorage.getItem('token');
           response = await fetch(`${API_BASE_URL}/usuarios/${userId}/update-with-image`, {
             method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
             body: usuarioGuardado,
           });
         } else {
           // Para JSON (sin imagen)
           response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
             method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(usuarioGuardado),
           });
         }
@@ -142,17 +153,19 @@ function GestionUsuarios() {
         // Crear nuevo usuario
         if (isFormData) {
           // Para FormData (con imagen)
+          const token = localStorage.getItem('token');
           response = await fetch(`${API_BASE_URL}/usuarios/register-with-image`, {
             method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
             body: usuarioGuardado,
           });
         } else {
           // Para JSON (sin imagen)
           response = await fetch(`${API_BASE_URL}/usuarios`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(usuarioGuardado),
           });
         }
@@ -192,6 +205,7 @@ function GestionUsuarios() {
     try {
       const response = await fetch(`${API_BASE_URL}/usuarios/${usuarioSeleccionado.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {

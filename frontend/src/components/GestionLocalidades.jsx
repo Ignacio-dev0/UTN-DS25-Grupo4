@@ -12,6 +12,15 @@ function GestionLocalidades() {
   const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
   const [localidadSeleccionada, setLocalidadSeleccionada] = useState(null);
 
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
   // Cargar localidades desde el backend
   useEffect(() => {
     const cargarLocalidades = async () => {
@@ -51,9 +60,7 @@ function GestionLocalidades() {
         // Actualizar localidad existente
         response = await fetch(`${API_BASE_URL}/localidades/${localidadGuardada.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             nombre: localidadGuardada.nombre
           }),
@@ -62,9 +69,7 @@ function GestionLocalidades() {
         // Crear nueva localidad
         response = await fetch(`${API_BASE_URL}/localidades`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             nombre: localidadGuardada.nombre
           }),
@@ -117,6 +122,7 @@ function GestionLocalidades() {
       console.log('Eliminando localidad:', localidadSeleccionada.id);
       const response = await fetch(`${API_BASE_URL}/localidades/${localidadSeleccionada.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       console.log('Response status:', response.status);

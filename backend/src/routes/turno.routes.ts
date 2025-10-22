@@ -26,8 +26,15 @@ router.put(
 router.post(
   '/individual',
   authenticate,
-  authorize('DUENIO'),
+  authorize('DUENIO', 'ADMINISTRADOR'),
   turnoAutomaticoController.crearTurnoIndividual
+);
+
+router.delete(
+  '/individual/:turnoId',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  turnoAutomaticoController.eliminarTurnoIndividual
 );
 
 // Generar turnos automáticamente (LEGACY)

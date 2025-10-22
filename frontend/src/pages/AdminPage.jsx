@@ -133,8 +133,13 @@ function AdminPage() {
     
     try {
       setLoadingComplejos(true);
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/complejos/${complejoId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.ok) {

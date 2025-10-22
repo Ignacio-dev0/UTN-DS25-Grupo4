@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as horarioDeshabilitadoController from '../controllers/horarioDeshabilitado.controller';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -14,10 +15,20 @@ router.get('/cancha/:canchaId', horarioDeshabilitadoController.obtenerHorariosDe
 
 // POST /api/horarios-deshabilitados
 // Deshabilitar un horario permanentemente
-router.post('/', horarioDeshabilitadoController.deshabilitarHorario);
+router.post(
+  '/',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  horarioDeshabilitadoController.deshabilitarHorario
+);
 
 // DELETE /api/horarios-deshabilitados/:id
 // Habilitar un horario (remover de la lista de deshabilitados)
-router.delete('/:id', horarioDeshabilitadoController.habilitarHorario);
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  horarioDeshabilitadoController.habilitarHorario
+);
 
 export default router;

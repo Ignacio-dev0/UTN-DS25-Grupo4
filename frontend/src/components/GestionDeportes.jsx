@@ -12,6 +12,15 @@ function GestionDeportes() {
   const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
   const [deporteSeleccionado, setDeporteSeleccionado] = useState(null);
 
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
   // Cargar deportes desde el backend
   useEffect(() => {
     const cargarDeportes = async () => {
@@ -51,9 +60,7 @@ function GestionDeportes() {
         // Actualizar deporte existente
         response = await fetch(`${API_BASE_URL}/deportes/${deporteGuardado.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             name: deporteGuardado.nombre,
             icono: deporteGuardado.icono 
@@ -63,9 +70,7 @@ function GestionDeportes() {
         // Crear nuevo deporte
         response = await fetch(`${API_BASE_URL}/deportes`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             name: deporteGuardado.nombre,
             icono: deporteGuardado.icono 
@@ -110,6 +115,7 @@ function GestionDeportes() {
     try {
       const response = await fetch(`${API_BASE_URL}/deportes/${deporteSeleccionado.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {

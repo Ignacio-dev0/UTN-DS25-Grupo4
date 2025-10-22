@@ -49,7 +49,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  authorize('ADMINNISTRADOR'),
+  authorize('ADMINISTRADOR'),
   complejoController.eliminarComplejo
 );
 

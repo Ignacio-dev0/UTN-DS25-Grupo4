@@ -50,28 +50,35 @@ router.post('/register-with-image', uploadSolicitud.single('imagen'), usuarioCon
 // Rutas CRUD para usuarios
 router.post(
   '/',
+  authenticate,
+  authorize('ADMINISTRADOR'),
   validate(usuarioSchema.crearUsuario),
   usuarioController.crearUsuario
 );
 
 router.get(
   "/",
+  authenticate,
+  authorize('ADMINISTRADOR'),
   usuarioController.obtenerUsuarios
 );
 
 router.get(
   "/:id",
+  authenticate,
   usuarioController.obtenerUsuarioPorId
 );
 
 router.get(
   "/email/:email",
+  authenticate,
   usuarioController.obtenerUsuarioPorEmail
 );
 
 router.put(
   "/:id",
   authenticate,
+  authorize('ADMINISTRADOR'),
   validate(usuarioSchema.actualizarUsuario),
   usuarioController.actualizarUsuario
 );
@@ -79,6 +86,7 @@ router.put(
 router.put(
   "/:id/update-with-image",
   authenticate,
+  authorize('ADMINISTRADOR'),
   uploadPerfil.single('imagen'),
   usuarioController.actualizarUsuarioConImagen
 );
@@ -86,6 +94,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
+  authorize('ADMINISTRADOR'),
   usuarioController.eliminarUsuario
 );
 

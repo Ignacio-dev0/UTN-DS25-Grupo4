@@ -11,6 +11,15 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
   // Debug: Ver cuando se re-renderiza con nuevos turnos
   console.log("🔄 CalendarioEdicionTurnos renderizado con", turnos.length, "turnos");
   
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+  
   // Función para recalcular el precio "desde" localmente
   const recalcularPrecioDesdeLocal = (turnosActualizados) => {
     const turnosDisponibles = turnosActualizados.filter(t => !t.reservado && !t.alquilerId);
@@ -270,9 +279,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       const response = await fetch(`${API_BASE_URL}/turnos/${turno.id}/${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -312,9 +319,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
     try {
       const response = await fetch(`${API_BASE_URL}/turnos/individual`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           canchaId: canchaId,
           dia: dia,
@@ -407,9 +412,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       setGuardandoCambios(true);
       const response = await fetch(`${API_BASE_URL}/turnos/individual/${turnoId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(cambios),
       });
 
@@ -470,9 +473,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       const responseHorario = await fetch(`${API_BASE_URL}/horarios-deshabilitados`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           canchaId: canchaId,
           dia: diaNormalizado,
@@ -496,6 +497,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       // 2. Eliminar el turno actual de la BD
       const responseTurno = await fetch(`${API_BASE_URL}/turnos/individual/${turno.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (!responseTurno.ok) {
