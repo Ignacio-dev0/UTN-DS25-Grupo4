@@ -491,24 +491,31 @@ export async function actualizarCancha (id: number, data: UpdateCanchaData) {
 };
 
 export async function eliminarCancha(id: number) {
+	console.log('🗑️ Iniciando eliminación de cancha ID:', id);
+	
 	// Verificar que la cancha existe
 	const canchaExistente = await prisma.cancha.findUnique({
 		where: { id }
 	});
 	
 	if (!canchaExistente) {
+		console.log('❌ Cancha no encontrada');
 		const error = new Error(`La cancha con ID ${id} no existe`);
 		(error as any).statusCode = 404;
 		throw error;
 	}
+	
+	console.log('✅ Cancha encontrada:', canchaExistente.nombre);
 
 	// Verificar si hay alquileres pagados que referencien turnos de esta cancha
+	console.log('🔍 Verificando alquileres pagados...');
 	const alquileres = await prisma.alquiler.findMany({
 		where: {
 			estado: EstadoAlquiler.PAGADO,
 			turnos: { some: { canchaId: id } },
 		}
 	});
+	console.log('📊 Alquileres pagados encontrados:', alquileres.length);
 
 	if (alquileres.length !== 0) {
 		const error = new Error(`No se puede eliminar la cancha porque tiene ${alquileres.length} reserva${alquileres.length > 1 ? 's' : ''} confirmada${alquileres.length > 1 ? 's' : ''} pendiente${alquileres.length > 1 ? 's' : ''} de cumplir.`);
@@ -517,18 +524,30 @@ export async function eliminarCancha(id: number) {
  	}
 	
 	// Eliminar turnos asociados primero
+	console.log('🧹 Eliminando turnos asociados...');
 	await prisma.turno.deleteMany({
 		where: { canchaId: id }
 	});
 	
 	// Eliminar cronogramas asociados
+	console.log('🧹 Eliminando cronogramas asociados...');
 	await prisma.horarioCronograma.deleteMany({
 		where: { canchaId: id }
 	});
 	
-  return prisma.cancha.delete({
+	// Eliminar horarios deshabilitados asociados
+	console.log('🧹 Eliminando horarios deshabilitados asociados...');
+	await prisma.horarioDeshabilitado.deleteMany({
+		where: { canchaId: id }
+	});
+	
+	console.log('🗑️ Eliminando cancha...');
+  const result = await prisma.cancha.delete({
     where: { id },
   });
+  
+  console.log('✅ Cancha eliminada exitosamente');
+  return result;
 };
 
 export async function esDuenioDeCancha(canchaId: number, usuarioId: number): Promise<boolean> {

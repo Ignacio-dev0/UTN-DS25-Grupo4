@@ -120,19 +120,24 @@ export async function obtenerCanchasPorComplejoId(req: Request, res: Response<Ca
 
 export async function eliminarCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
+    console.log('🗑️ Request para eliminar cancha - ID:', req.params.id);
     const canchaId = Number(req.params.id);
     const usuarioId = req.usuario.id;
+    console.log('👤 Usuario ID:', usuarioId, 'Rol:', req.usuario.rol);
 
     if(req.usuario.rol !== 'ADMINISTRADOR' && !(await canchaService.esDuenioDeCancha(canchaId, usuarioId))) {
+      console.log('❌ Usuario no tiene permiso');
       throw new Error('No tienes permiso para eliminar esta cancha.');
     }
 
     const cancha = await canchaService.eliminarCancha(canchaId);
+    console.log('✅ Cancha eliminada exitosamente');
     res.status(200).json({
 			cancha,
 			message: 'Cancha eliminada correctamente.'
     });
   } catch (error) {
+    console.error('❌ ERROR eliminando cancha:', error);
 		next(error);
 	}
 };
