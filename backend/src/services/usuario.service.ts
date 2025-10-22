@@ -112,7 +112,7 @@ export async function updateUsuario(id: number, updateData: ActualizarUsuarioDat
             where: { id },
             data: {
                 ...(dataToUpdate.apellido !== undefined ? { apellido: dataToUpdate.apellido } : {}),
-                ...(dataToUpdate.name !== undefined ? { nombre: dataToUpdate.name } : {}),
+                ...(dataToUpdate.nombre !== undefined ? { nombre: dataToUpdate.nombre } : {}),
                 ...(dataToUpdate.dni !== undefined ? { dni: dataToUpdate.dni } : {}),
                 ...(dataToUpdate.correo !== undefined ? { correo: dataToUpdate.correo } : {}),
                 ...(dataToUpdate.password !== undefined ? { password: dataToUpdate.password } : {}),

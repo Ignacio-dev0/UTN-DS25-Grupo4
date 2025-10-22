@@ -192,17 +192,30 @@ function PerfilInfo({ usuario, onSave, turnosFinalizados = 0 }) {
           onChange={handleFileChange}
         />
 
-        {/* Nombre Editable */}
+        {/* Nombre y Apellido Editables */}
         {isEditing ? (
-          <input
-            type="text"
-            name="nombre"
-            value={editedData.nombre}
-            onChange={handleChange}
-            className="text-2xl font-bold text-primary font-lora text-center bg-white border border-primary rounded-md mb-2 w-full"
-          />
+          <div className="w-full space-y-2 mb-2">
+            <input
+              type="text"
+              name="nombre"
+              value={editedData.nombre || ''}
+              onChange={handleChange}
+              placeholder="Nombre"
+              className="text-xl font-bold text-primary font-lora text-center bg-white border border-primary rounded-md w-full px-2 py-1"
+            />
+            <input
+              type="text"
+              name="apellido"
+              value={editedData.apellido || ''}
+              onChange={handleChange}
+              placeholder="Apellido"
+              className="text-xl font-bold text-primary font-lora text-center bg-white border border-primary rounded-md w-full px-2 py-1"
+            />
+          </div>
         ) : (
-          <h3 className="text-2xl font-bold text-primary font-lora">{usuario.nombre}</h3>
+          <h3 className="text-2xl font-bold text-primary font-lora">
+            {usuario.nombre} {usuario.apellido || ''}
+          </h3>
         )}
 
         <p className="text-md text-secondary mb-6">{calcularNivelUsuario(turnosFinalizados)}</p>

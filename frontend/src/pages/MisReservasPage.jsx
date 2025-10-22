@@ -54,16 +54,19 @@ function MisReservasPage() {
             try {
                 const response = await getUserProfile();
                 if (response.ok) {
+                    // Construir URL correcta para la imagen (sin /api)
+                    const baseUrl = API_BASE_URL.replace('/api', '');
                     const userData = {
                         id: response.user.id,
-                        nombre: `${response.user.nombre} ${response.user.apellido}`,
+                        nombre: response.user.nombre,
+                        apellido: response.user.apellido,
                         rol: 'Jugador Apasionado', // Esto se puede personalizar según el rol
                         email: response.user.correo,
                         telefono: response.user.telefono || '',
                         direccion: response.user.direccion || '', // Campo de dirección libre
                         dni: response.user.dni,
                         profileImageUrl: response.user.image ? 
-                            (response.user.image.startsWith('http') ? response.user.image : `${API_BASE_URL}${response.user.image}`) 
+                            (response.user.image.startsWith('http') ? response.user.image : `${baseUrl}${response.user.image}`) 
                             : 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
                     };
                     setUsuario(userData);
@@ -436,6 +439,7 @@ function MisReservasPage() {
                 const updatedUserData = {
                     ...usuario,
                     nombre: datosActualizados.nombre || usuario.nombre,
+                    apellido: datosActualizados.apellido || usuario.apellido,
                     telefono: datosActualizados.telefono || usuario.telefono,
                     direccion: datosActualizados.direccion || usuario.direccion,
                     profileImageUrl: nuevaImagenUrl
@@ -465,6 +469,7 @@ function MisReservasPage() {
                     email: response.user.correo || contextUser.email || contextUser.correo,
                     profileImageUrl: nuevaImagenUrl,
                     nombre: response.user.nombre || datosActualizados.nombre,
+                    apellido: response.user.apellido || datosActualizados.apellido,
                     telefono: response.user.telefono || datosActualizados.telefono,
                     direccion: response.user.direccion || datosActualizados.direccion
                 };

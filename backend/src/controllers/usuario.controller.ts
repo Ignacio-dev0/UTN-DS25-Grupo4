@@ -496,8 +496,8 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     // Preparar datos para actualizar
     const updateData: any = {};
     
-    if (nombre) updateData.name = nombre;
-    if (apellido) updateData.lastname = apellido;
+    if (nombre) updateData.nombre = nombre;
+    if (apellido) updateData.apellido = apellido;
     if (correo) updateData.correo = correo;
     if (dni && dni !== 'undefined') updateData.dni = dni;
     if (telefono) updateData.telefono = telefono;

@@ -198,12 +198,16 @@ export const updateUserProfile = async (userData) => {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      // Crear FormData
+      // Crear FormData - solo agregar campos que tengan valor
       const formData = new FormData();
-      formData.append('nombre', userData.nombre || currentUser.nombre);
-      formData.append('apellido', userData.apellido || currentUser.apellido);
+      if (userData.nombre || currentUser.nombre) {
+        formData.append('nombre', userData.nombre || currentUser.nombre);
+      }
+      if (userData.apellido || currentUser.apellido) {
+        formData.append('apellido', userData.apellido || currentUser.apellido);
+      }
       formData.append('correo', currentUser.correo || currentUser.email);
-      formData.append('dni', currentUser.dni);
+      formData.append('dni', currentUser.dni || '');
       formData.append('telefono', userData.telefono || '');
       formData.append('direccion', userData.direccion || '');
       formData.append('rol', currentUser.rol || currentUser.role);
@@ -211,8 +215,12 @@ export const updateUserProfile = async (userData) => {
 
       console.log('Enviando con FormData al endpoint con imagen');
 
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}/update-with-image`, {
         method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -227,11 +235,13 @@ export const updateUserProfile = async (userData) => {
       }
 
       // Actualizar usuario en el storage
+      // Construir URL correcta de la imagen (sin /api ya que las imágenes se sirven desde /images directamente)
+      const baseUrl = API_BASE_URL.replace('/api', ''); // http://localhost:3000
       const updatedUser = {
         ...currentUser,
         ...data.usuario,
         role: mapBackendRoleToFrontend(data.usuario.rol),
-        profileImageUrl: data.usuario.image ? `${API_BASE_URL}${data.usuario.image}` : currentUser.profileImageUrl
+        profileImageUrl: data.usuario.image ? `${baseUrl}${data.usuario.image}` : currentUser.profileImageUrl
       };
 
       if (localStorage.getItem('user')) {
@@ -255,10 +265,12 @@ export const updateUserProfile = async (userData) => {
 
       console.log('Enviando datos sin imagen:', updateData);
 
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateData),
       });
