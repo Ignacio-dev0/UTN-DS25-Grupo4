@@ -172,7 +172,7 @@ export async function login(req: Request, res: Response) {
     const token = jwt.sign(
       {
         id: usuario.id,
-        email: usuario.correo || usuario.email,
+        email: usuario.correo,
         rol: usuario.rol
       },
       process.env.JWT_SECRET!,
@@ -184,7 +184,8 @@ export async function login(req: Request, res: Response) {
       ok: true,
       user: {
         id: usuario.id,
-        email: usuario.correo || usuario.email, // Compatibilidad Usuario/Administrador
+        email: usuario.correo,
+        correo: usuario.correo, // También incluir correo para compatibilidad frontend
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         role: usuario.rol // Usar rol del schema
