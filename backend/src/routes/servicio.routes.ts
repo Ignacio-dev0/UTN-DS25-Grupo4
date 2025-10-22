@@ -40,8 +40,23 @@ router.delete(
 // Rutas para servicios de complejos
 // Estos endpoints deberían estar en las rutas de complejo
 router.get('/complejo/:complejoId', servicioController.getServiciosByComplejo);
-router.post('/complejo/:complejoId', servicioController.addServicioToComplejo);
-router.put('/complejo/:complejoId/:servicioId', servicioController.updateComplejoServicio);
-router.delete('/complejo/:complejoId/:servicioId', servicioController.removeServicioFromComplejo);
+router.post(
+  '/complejo/:complejoId',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  servicioController.addServicioToComplejo
+);
+router.put(
+  '/complejo/:complejoId/:servicioId',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  servicioController.updateComplejoServicio
+);
+router.delete(
+  '/complejo/:complejoId/:servicioId',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  servicioController.removeServicioFromComplejo
+);
 
 export default router;

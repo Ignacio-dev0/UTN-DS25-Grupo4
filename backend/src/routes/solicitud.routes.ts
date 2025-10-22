@@ -12,7 +12,13 @@ router.post(
 );
 
 // Nueva ruta para crear solicitudes con imagen
-router.post('/with-image', solicitudController.uploadMiddleware, solicitudController.createRequestWithImage);
+router.post(
+  '/with-image',
+  authenticate,
+  authorize('DUENIO'),
+  solicitudController.uploadMiddleware,
+  solicitudController.createRequestWithImage
+);
 
 router.get(
   '/',
