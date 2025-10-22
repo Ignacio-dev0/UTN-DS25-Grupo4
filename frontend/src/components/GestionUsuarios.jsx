@@ -94,7 +94,13 @@ function GestionUsuarios() {
   const cargarUsuarios = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/usuarios`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/usuarios`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         console.log('Usuarios cargados:', data);
