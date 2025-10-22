@@ -1,1 +1,21 @@
 Reserva-Reseña Front/node_modules/
+
+# Environment variables
+backend/.env
+frontend/.env
+
+# Database backups
+*.sql
+backend/supabase_backup_*.sql
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*.log
+
+backend/scripts/
+
