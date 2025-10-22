@@ -15,6 +15,7 @@ const apiRequest = async (endpoint, options = {}) => {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }), // Agregar token si existe
+      ...(options.headers || {}), // Merge con headers personalizados
     },
     ...options
   };
