@@ -1,10 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StarIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 function MiniCanchaCard({ cancha, onAction, isEditing }) {
   // Usar el icono del backend directamente
   const deporteIcono = cancha.deporte?.icono || '⚽';
+  const [imageError, setImageError] = useState(false);
+  
+  // Función para obtener la URL de la imagen
+  const getImageUrl = (image) => {
+    if (!image || image.length === 0) return '/canchaYa.png';
+    const firstImage = image[0];
+    // Si es base64, usarla directamente
+    if (firstImage.startsWith('data:image')) return firstImage;
+    // Si es un nombre de archivo, intentar cargar desde el servidor
+    if (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg')) {
+      return `http://localhost:3000/images/canchas/${firstImage}`;
+    }
+    return '/canchaYa.png';
+  };
 
   const cardClasses = `block rounded-lg shadow-lg overflow-hidden transition-all duration-300 group relative ${
     cancha.estado === 'deshabilitada' 
@@ -26,17 +40,9 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
         <div className="relative">
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
-            src={
-              (cancha.image && cancha.image.length > 0 && cancha.image[0].startsWith('data:image')) 
-                ? cancha.image[0]  // Solo usar si es base64 válido
-                : '/canchaYa.png'   // Usar placeholder siempre para archivos
-            } 
+            src={imageError ? '/canchaYa.png' : getImageUrl(cancha.image)}
             alt={`Cancha ${cancha.nroCancha}`}
-            onError={(e) => {
-              // Silenciosamente usar placeholder si falla la carga
-              e.target.onerror = null; // Prevenir loop infinito
-              e.target.src = '/canchaYa.png';
-            }}
+            onError={() => setImageError(true)}
           />
           {cancha.estado === 'deshabilitada' && (
             <div className="absolute inset-0 bg-black bg-opacity-40"></div>

@@ -184,6 +184,22 @@ function CanchaCard({ cancha }) {
   
   // Usar el icono del backend directamente
   const deporteIcono = cancha.deporte?.icono || '⚽';
+  
+  // Estado para manejar error de imagen
+  const [imageError, setImageError] = useState(false);
+  
+  // Función para obtener la URL de la imagen
+  const getImageUrl = (image) => {
+    if (!image || image.length === 0) return '/canchaYa.png';
+    const firstImage = image[0];
+    // Si es base64, usarla directamente
+    if (firstImage.startsWith('data:image')) return firstImage;
+    // Si es un nombre de archivo, intentar cargar desde el servidor
+    if (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg')) {
+      return `http://localhost:3000/images/canchas/${firstImage}`;
+    }
+    return '/canchaYa.png';
+  };
 
   // Function to calculate the cheapest price from available turns today
   const calcularPrecioMinimo = () => {
@@ -225,16 +241,9 @@ function CanchaCard({ cancha }) {
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={
-            (cancha.image?.[0] && cancha.image[0].startsWith('data:image'))
-              ? cancha.image[0]  // Solo usar si es base64 válido
-              : '/canchaYa.png'   // Usar placeholder para todo lo demás
-          }
+          src={imageError ? '/canchaYa.png' : getImageUrl(cancha.image)}
           loading="lazy"
-          onError={(e) => {
-            e.target.onerror = null; // Prevenir loop infinito
-            e.target.src = '/canchaYa.png';
-          }}
+          onError={() => setImageError(true)}
           alt={`Cancha de ${cancha.deporte?.nombre}`}
         />
         {precioDesde && (

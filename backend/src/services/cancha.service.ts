@@ -448,7 +448,8 @@ export async function obtenerCanchasPorComplejoId(
       ...(incluirInactivas ? {} : { activa: true })
     },
     include: {
-      cronograma: true
+      cronograma: true,
+      deporte: true
     }
   });
 
@@ -470,6 +471,15 @@ export async function obtenerCanchasPorComplejoId(
       precioDesde: precioMinimo
     };
   });
+
+  console.log('🖼️ CANCHA SERVICE - Canchas con imágenes:', 
+    canchasConPrecios.map(c => ({ 
+      id: c.id, 
+      nroCancha: c.nroCancha, 
+      image: c.image,
+      imageLength: c.image?.length 
+    }))
+  );
 
   return canchasConPrecios;
 };

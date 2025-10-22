@@ -321,16 +321,26 @@ function ReservaPage() {
     let imageUrl;
     let otrasImagenes = [];
     
-    if (cancha.image && cancha.image.length > 0 && cancha.image[0].startsWith('data:image')) {
-      // Solo usar imágenes si son base64 válidas
-      imageUrl = cancha.image[0]; // Primera imagen como principal
+    // Función helper para procesar imágenes
+    const processImageUrl = (image) => {
+      if (!image) return '/canchaYa.png';
+      // Si es base64, usarla directamente
+      if (image.startsWith('data:image')) return image;
+      // Si es un nombre de archivo, intentar cargar desde el servidor
+      if (image.includes('.jpg') || image.includes('.png') || image.includes('.jpeg')) {
+        return `http://localhost:3000/images/canchas/${image}`;
+      }
+      return '/canchaYa.png';
+    };
+    
+    if (cancha.image && cancha.image.length > 0) {
+      imageUrl = processImageUrl(cancha.image[0]);
       
-      // Resto de imágenes como thumbnails (solo base64)
+      // Resto de imágenes como thumbnails
       if (cancha.image.length > 1) {
-        otrasImagenes = cancha.image.slice(1).filter(img => img.startsWith('data:image'));
+        otrasImagenes = cancha.image.slice(1).map(img => processImageUrl(img));
       }
     } else {
-      // Usar placeholder para todo lo demás
       imageUrl = '/canchaYa.png';
     }
     
