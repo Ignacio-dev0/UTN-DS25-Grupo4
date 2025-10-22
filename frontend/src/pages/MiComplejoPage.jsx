@@ -316,8 +316,13 @@ function MiComplejoPage() {
     if (!confirm('¿Estás seguro de que quieres eliminar esta cancha?')) return;
     
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       
       if (response.ok) {
