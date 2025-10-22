@@ -30,11 +30,13 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
             src={
               (cancha.image && cancha.image.length > 0) 
                 ? getImageUrl(cancha.image[0]) 
-                : getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)
+                : '/canchaYa.png'
             } 
             alt={`Cancha ${cancha.nroCancha}`}
             onError={(e) => {
-              e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
+              // Silenciosamente usar placeholder si falla la carga
+              e.target.onerror = null; // Prevenir loop infinito
+              e.target.src = '/canchaYa.png';
             }}
           />
           {cancha.estado === 'deshabilitada' && (

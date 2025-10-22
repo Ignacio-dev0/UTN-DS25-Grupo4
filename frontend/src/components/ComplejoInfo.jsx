@@ -189,18 +189,16 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
                   : complejo.image.startsWith('http') 
                     ? `${complejo.image}?t=${Date.now()}` 
                     : `${API_BASE_URL}${complejo.image}?t=${Date.now()}`)
-              : "/images/placeholder.png"
+              : "/canchaYa.png"
           } 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
           onClick={handleImageClick}
           loading="lazy"
           onError={(e) => {
-            console.error('❌ Error cargando imagen del complejo');
-            // Evitar loop infinito de errores
-            if (e.target.src !== "/images/placeholder.png") {
-              e.target.src = "/images/placeholder.png";
-            }
+            // Silenciosamente usar placeholder si falla
+            e.target.onerror = null; // Prevenir loop infinito
+            e.target.src = "/canchaYa.png";
           }}
         />
         {isEditing && (

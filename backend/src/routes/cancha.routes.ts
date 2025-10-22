@@ -49,7 +49,7 @@ router.patch('/:id', canchaController.actualizarCancha);
 router.delete(
   '/:id',
   authenticate,
-  authorize('DUENIO'),
+  authorize('DUENIO', 'ADMINISTRADOR'),
   canchaController.eliminarCancha
 );
 

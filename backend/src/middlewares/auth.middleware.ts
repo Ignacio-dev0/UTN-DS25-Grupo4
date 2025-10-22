@@ -46,6 +46,11 @@ export function authorize(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.usuario) throw new Error('Se requiere autenticación')
+      
+      console.log('🔐 AUTHORIZE - Usuario:', req.usuario.email, 'Rol:', req.usuario.rol);
+      console.log('🔐 AUTHORIZE - Roles permitidos:', roles);
+      console.log('🔐 AUTHORIZE - Tiene permiso:', roles.includes(req.usuario.rol));
+      
       if (!roles.includes(req.usuario.rol)) throw new Error('No tiene permiso para esta acción')
       next(); // ✅ Agregado: continuar si todo está bien
     } catch (e) { 
