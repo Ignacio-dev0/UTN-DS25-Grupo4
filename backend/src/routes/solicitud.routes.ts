@@ -16,7 +16,6 @@ router.post(
   '/with-image',
   authenticate,
   authorize('DUENIO'),
-  solicitudController.uploadMiddleware,
   solicitudController.createRequestWithImage
 );
 

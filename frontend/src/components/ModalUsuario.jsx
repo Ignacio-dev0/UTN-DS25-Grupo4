@@ -132,24 +132,19 @@ function ModalUsuario({ isOpen, usuarioActual, onSave, onClose }) {
         delete dataToSend.password;
       }
 
-      // Si hay una imagen seleccionada, usar FormData
+      // Si hay una imagen seleccionada, convertir a base64
       if (imageFile) {
-        const formDataWithImage = new FormData();
-        
-        // Agregar todos los campos del formulario
-        Object.keys(dataToSend).forEach(key => {
-          if (dataToSend[key] !== undefined && dataToSend[key] !== null) {
-            formDataWithImage.append(key, dataToSend[key]);
-          }
+        const imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(imageFile);
         });
         
-        // Agregar la imagen
-        formDataWithImage.append('imagen', imageFile);
-        
-        onSave(formDataWithImage, true); // true indica que es FormData
-      } else {
-        onSave(dataToSend, false); // false indica que es JSON
+        dataToSend.imagen = imageBase64;
       }
+      
+      onSave(dataToSend, false); // Siempre enviar como JSON
     } catch (error) {
       console.error('Error en handleSubmit:', error);
       alert('Error al procesar los datos del usuario');

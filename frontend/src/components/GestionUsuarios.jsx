@@ -129,27 +129,21 @@ function GestionUsuarios() {
     setUsuarioSeleccionado(null);
   };
 
-  const handleSaveUsuario = async (usuarioGuardado, isFormData = false) => {
+  const handleSaveUsuario = async (usuarioGuardado) => {
     try {
       let response;
       
-      if (usuarioGuardado.id || (isFormData && usuarioGuardado.get('id'))) {
+      if (usuarioGuardado.id) {
         // Actualizar usuario existente
-        const userId = isFormData ? usuarioGuardado.get('id') : usuarioGuardado.id;
-        
-        if (isFormData) {
-          // Para FormData (con imagen)
-          const token = localStorage.getItem('token');
-          response = await fetch(`${API_BASE_URL}/usuarios/${userId}/update-with-image`, {
+        // Si tiene imagen, usar el endpoint con imagen, sino el normal
+        if (usuarioGuardado.imagen) {
+          response = await fetch(`${API_BASE_URL}/usuarios/${usuarioGuardado.id}/update-with-image`, {
             method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: usuarioGuardado,
+            headers: getAuthHeaders(),
+            body: JSON.stringify(usuarioGuardado),
           });
         } else {
-          // Para JSON (sin imagen)
-          response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
+          response = await fetch(`${API_BASE_URL}/usuarios/${usuarioGuardado.id}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify(usuarioGuardado),
@@ -157,18 +151,14 @@ function GestionUsuarios() {
         }
       } else {
         // Crear nuevo usuario
-        if (isFormData) {
-          // Para FormData (con imagen)
-          const token = localStorage.getItem('token');
+        // Si tiene imagen, usar el endpoint con imagen, sino el normal
+        if (usuarioGuardado.imagen) {
           response = await fetch(`${API_BASE_URL}/usuarios/register-with-image`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: usuarioGuardado,
+            headers: getAuthHeaders(),
+            body: JSON.stringify(usuarioGuardado),
           });
         } else {
-          // Para JSON (sin imagen)
           response = await fetch(`${API_BASE_URL}/usuarios`, {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -189,7 +179,7 @@ function GestionUsuarios() {
         // Recargar la lista completa para asegurar que se muestren todos los cambios
         await cargarUsuarios();
         
-        alert((usuarioGuardado.id || (isFormData && usuarioGuardado.get('id'))) ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente');
+        alert(usuarioGuardado.id ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente');
       } else {
         const errorData = await response.json();
         alert(errorData.error || errorData.message || 'Error al guardar usuario');

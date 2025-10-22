@@ -1,9 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import  * as soliServ  from "../services/solicitud.service";
-import { uploadSolicitudMiddleware } from "../middlewares/upload";
-
-// Re-exportar el middleware para mantener compatibilidad
-export const uploadMiddleware = uploadSolicitudMiddleware;
 
 export const createRequest =  async (req: Request, res:Response, next:NextFunction) =>{
     try{
@@ -17,8 +13,8 @@ export const createRequest =  async (req: Request, res:Response, next:NextFuncti
 export const createRequestWithImage = async (req: Request, res: Response, next: NextFunction) => {
     try {
         console.log('BODY RECIBIDO EN /admin/solicitudes/with-image:', req.body);
-        const { usuarioId, cuit, nombreComplejo, calle, altura, localidadId } = req.body;
-        const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
+        const { usuarioId, cuit, nombreComplejo, calle, altura, localidadId, imagen } = req.body;
+        const imageBase64 = imagen || null;
 
         // Validaciones explícitas
         if (!usuarioId || isNaN(parseInt(usuarioId))) {
@@ -45,7 +41,7 @@ export const createRequestWithImage = async (req: Request, res: Response, next: 
             cuit,
             complejo: {
                 nombre: nombreComplejo,
-                imagen: imagePath,
+                imagen: imageBase64,
                 domicilio: {
                     calle,
                     altura,

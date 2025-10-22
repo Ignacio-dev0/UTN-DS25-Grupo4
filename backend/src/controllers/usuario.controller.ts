@@ -333,10 +333,8 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function registerWithImage(req: Request, res: Response) {
-  console.log('=== DEBUG registerWithImage ===');
-  console.log('BODY recibido:', req.body);
-  console.log('Archivo recibido:', req.file);
-  console.log('Nombre del campo esperado: imagen');
+  console.log('=== DEBUG registerWithImage (BASE64) ===');
+  console.log('BODY recibido:', { ...req.body, imagen: req.body.imagen ? `[base64 ${req.body.imagen.substring(0, 50)}...]` : null });
   
   try {
     const { 
@@ -354,10 +352,12 @@ export async function registerWithImage(req: Request, res: Response) {
       nombreComplejo, 
       calle, 
       altura, 
-      localidadId 
+      localidadId,
+      imagen  // Base64 image
     } = req.body;
     
-    const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
+    // La imagen ahora viene como base64 en lugar de archivo
+    const imageBase64 = imagen || null;
     
     // Usar correo o email (el que venga)
     const userEmail = correo || email;
@@ -399,7 +399,7 @@ export async function registerWithImage(req: Request, res: Response) {
       dni: dni,
       telefono,
       rol: finalRole,
-      image: imagePath || undefined
+      image: imageBase64 || undefined
     });
 
     // Si es dueño, crear la solicitud automáticamente
@@ -417,7 +417,7 @@ export async function registerWithImage(req: Request, res: Response) {
           cuit,
           complejo: {
             nombre: nombreComplejo,
-            imagen: imagePath,
+            imagen: imageBase64,
             domicilio: {
               calle,
               altura,
@@ -479,14 +479,13 @@ export async function registerWithImage(req: Request, res: Response) {
 export async function actualizarUsuarioConImagen(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { nombre, apellido, correo, dni, telefono, direccion, rol, password } = req.body;
-    const imagePath = req.file ? `/images/usuarios/${req.file.filename}` : null;
+    const { nombre, apellido, correo, dni, telefono, direccion, rol, password, imagen } = req.body;
+    const imageBase64 = imagen || null;
     
     console.log('=== DEBUG: Actualizando usuario con imagen ===');
     console.log('ID:', id);
     console.log('Body completo:', req.body);
-    console.log('Archivo recibido:', req.file);
-    console.log('Imagen path:', imagePath);
+    console.log('Imagen recibida (base64):', imageBase64 ? 'Sí' : 'No');
 
     if (!id) {
       return res.status(400).json({
@@ -533,7 +532,7 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     }
     
     if (password) updateData.password = password;
-    if (imagePath) updateData.image = imagePath;
+    if (imageBase64) updateData.image = imageBase64;
 
     // Actualizar usuario
     console.log('Datos a actualizar:', updateData);
