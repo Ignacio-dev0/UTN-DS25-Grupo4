@@ -140,16 +140,20 @@ export async function eliminarUsuario(req: Request<{id: string}>, res: Response)
 // Nuevas funciones de autenticación
 export async function login(req: Request, res: Response) {
   try {
+    console.log('🔐 LOGIN REQUEST - Body:', { email: req.body.email, hasPassword: !!req.body.password });
     const { email, password } = req.body;
     
     if (!email || !password) {
+      console.log('❌ LOGIN FAILED - Missing credentials');
       return res.status(400).json({
         ok: false,
         error: 'Email y contraseña son requeridos'
       });
     }
 
+    console.log('🔍 Buscando usuario con email:', email);
     const usuario = await usuarioService.getUsuarioByEmail(email);
+    console.log('👤 Usuario encontrado:', usuario ? 'Sí' : 'No');
     
     if (!usuario) {
       return res.status(401).json({
@@ -169,15 +173,17 @@ export async function login(req: Request, res: Response) {
 
     // Generar token JWT
     const jwt = require('jsonwebtoken');
+    console.log('🔑 Generando JWT con secret:', process.env.JWT_SECRET ? 'Configurado' : 'NO CONFIGURADO');
     const token = jwt.sign(
       {
         id: usuario.id,
         email: usuario.correo,
         rol: usuario.rol
       },
-      process.env.JWT_SECRET!,
-      { expiresIn: Number(process.env.JWT_EXPIRES_IN) || '24h' }
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
+    console.log('✅ Token generado exitosamente');
 
     // Login exitoso
     res.json({
@@ -195,9 +201,11 @@ export async function login(req: Request, res: Response) {
     });
 
   } catch (error) {
+    console.error('❌ ERROR EN LOGIN:', error);
     res.status(500).json({
       ok: false,
-      error: 'Error interno del servidor'
+      error: 'Error interno del servidor',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
     });
   }
 }
