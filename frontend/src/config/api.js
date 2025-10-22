@@ -60,11 +60,12 @@ export const getImageUrl = (imagePath) => {
     // Convertir números con leading zero a números sin leading zero
     normalizedPath = normalizedPath.replace(/(_)0(\d+)(\.[a-z]+)$/i, '$1$2$3');
     
-    return `/images/canchas/${normalizedPath}`;
+    // ✅ FIX: Las imágenes estáticas se sirven desde el backend, no desde Vite
+    return `http://localhost:3000/images/canchas/${normalizedPath}`;
   }
   
   // Si no, asumimos que es una ruta relativa dentro de /images/
-  return `/images/${imagePath}`;
+  return `http://localhost:3000/images/${imagePath}`;
 };
 
 // Función helper para construir URLs de API
@@ -112,7 +113,8 @@ export const getPlaceholderImage = (deporteNombre = 'Cancha') => {
     }
   }
   
-  return `/images/canchas/${imageName}`;
+  // ✅ FIX: Las imágenes estáticas se sirven desde el backend
+  return `http://localhost:3000/images/canchas/${imageName}`;
 };
 
 // Función para obtener imagen específica de cancha basada en su ID y deporte
@@ -159,6 +161,7 @@ export const getCanchaImage = (canchaId, deporteNombre, nroCancha = null) => {
   const uniqueNumber = nroCancha ? (canchaId * 13 + nroCancha * 7) : (canchaId * 17);
   const imageNumber = (uniqueNumber % 8) + 1; // Cicla entre 1-8
   
-  return `/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
+  // ✅ FIX: Las imágenes estáticas se sirven desde el backend
+  return `http://localhost:3000/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
 };
 
