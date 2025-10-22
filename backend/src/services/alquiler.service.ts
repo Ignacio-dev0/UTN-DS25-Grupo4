@@ -156,7 +156,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 				select: {
 					nombre: true,
 					apellido: true,
-					email: true
+					correo: true
 				}
 			}
 		}
@@ -256,7 +256,7 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 				select: {
 					nombre: true,
 					apellido: true,
-					email: true
+					correo: true
 				}
 			}
 		}

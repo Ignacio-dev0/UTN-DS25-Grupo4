@@ -282,7 +282,7 @@ export async function register(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.email,
+            correo: newUsuario.correo,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -300,7 +300,7 @@ export async function register(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.email,
+          correo: newUsuario.correo,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
@@ -421,7 +421,7 @@ export async function registerWithImage(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.email,
+            correo: newUsuario.correo,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -443,7 +443,7 @@ export async function registerWithImage(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.email,
+          correo: newUsuario.correo,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
