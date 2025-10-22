@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { StarIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { getImageUrl, getCanchaImage } from '../config/api.js';
 
 function MiniCanchaCard({ cancha, onAction, isEditing }) {
   // Usar el icono del backend directamente
@@ -28,9 +27,9 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
             src={
-              (cancha.image && cancha.image.length > 0) 
-                ? getImageUrl(cancha.image[0]) 
-                : '/canchaYa.png'
+              (cancha.image && cancha.image.length > 0 && cancha.image[0].startsWith('data:image')) 
+                ? cancha.image[0]  // Solo usar si es base64 válido
+                : '/canchaYa.png'   // Usar placeholder siempre para archivos
             } 
             alt={`Cancha ${cancha.nroCancha}`}
             onError={(e) => {

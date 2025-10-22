@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
-import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
+import { API_BASE_URL } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
   const [turnosHoy, setTurnosHoy] = useState([]);
@@ -225,14 +225,15 @@ function CanchaCard({ cancha }) {
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={getImageUrl(cancha.image?.[0]) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)}
+          src={
+            (cancha.image?.[0] && cancha.image[0].startsWith('data:image'))
+              ? cancha.image[0]  // Solo usar si es base64 válido
+              : '/canchaYa.png'   // Usar placeholder para todo lo demás
+          }
           loading="lazy"
           onError={(e) => {
-            // Fallback a imagen por defecto del deporte
-            const fallbackSrc = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
-            if (e.target.src !== fallbackSrc) {
-              e.target.src = fallbackSrc;
-            }
+            e.target.onerror = null; // Prevenir loop infinito
+            e.target.src = '/canchaYa.png';
           }}
           alt={`Cancha de ${cancha.deporte?.nombre}`}
         />

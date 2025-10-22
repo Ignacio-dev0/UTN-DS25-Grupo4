@@ -183,13 +183,9 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
       <div className="relative bg-accent h-64 rounded-lg flex items-center justify-center mb-6">
         <img 
           src={
-            complejo.image 
-              ? (complejo.image.startsWith('data:image') 
-                  ? complejo.image  // Base64 directo
-                  : complejo.image.startsWith('http') 
-                    ? `${complejo.image}?t=${Date.now()}` 
-                    : `${API_BASE_URL}${complejo.image}?t=${Date.now()}`)
-              : "/canchaYa.png"
+            complejo.image && complejo.image.startsWith('data:image')
+              ? complejo.image  // Solo usar si es base64 válido
+              : "/canchaYa.png" // Usar placeholder para todo lo demás
           } 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
