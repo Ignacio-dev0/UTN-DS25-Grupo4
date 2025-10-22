@@ -5,7 +5,7 @@ import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
-import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
+import { API_BASE_URL } from '../config/api.js';
 
 // Función helper para construir la dirección completa
 const buildLocationString = (domicilio) => {
@@ -321,17 +321,17 @@ function ReservaPage() {
     let imageUrl;
     let otrasImagenes = [];
     
-    if (cancha.image && cancha.image.length > 0) {
-      // Si la cancha tiene imágenes en la BD
-      imageUrl = getImageUrl(cancha.image[0]); // Primera imagen como principal
+    if (cancha.image && cancha.image.length > 0 && cancha.image[0].startsWith('data:image')) {
+      // Solo usar imágenes si son base64 válidas
+      imageUrl = cancha.image[0]; // Primera imagen como principal
       
-      // Resto de imágenes como thumbnails
+      // Resto de imágenes como thumbnails (solo base64)
       if (cancha.image.length > 1) {
-        otrasImagenes = cancha.image.slice(1).map(img => getImageUrl(img));
+        otrasImagenes = cancha.image.slice(1).filter(img => img.startsWith('data:image'));
       }
     } else {
-      // Si no hay imágenes en la BD, generar basada en el deporte y ID único
-      imageUrl = getCanchaImage(cancha.id, deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
+      // Usar placeholder para todo lo demás
+      imageUrl = '/canchaYa.png';
     }
     
     return {
