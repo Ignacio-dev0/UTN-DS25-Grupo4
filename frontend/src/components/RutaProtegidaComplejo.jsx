@@ -10,8 +10,7 @@ function RutaProtegidaComplejo() {
   }
 
   if (!isAuthenticated) {
-    alert("Debes iniciar sesión para acceder a esta página.");
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   
   // Permitir acceso a administradores y dueños
