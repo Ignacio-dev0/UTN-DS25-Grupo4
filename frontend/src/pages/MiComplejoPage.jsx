@@ -262,9 +262,11 @@ function MiComplejoPage() {
         console.log('Datos a enviar:', datosParaActualizar);
         console.log('Tamaño de la imagen:', datosParaActualizar.image ? `${(datosParaActualizar.image.length / 1024).toFixed(2)} KB` : 'Sin imagen');
         
+        const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/complejos/${complejoId}`, {
           method: 'PUT',
           headers: {
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(datosParaActualizar),
