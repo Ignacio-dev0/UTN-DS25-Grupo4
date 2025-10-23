@@ -142,9 +142,11 @@ export const getUserProfile = async () => {
       };
     }
 
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
