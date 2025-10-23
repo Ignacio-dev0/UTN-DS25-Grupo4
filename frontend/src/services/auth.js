@@ -225,13 +225,14 @@ export const updateUserProfile = async (userData) => {
       }
 
       // Actualizar usuario en el storage
-      // Construir URL correcta de la imagen (sin /api ya que las imágenes se sirven desde /images directamente)
-      const baseUrl = API_BASE_URL.replace('/api', ''); // http://localhost:3000
+      // El backend ahora devuelve imageUrl en lugar de image completa
+      const baseUrl = API_BASE_URL.replace('/api', '');
       const updatedUser = {
         ...currentUser,
         ...data.usuario,
         role: mapBackendRoleToFrontend(data.usuario.rol),
-        profileImageUrl: data.usuario.image ? `${baseUrl}${data.usuario.image}` : currentUser.profileImageUrl
+        profileImageUrl: data.usuario.imageUrl ? `${baseUrl}${data.usuario.imageUrl}` : 
+                         (data.usuario.hasImage ? `${baseUrl}/api/usuarios/${currentUser.id}/image` : currentUser.profileImageUrl)
       };
 
       if (localStorage.getItem('user')) {
