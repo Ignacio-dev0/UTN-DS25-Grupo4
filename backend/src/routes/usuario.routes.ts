@@ -28,6 +28,11 @@ router.get(
 );
 
 router.get(
+  "/:id/image",
+  usuarioController.obtenerImagenUsuario
+);
+
+router.get(
   "/:id",
   authenticate,
   usuarioController.obtenerUsuarioPorId

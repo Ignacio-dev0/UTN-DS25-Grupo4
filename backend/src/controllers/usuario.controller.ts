@@ -39,6 +39,26 @@ export async function obtenerUsuarios(req: Request, res: Response<UsuarioListRes
   }
 }
 
+export async function obtenerImagenUsuario(req: Request<{id: string}>, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const usuario = await usuarioService.getUsuarioById(parseInt(id));
+    
+    if (!usuario || !usuario.image) {
+      return res.status(404).json({
+        error: 'Imagen no encontrada'
+      });
+    }
+    
+    // Devolver la imagen base64
+    res.json({
+      image: usuario.image
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function obtenerUsuarioPorId(req: Request<{id: string}>, res: Response<UsuarioResponse>, next: NextFunction) {
   try {
     const { id } = req.params;
@@ -51,8 +71,17 @@ export async function obtenerUsuarioPorId(req: Request<{id: string}>, res: Respo
       } as any);
     }
     
+    // No enviar la imagen base64 completa (muy grande)
+    // Solo indicar si tiene imagen y la URL
+    const { image, ...usuarioSinImagen } = usuario;
+    const responseUsuario: any = {
+      ...usuarioSinImagen,
+      hasImage: !!image,
+      imageUrl: image ? `/images/usuarios/${id}.jpg` : null
+    };
+    
     res.json({
-      usuario,
+      usuario: responseUsuario,
       message: 'Usuario obtenido exitosamente'
     });
   } catch (error) {
@@ -539,9 +568,18 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     const usuarioActualizado = await usuarioService.updateUsuario(parseInt(id), updateData);
     console.log('Usuario actualizado exitosamente:', usuarioActualizado);
 
+    // No enviar la imagen base64 en la respuesta (muy grande)
+    // Solo indicar que hay imagen disponible
+    const { image, ...usuarioSinImagen } = usuarioActualizado;
+    const responseUsuario = {
+      ...usuarioSinImagen,
+      hasImage: !!image,
+      imageUrl: image ? `/images/usuarios/${id}.jpg` : null
+    };
+
     res.status(200).json({
       message: 'Usuario actualizado exitosamente',
-      usuario: usuarioActualizado
+      usuario: responseUsuario
     });
 
   } catch (error: any) {
