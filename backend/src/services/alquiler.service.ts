@@ -2,6 +2,7 @@ import prisma from '../config/prisma';
 import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
 import { CrearAlquilerData } from '../validations/alquiler.validation';
+import { BadRequestError, NotFoundError } from '../middlewares/handleError.middleware';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	return await prisma.alquiler.findMany({
@@ -29,6 +30,22 @@ export async function obtenerAlquileresPorComplejo(complejoId: number) {
 }
 
 export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) {
+  const alquiler = await prisma.$transaction(async (tx) => {
+    await tx.turno.updateMany({
+      where: { id: { in: data.turnosIds } },
+      data: { reservado: true }
+    });
+    return await tx.alquiler.create({
+      data: {
+        turnos: { connect: data.turnosIds.map(id => ({ id })) },
+        cliente: { connect: { id: usuarioId }}
+      }
+    });
+  });
+  return alquiler;
+}
+
+export async function crearAlquilerVieja(usuarioId: number, data: CrearAlquilerData) {
   const { turnosIds } = data;
 
   if (turnosIds.length < 1) {
@@ -274,7 +291,8 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 export async function obtenerAlquilerPorId(id: number) {
 	const alquiler = await prisma.alquiler.findUnique({
 		where: { id },
-		include: { 
+		include: {
+      resenia: true,
 			turnos: {
 				include: {
 					cancha: {
@@ -389,26 +407,31 @@ export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {
 }
 
 export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest) {
-	const alquiler = await prisma.alquiler.findUnique({
-		where: { id },
-	});
-
-	if (!alquiler) {
-		const error = new Error('Alquiler no encontrado');
-		(error as any).statusCode = 404;
-		throw error;
-	}
+	const alquiler = await obtenerAlquilerPorId(id);
 
 	if (alquiler.estado === EstadoAlquiler.CANCELADO || alquiler.estado === EstadoAlquiler.FINALIZADO) {
-		const error = new Error('Alquiler no puede cancelarse');
-		(error as any).statusCode = 400;
-		throw error;
+		throw new BadRequestError('Alquiler no puede cancelarse');
 	}
-
 	/* En un futuro se deberán realizar las validaciones correspondientes acá mismo */
-	
+	/* Mauro: estoy de acuerdo */
 	return await prisma.alquiler.update({
 		where: { id },
 		data,
 	});
+}
+
+export async function obtenerComplejo(alquilerId: number) {
+  const alquiler = await prisma.alquiler.findUnique({
+    where: { id: alquilerId },
+    select: {
+      turnos: {
+        take: 1,
+        select: {
+          cancha: { select: { complejo: true } }
+        }
+      }
+    }
+  });
+  if (!alquiler) throw new NotFoundError('Alquiler no encontrado');
+  return alquiler.turnos[0].cancha.complejo
 }

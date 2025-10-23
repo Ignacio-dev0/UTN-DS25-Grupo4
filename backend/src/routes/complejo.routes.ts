@@ -50,7 +50,7 @@ router.put(
 router.patch(
   '/:id',
   authenticate,
-  authorize('ADMNISTRADOR'),
+  authorize('ADMINISTRADOR'),
   validate(validationComplejo.evaluarComplejo),
   complejoController.evaluarComplejo
 )
@@ -59,7 +59,7 @@ router.patch(
 router.delete(
   '/:id',
   authenticate,
-  authorize('ADMINNISTRADOR'),
+  authorize('ADMINISTRADOR'),
   complejoController.eliminarComplejo
 );
 

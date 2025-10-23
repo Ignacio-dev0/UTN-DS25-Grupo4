@@ -36,7 +36,8 @@ router.post(
 );
 
 router.post(
-  '/:id/pagar',authenticate,
+  '/:id/pagar',
+  authenticate,
   authorize('CLIENTE'),
   validate(alquilerSchema.pagarAlquiler),
   alquilerController.pagarAlquiler
@@ -45,7 +46,7 @@ router.post(
 router.patch(
   '/:id',
   authenticate,
-  authorize('ADMINISTRADOR'),
+  authorize('ADMINISTRADOR', 'CLIENTE'),
   validate(alquilerSchema.actualizarAlquiler),
   alquilerController.actualizarAlquiler
 );

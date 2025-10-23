@@ -20,6 +20,12 @@ export class BadRequestError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = "No tienes permiso para realizar esta accion") {
+    super(message, 401);
+  }
+}
+
 export default function handleError(err: any, req: Request, res: Response, _next: NextFunction) {
     console.error('💥 ERROR GLOBAL MIDDLEWARE:', {
         url: req.url,

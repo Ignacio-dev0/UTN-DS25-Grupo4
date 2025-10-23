@@ -27,6 +27,7 @@ router.post(
   '/individual',
   authenticate,
   authorize('DUENIO'),
+  validate(crearTurnoSchema),
   turnoAutomaticoController.crearTurnoIndividual
 );
 

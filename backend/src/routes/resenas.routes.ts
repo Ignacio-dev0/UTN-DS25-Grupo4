@@ -30,9 +30,6 @@ router.get(
   resenasController.obtenerReseniaPorId
 );
 
-// Las reseñas deberían poder modificarse ¿¿¿
-// router.put('/:id', validate(reseniaIdSchema), validate(actualizarReseniaSchema), resenasController.actualizarResenia);
-
 router.delete(
   '/:id',
   authenticate,

@@ -2,6 +2,11 @@
 import prisma from '../config/prisma';
 import { Resenia } from '@prisma/client';
 import { CreateReseniaRequest, UpdateReseniaRequest } from '../types/resenia.types';
+import * as alquilerService from '../services/alquiler.service';
+import * as complejoService from '../services/complejo.service';
+import * as canchaService from '../services/cancha.service';
+import { BadRequestError } from '../middlewares/handleError.middleware';
+
 
 export async function getAllResenas(): Promise<Resenia[]> {
     const resenas = await prisma.resenia.findMany({
@@ -201,8 +206,28 @@ export async function getResenasByUsuario(usuarioId: number): Promise<Resenia[]>
 }
 
 export async function createResenia(data: CreateReseniaRequest): Promise<Resenia> {
-    console.log('🔧 RESENIA SERVICE - createResenia called with data:', JSON.stringify(data, null, 2));
-    
+  // Verifico que el alquiler exista
+  const alquiler = await alquilerService.obtenerAlquilerPorId(data.alquilerId);
+  if (alquiler.estado !== 'FINALIZADO') {
+    throw new BadRequestError('No se puede reseñar un alquiler no finalizado');
+  }
+
+  // Creo la reseña
+  const resenia = await prisma.resenia.create({ data });
+
+  // Actualizo el puntaje del complejo
+  const complejoId = alquiler.turnos[0].cancha.complejo.id;
+  await complejoService.recalcularPuntaje(complejoId);
+  
+  // Actualizo el puntaje de la cancha
+  const canchaId = alquiler.turnos[0].cancha.id;
+  await canchaService.recalcularPuntaje(canchaId);
+
+  return resenia;
+}
+
+
+export async function createReseniaVieja(data: CreateReseniaRequest): Promise<Resenia> {
     // Validar que el puntaje esté entre 1 y 5
     if (data.puntaje < 1 || data.puntaje > 5) {
         console.log('❌ RESENIA SERVICE - Puntaje inválido:', data.puntaje);

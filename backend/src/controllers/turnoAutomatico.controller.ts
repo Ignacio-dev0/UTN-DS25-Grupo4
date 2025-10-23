@@ -193,20 +193,6 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
     try {
         const { canchaId, dia, hora, precio } = req.body;
 
-        if (!canchaId || !dia || !hora || precio === undefined) {
-            return res.status(400).json({ 
-                error: "Faltan campos requeridos: canchaId, dia, hora, precio" 
-            });
-        }
-
-        // Validar formato de hora (HH:MM)
-        const horaRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!horaRegex.test(hora)) {
-            return res.status(400).json({ 
-                error: "Formato de hora inválido. Use formato HH:MM (ej: 17:00)" 
-            });
-        }
-
         const canchaIdNum = Number(canchaId);
         const precioNum = Number(precio);
 

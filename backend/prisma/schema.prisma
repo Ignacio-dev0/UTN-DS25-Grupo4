@@ -43,7 +43,7 @@ model Complejo {
   usuarioId       Int                @unique
   cuit            String             @unique
   horarios        String?
-  estado          EstadoComplejo     @default(APROBADO)
+  estado          EstadoComplejo     @default(PENDIENTE)
   canchas         Cancha[]
   domicilio       Domicilio          @relation("ComplejoDomicilio", fields: [domicilioId], references: [id])
   usuario         Usuario            @relation(fields: [usuarioId], references: [id])
@@ -69,7 +69,7 @@ model Localidad {
 
 model Cancha {
   id          Int                 @id @default(autoincrement())
-  nroCancha   Int
+  nroCancha   Int                 @default(autoincrement())
   descripcion String?
   puntaje     Float               @default(0.0)
   precioDesde Float?              @default(0.0)  // Campo calculado para precio mínimo

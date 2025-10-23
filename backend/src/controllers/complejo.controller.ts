@@ -100,7 +100,7 @@ export const evaluarComplejo = async (req: Request, res: Response, next: NextFun
   try {
     const complejoId = parseInt(req.params.id, 10);
     if (isNaN(complejoId)) throw new BadRequestError('Id debe ser un entero positivo');
-    const complejo = await complejoService.evaluarComplejo(complejoId, req.body);
+    const complejo = await complejoService.evaluarComplejo(complejoId, req.usuario.id, req.body);
     return res.status(200).json({
       complejo,
       message: 'Complejo evaluado exitosamente'

@@ -1,6 +1,8 @@
-import { EstadoComplejo } from "@prisma/client";
+import { EstadoComplejo, Turno } from "@prisma/client";
 import prisma from "../config/prisma";
 import { CreateComplejoRequest, UpdateComplejoRequest, EvaluarComplejoRequest } from "../validations/complejo.validation";
+import { BadRequestError } from "../middlewares/handleError.middleware";
+import { obtenerComplejoPorId } from "../controllers/complejo.controller";
 
 
 export const createComplejo = async (data: CreateComplejoRequest) => {
@@ -62,8 +64,16 @@ export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>
   }
 };
 
-export const evaluarComplejo = async (id: number, data: EvaluarComplejoRequest) {
-
+export const evaluarComplejo = async (complejoId: number, administradorId: number, data: EvaluarComplejoRequest) => {
+  let complejo = await getComplejoById(complejoId);
+  if (complejo.estado === data.estado) throw new BadRequestError('El complejo ya se encuentra en ese estado');
+  return await prisma.complejo.update({
+    where: { id: complejoId },
+    data: {
+      ...data,
+      administrador: { connect: {id: administradorId }}
+    }
+  });
 }
 
 export const getComplejos = async (pendientes: boolean) => {
@@ -266,4 +276,30 @@ export const deleteComplejo = async (id: number) => {
 export async function esDuenioDeComplejo(complejoId: number, usuarioId: number): Promise<boolean> {
   const complejo = await getComplejoById(complejoId);
   return complejo.usuarioId === usuarioId;
+}
+
+export async function recalcularPuntaje(complejoId: number) {
+  const resenias = await getReseniasComplejo(complejoId);
+  
+  // Recalculo el promedio de puntajes de las resenias
+  const puntaje = resenias.reduce((acc, r) => acc += r.puntaje, 0) / resenias.length;
+
+  return await prisma.complejo.update({
+    where: { id: complejoId },
+    data: { puntaje }
+  });
+}
+
+export async function getReseniasComplejo(complejoId: number) {
+  // Obtengo complejo con todas sus reseñas
+  const alquileres = await prisma.alquiler.findMany({
+    where: {
+      turnos: {
+        some: { cancha: { complejoId } }
+      },
+      resenia: { isNot: null }
+    },
+    select: { resenia: true }
+  });
+  return alquileres.map(a => a.resenia);
 }

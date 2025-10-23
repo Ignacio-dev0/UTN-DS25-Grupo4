@@ -41,7 +41,11 @@ export async function register(data: RegistroUsuarioBody) {
         complejo: complejoData ? {
           create: {
             ...complejoData,
-            domicilio: { create: complejoData.domicilio }
+            domicilio: { create: {
+              calle: complejoData.domicilio.calle,
+              altura: complejoData.domicilio.altura,
+              localidad: { connect: { id: complejoData.domicilio.localidadId }}
+            }}
           }
         } : { }
       },

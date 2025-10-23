@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AlquilerResponse, AlquilerListResponse, AlquilerPagadoResponse } from "../types/alquiler.types";
 import * as alquilerService from "../services/alquiler.service";
+import { UnauthorizedError } from "../middlewares/handleError.middleware";
 
 export async function crearAlquiler(req: Request, res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
@@ -99,16 +100,20 @@ export async function pagarAlquiler(req: Request, res: Response<AlquilerPagadoRe
 
 export async function actualizarAlquiler(req: Request,  res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
-		const { id } = req.params;
-		console.log('🔍 ACTUALIZAR ALQUILER - ID:', id, 'Datos:', JSON.stringify(req.body, null, 2));
-		const alquiler = await alquilerService.actualizarAlquiler(Number(id), req.body);
-		console.log('✅ ACTUALIZAR ALQUILER - Alquiler actualizado exitosamente:', alquiler.id);
-		res.status(200).json({
-			alquiler,
+		const alquilerId = parseInt(req.params.id, 10);
+    const alquiler = await alquilerService.obtenerAlquilerPorId(alquilerId);
+
+    // Validaciones
+    if (req.usuario.rol !== 'ADMINISTRADOR' && req.usuario.id !== alquiler.clienteId) {
+      throw new UnauthorizedError();
+    }
+		const alquilerActualizado = await alquilerService.actualizarAlquiler(alquilerId, req.body);
+    
+		return res.status(200).json({
+			alquiler: alquilerActualizado,
 			message: 'Alquiler modificado exitosamente',
 		});
 	} catch (error) {
-		console.error('💥 ACTUALIZAR ALQUILER - Error:', error);
 		next(error);
 	}
 }

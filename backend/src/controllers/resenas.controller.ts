@@ -1,66 +1,25 @@
 // backend/src/controllers/resenas.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import * as resenasService from '../services/resenas.service';
+import * as alquilerService from '../services/alquiler.service';
 import { CreateReseniaRequest, UpdateReseniaRequest, ReseniaResponse, ReseniaListResponse } from '../types/resenia.types';
+import { BadRequestError } from '../middlewares/handleError.middleware';
 
-export async function crearResenia(req: Request<{}, ReseniaResponse, CreateReseniaRequest>, res: Response<ReseniaResponse>) {
-    try {
-        console.log('🔍 CREAR RESEÑA - Datos recibidos:', JSON.stringify(req.body, null, 2));
-        
-        // Validar que los datos requeridos estén presentes
-        const { descripcion, puntaje, alquilerId } = req.body;
-        
-        if (!descripcion || puntaje === undefined || !alquilerId) {
-            console.log('❌ CREAR RESEÑA - Faltan datos requeridos');
-            return res.status(400).json({
-                resenia: null,
-                message: 'Faltan datos requeridos: descripcion, puntaje, alquilerId'
-            } as any);
-        }
+export async function crearResenia(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Verifico que el alquiler sea del cliente
+    const alquiler = await alquilerService.obtenerAlquilerPorId(req.body.alquilerId);
+    if (alquiler.clienteId !== req.usuario.id) throw new BadRequestError('Accion no permitida');
+    
+    const nuevaResenia = await resenasService.createResenia(req.body);
 
-        // Validar tipos de datos
-        if (typeof puntaje !== 'number' || typeof alquilerId !== 'number') {
-            console.log('❌ CREAR RESEÑA - Tipos de datos incorrectos');
-            return res.status(400).json({
-                resenia: null,
-                message: 'El puntaje y alquilerId deben ser números'
-            } as any);
-        }
-
-        console.log('🚀 CREAR RESEÑA - Creando reseña...');
-        const nuevaResenia = await resenasService.createResenia(req.body);
-        
-        console.log('✅ CREAR RESEÑA - Reseña creada exitosamente:', nuevaResenia.id);
-        res.status(201).json({
-            resenia: nuevaResenia,
-            message: 'Reseña creada exitosamente'
-        });
-    } catch (error: any) {
-        console.error('💥 CREAR RESEÑA - Error:', error);
-        
-        if (error.statusCode === 400) {
-            return res.status(400).json({
-                resenia: null,
-                message: error.message
-            } as any);
-        }
-        if (error.statusCode === 404) {
-            return res.status(404).json({
-                resenia: null,
-                message: 'El alquiler no existe'
-            } as any);
-        }
-        if (error.statusCode === 409) {
-            return res.status(409).json({
-                resenia: null,
-                message: 'Este alquiler ya tiene una reseña'
-            } as any);
-        }
-        res.status(500).json({
-            resenia: null,
-            message: 'Error interno del servidor'
-        } as any);
-    }
+    return res.status(201).json({
+        resenia: nuevaResenia,
+        message: 'Reseña creada exitosamente'
+    });
+  } catch (e) {
+    next(e);
+  }
 }
 
 export async function obtenerTodasLasResenas(req: Request, res: Response<ReseniaListResponse>, next: NextFunction) {
@@ -87,7 +46,7 @@ export async function obtenerReseniaPorId(req: Request<{id: string}>, res: Respo
             } as any);
         }
         
-        res.json({
+        return res.status(200).json({
             resenia,
             message: 'Reseña obtenida exitosamente'
         });
@@ -100,7 +59,7 @@ export async function obtenerResenasPorComplejo(req: Request<{complejoId: string
     try {
         const { complejoId } = req.params;
         const resenas = await resenasService.getResenasByComplejo(parseInt(complejoId));
-        res.json({
+        return res.status(200).json({
             resenas,
             total: resenas.length
         });
@@ -113,7 +72,7 @@ export async function obtenerResenasPorCancha(req: Request<{canchaId: string}>, 
     try {
         const { canchaId } = req.params;
         const resenas = await resenasService.getResenasByCanchaId(parseInt(canchaId));
-        res.json({
+        return res.status(200).json({
             resenas,
             total: resenas.length
         });

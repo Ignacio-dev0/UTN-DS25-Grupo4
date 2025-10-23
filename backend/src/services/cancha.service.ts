@@ -516,3 +516,26 @@ export async function esDuenioDeCancha(canchaId: number, usuarioId: number): Pro
   const cancha = await obtenerCanchaPorId(canchaId);
   return cancha.complejo.usuarioId === usuarioId;
 }
+
+export async function obtenerReseniasCancha(canchaId: number) {
+  const alquileres = await prisma.alquiler.findMany({
+    where: {
+      turnos: { some: { canchaId } },
+      resenia: { isNot: null }
+    },
+    select: { resenia: true }
+  });
+  return alquileres.map(a => a.resenia);
+}
+
+export async function recalcularPuntaje(canchaId: number) {
+  const resenias = await obtenerReseniasCancha(canchaId);
+  
+  // Recalculo el promedio de puntajes de las resenias
+  const puntaje = resenias.reduce((acc, r) => acc += r.puntaje, 0) / resenias.length;
+
+  return await prisma.cancha.update({
+    where: { id: canchaId },
+    data: { puntaje }
+  });
+}

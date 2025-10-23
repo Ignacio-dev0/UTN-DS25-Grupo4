@@ -9,7 +9,6 @@ export async function getAllUsuarios(): Promise<Usuario[]> {
     orderBy: { nombre: 'asc' },
     include: {
       complejo: true,
-      solicitudes: true,
       reservas: true
     }
   });
@@ -21,7 +20,6 @@ export async function getUsuarioById(id: number): Promise<Usuario | null>{
         where: { id },
         include: {
           complejo: true,
-          solicitudes: true,
           reservas: {
             include: {
               turnos: {
@@ -134,7 +132,6 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
             where: { id },
             include: {
                 complejo: true,
-                solicitudes: true,
                 reservas: {  // reservas son Alquiler[]
                     include: {
                         turnos: true,
@@ -154,15 +151,14 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
 
         console.log(`📊 [${new Date().toISOString()}] User relationships:`, {
             hasComplejo: !!usuario.complejo,
-            solicitudesCount: Array.isArray(usuario.solicitudes) ? usuario.solicitudes.length : 0,
             reservasCount: usuario.reservas.length
         });
 
         // Si el usuario tiene un complejo asociado, usar el servicio especializado
         if (usuario.complejo) {
             console.log(`🏢 [${new Date().toISOString()}] User has complejo, using specialized deletion`);
-            const { deleteComplejo_sol_dom } = await import('./complejo.service');
-            await deleteComplejo_sol_dom(usuario.complejo.id);
+            const { deleteComplejo } = await import('./complejo.service');
+            await deleteComplejo(usuario.complejo.id);
             return usuario; // El usuario ya fue eliminado en la transacción del complejo
         }
 
@@ -197,22 +193,6 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
                     await tx.alquiler.delete({
                         where: { id: alquiler.id }
                     });
-                }
-            }
-
-            // Eliminar solicitudes (si las hay y no están asociadas a complejos)
-            if (Array.isArray(usuario.solicitudes) && usuario.solicitudes.length > 0) {
-                console.log(`🗑️ [${new Date().toISOString()}] Deleting ${usuario.solicitudes.length} solicitudes`);
-                for (const solicitud of usuario.solicitudes) {
-                    // Solo eliminar solicitudes que no estén asociadas a complejos
-                    const complejoAssociated = await tx.complejo.findFirst({
-                        where: { solicitudId: solicitud.id }
-                    });
-                    if (!complejoAssociated) {
-                        await tx.solicitud.delete({
-                            where: { id: solicitud.id }
-                        });
-                    }
                 }
             }
 
