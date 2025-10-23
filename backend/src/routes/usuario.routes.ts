@@ -42,7 +42,16 @@ router.get(
 router.put(
   "/:id",
   authenticate,
-  authorize('ADMINISTRADOR'),
+  (req, res, next) => {
+    // Allow user to update their own profile OR admin to update any profile
+    const isOwnProfile = req.usuario?.id === parseInt(req.params.id);
+    const isAdmin = req.usuario?.rol === 'ADMINISTRADOR';
+    
+    if (!isOwnProfile && !isAdmin) {
+      return res.status(403).json({ error: 'No tiene permiso para actualizar este perfil' });
+    }
+    next();
+  },
   validate(usuarioSchema.actualizarUsuario),
   usuarioController.actualizarUsuario
 );
@@ -50,7 +59,16 @@ router.put(
 router.put(
   "/:id/update-with-image",
   authenticate,
-  authorize('ADMINISTRADOR'),
+  (req, res, next) => {
+    // Allow user to update their own profile OR admin to update any profile
+    const isOwnProfile = req.usuario?.id === parseInt(req.params.id);
+    const isAdmin = req.usuario?.rol === 'ADMINISTRADOR';
+    
+    if (!isOwnProfile && !isAdmin) {
+      return res.status(403).json({ error: 'No tiene permiso para actualizar este perfil' });
+    }
+    next();
+  },
   usuarioController.actualizarUsuarioConImagen
 );
 
