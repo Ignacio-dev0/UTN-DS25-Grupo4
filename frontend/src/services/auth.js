@@ -188,42 +188,30 @@ export const updateUserProfile = async (userData) => {
 
     console.log('Datos recibidos para actualizar:', userData);
 
-    // Si hay imagen, usar FormData y el endpoint con imagen
+    // Si hay imagen, usar JSON con base64
     if (userData.profileImageData && userData.profileImageData.startsWith('data:')) {
-      // Convertir base64 a blob
-      const base64Data = userData.profileImageData.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      // Preparar datos para enviar como JSON
+      const updateData = {
+        nombre: userData.nombre || currentUser.nombre,
+        apellido: userData.apellido || currentUser.apellido,
+        correo: currentUser.correo || currentUser.email,
+        dni: currentUser.dni || '',
+        telefono: userData.telefono || '',
+        direccion: userData.direccion || '',
+        rol: currentUser.rol || currentUser.role,
+        imagen: userData.profileImageData // Enviar base64 directamente
+      };
 
-      // Crear FormData - solo agregar campos que tengan valor
-      const formData = new FormData();
-      if (userData.nombre || currentUser.nombre) {
-        formData.append('nombre', userData.nombre || currentUser.nombre);
-      }
-      if (userData.apellido || currentUser.apellido) {
-        formData.append('apellido', userData.apellido || currentUser.apellido);
-      }
-      formData.append('correo', currentUser.correo || currentUser.email);
-      formData.append('dni', currentUser.dni || '');
-      formData.append('telefono', userData.telefono || '');
-      formData.append('direccion', userData.direccion || '');
-      formData.append('rol', currentUser.rol || currentUser.role);
-      formData.append('imagen', blob, 'profile.jpg');
-
-      console.log('Enviando con FormData al endpoint con imagen');
+      console.log('Enviando con JSON (base64) al endpoint con imagen');
 
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}/update-with-image`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formData,
+        body: JSON.stringify(updateData),
       });
 
       const data = await response.json();
