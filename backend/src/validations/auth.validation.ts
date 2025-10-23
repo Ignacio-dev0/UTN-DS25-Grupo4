@@ -24,24 +24,26 @@ export const registroSchema = z.object({
       .max(30, "El teléfono no puede exceder 30 caracteres")
       .optional(),
     rol: z.enum(["CLIENTE", "DUENIO"]).optional(),
-    solicitudComplejo: z.object({
+    complejo: z.object({
       cuit: z.string()
         .min(11, "El CUIT debe tener 11 dígitos")
         .max(11, "El CUIT debe tener 11 dígitos"),
-      nombreComplejo: z.string()
+      nombre: z.string()
         .min(1, "El nombre del complejo es requerido")
         .max(200, "El nombre del complejo no puede exceder 200 caracteres")
         .trim(),
-      calle: z.string()
-        .min(1, "La calle es requerida")
-        .max(200, "La calle no puede exceder 200 caracteres")
-        .trim(),
-      altura: z.number()
-        .int("La altura debe ser un número entero")
-        .positive("La altura debe ser un número positivo"),
-      localidadId: z.number()
-        .int("El ID de localidad debe ser un número entero")
-        .positive("El ID de localidad debe ser un número positivo"),
+      domicilio: z.object({
+        calle: z.string()
+          .min(1, "La calle es requerida")
+          .max(200, "La calle no puede exceder 200 caracteres")
+          .trim(),
+        altura: z.number()
+          .int("La altura debe ser un número entero")
+          .positive("La altura debe ser un número positivo"),
+        localidadId: z.number()
+          .int("El ID de localidad debe ser un número entero")
+          .positive("El ID de localidad debe ser un número positivo"),
+      }),
       imagen: z.string().optional()
     }).optional()
   });

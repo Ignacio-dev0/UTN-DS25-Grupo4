@@ -25,8 +25,8 @@ router.get(
 router.post(
   '/',
   authenticate,
-  authorize('DUENIO'),
-  validate(validationComplejo.crearComplejoSchema),
+  authorize('ADMINISTRADOR'),
+  validate(validationComplejo.crearComplejo),
   complejoController.crearComplejo
 );
 
@@ -43,9 +43,17 @@ router.put(
   '/:id',
   authenticate,
   authorize('DUENIO'),
-  validate(validationComplejo.updateComplejoSchema),
+  validate(validationComplejo.updateComplejo),
   complejoController.actualizarComplejo
 );
+
+router.patch(
+  '/:id',
+  authenticate,
+  authorize('ADMNISTRADOR'),
+  validate(validationComplejo.evaluarComplejo),
+  complejoController.evaluarComplejo
+)
 
 // Ruta para eliminar un complejo por su ID
 router.delete(

@@ -22,7 +22,6 @@ model Usuario {
   direccion   String?
   reservas    Alquiler[]
   complejo    Complejo?
-  solicitudes Solicitud?
 }
 
 model Administrador {
@@ -30,38 +29,27 @@ model Administrador {
   password             String
   rol                  Rol         @default(ADMINISTRADOR)
   email                String      @unique
-  solicitudesEvaluadas Solicitud[]
-}
-
-model Solicitud {
-  id        Int             @id @default(autoincrement())
-  cuit      String          @unique
-  estado    EstadoSolicitud @default(PENDIENTE)
-  usuarioId Int             @unique
-  adminId   Int?
-  image     String?
-  complejo  Complejo?
-  admin     Administrador?  @relation(fields: [adminId], references: [id])
-  usuario   Usuario         @relation(fields: [usuarioId], references: [id])
+  complejosEvaluados   Complejo[]
 }
 
 model Complejo {
-  id          Int                @id @default(autoincrement())
-  nombre      String
-  descripcion String?
-  puntaje     Float              @default(0.0)
-  precioDesde Float?             @default(0.0)  // Campo calculado para precio mínimo del complejo
-  image       String?
-  domicilioId Int                @unique
-  usuarioId   Int                @unique
-  solicitudId Int                @unique
-  cuit        String             @unique
-  horarios    String?
-  canchas     Cancha[]
-  domicilio   Domicilio          @relation("ComplejoDomicilio", fields: [domicilioId], references: [id])
-  solicitud   Solicitud          @relation(fields: [solicitudId], references: [id])
-  usuario     Usuario            @relation(fields: [usuarioId], references: [id])
-  servicios   ComplejoServicio[]
+  id              Int                @id @default(autoincrement())
+  nombre          String
+  descripcion     String?
+  puntaje         Float              @default(0.0)
+  precioDesde     Float?             @default(0.0)  // Campo calculado para precio mínimo del complejo
+  image           String?
+  domicilioId     Int                @unique
+  usuarioId       Int                @unique
+  cuit            String             @unique
+  horarios        String?
+  estado          EstadoComplejo     @default(APROBADO)
+  canchas         Cancha[]
+  domicilio       Domicilio          @relation("ComplejoDomicilio", fields: [domicilioId], references: [id])
+  usuario         Usuario            @relation(fields: [usuarioId], references: [id])
+  servicios       ComplejoServicio[]
+  administradorId Int?
+  administrador   Administrador?  @relation(fields: [administradorId], references: [id])
 }
 
 model Domicilio {
@@ -201,10 +189,11 @@ enum DiaSemana {
   DOMINGO
 }
 
-enum EstadoSolicitud {
+enum EstadoComplejo {
   PENDIENTE
-  APROBADA
-  RECHAZADA
+  APROBADO
+  RECHAZADO
+  OCULTO
 }
 
 enum Rol {

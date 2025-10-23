@@ -8,7 +8,7 @@ CREATE TYPE "public"."EstadoAlquiler" AS ENUM ('PROGRAMADO', 'PAGADO', 'CANCELAD
 CREATE TYPE "public"."DiaSemana" AS ENUM ('LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO');
 
 -- CreateEnum
-CREATE TYPE "public"."EstadoSolicitud" AS ENUM ('PENDIENTE', 'APROBADA', 'RECHAZADA');
+CREATE TYPE "public"."EstadoComplejo" AS ENUM ('PENDIENTE', 'APROBADA', 'RECHAZADA');
 
 -- CreateEnum
 CREATE TYPE "public"."Rol" AS ENUM ('CLIENTE', 'DUENIO', 'ADMINISTRADOR');
@@ -40,18 +40,6 @@ CREATE TABLE "public"."Administrador" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Solicitud" (
-    "id" SERIAL NOT NULL,
-    "cuit" TEXT NOT NULL,
-    "estado" "public"."EstadoSolicitud" NOT NULL DEFAULT 'PENDIENTE',
-    "usuarioId" INTEGER NOT NULL,
-    "adminId" INTEGER,
-    "image" TEXT,
-
-    CONSTRAINT "Solicitud_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "public"."Complejo" (
     "id" SERIAL NOT NULL,
     "nombre" TEXT NOT NULL,
@@ -64,6 +52,8 @@ CREATE TABLE "public"."Complejo" (
     "solicitudId" INTEGER NOT NULL,
     "cuit" TEXT NOT NULL,
     "horarios" TEXT,
+    "estado" "public"."EstadoComplejo" NOT NULL DEFAULT 'APROBADA',
+    "administradorId" INTEGER,
 
     CONSTRAINT "Complejo_pkey" PRIMARY KEY ("id")
 );
@@ -199,12 +189,6 @@ CREATE UNIQUE INDEX "Usuario_email_key" ON "public"."Usuario"("email");
 CREATE UNIQUE INDEX "Administrador_email_key" ON "public"."Administrador"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Solicitud_cuit_key" ON "public"."Solicitud"("cuit");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Solicitud_usuarioId_key" ON "public"."Solicitud"("usuarioId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Complejo_domicilioId_key" ON "public"."Complejo"("domicilioId");
 
 -- CreateIndex
@@ -241,19 +225,13 @@ CREATE UNIQUE INDEX "Servicio_nombre_key" ON "public"."Servicio"("nombre");
 CREATE UNIQUE INDEX "ComplejoServicio_complejoId_servicioId_key" ON "public"."ComplejoServicio"("complejoId", "servicioId");
 
 -- AddForeignKey
-ALTER TABLE "public"."Solicitud" ADD CONSTRAINT "Solicitud_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "public"."Administrador"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."Solicitud" ADD CONSTRAINT "Solicitud_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "public"."Complejo" ADD CONSTRAINT "Complejo_domicilioId_fkey" FOREIGN KEY ("domicilioId") REFERENCES "public"."Domicilio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Complejo" ADD CONSTRAINT "Complejo_solicitudId_fkey" FOREIGN KEY ("solicitudId") REFERENCES "public"."Solicitud"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Complejo" ADD CONSTRAINT "Complejo_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Complejo" ADD CONSTRAINT "Complejo_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Complejo" ADD CONSTRAINT "Complejo_administradorId_fkey" FOREIGN KEY ("administradorId") REFERENCES "public"."Administrador"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Domicilio" ADD CONSTRAINT "Domicilio_localidadId_fkey" FOREIGN KEY ("localidadId") REFERENCES "public"."Localidad"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

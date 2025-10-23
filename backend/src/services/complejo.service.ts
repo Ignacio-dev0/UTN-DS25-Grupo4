@@ -1,40 +1,18 @@
+import { EstadoComplejo } from "@prisma/client";
 import prisma from "../config/prisma";
-import { CreateComplejoRequest, UpdateComplejoRequest } from "../types/complejo.types";
+import { CreateComplejoRequest, UpdateComplejoRequest, EvaluarComplejoRequest } from "../validations/complejo.validation";
 
 
 export const createComplejo = async (data: CreateComplejoRequest) => {
-  const { domicilio, solicitud, usuarioId, ...complejo } = data;
-    
-  return await prisma.$transaction(async (tx) => {
-        
-    const nuevoDomicilio = await tx.domicilio.create({
-      data: {
-        calle: domicilio.calle,
-        altura: domicilio.altura,
-        localidad: { connect: { id: domicilio.localidadId } },
-      }
-    });
-    
-    const nuevaSolicitud = await tx.solicitud.create({
-      data:{
-        cuit: solicitud.cuit,
-        usuario: { connect: { id: data.usuarioId } },
-      }
-    });
-
-    const nuevoComplejo = await tx.complejo.create({
-      data: {
-        ...complejo,
-        cuit: solicitud.cuit,
-        solicitud: { connect: { id: nuevaSolicitud.id } },
-        usuario: { connect: { id: usuarioId } },
-        domicilio: { connect: { id: nuevoDomicilio.id } },
-      }
-    });
-
-    return nuevoComplejo;
+  const { domicilio, usuarioId, ...complejo } = data;
+  return await prisma.complejo.create({
+    data: {
+      ...complejo,
+      usuario: { connect: { id: usuarioId }},
+      domicilio: { create: domicilio }
+    },
   });
-};
+}
 
 export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>{
   console.log('=== SERVICIO updateComplejo ===');
@@ -84,26 +62,26 @@ export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>
   }
 };
 
-export const getAllComplejos = async () => {
+export const evaluarComplejo = async (id: number, data: EvaluarComplejoRequest) {
+
+}
+
+export const getComplejos = async (pendientes: boolean) => {
   return await prisma.complejo.findMany({
+    where: pendientes ? { estado: EstadoComplejo.PENDIENTE } : { },
     include: { domicilio: true },
   });
 };
 
 export const getComplejosAprobados = async () => {
   return await prisma.complejo.findMany({
-    where: {
-      solicitud: {
-        estado: 'APROBADA'
-      }
-    },
+    where: { estado: EstadoComplejo.APROBADO },
     include: { 
       domicilio: {
         include: {
           localidad: true
         }
       },
-      solicitud: true,
       usuario: true 
     },
   });
@@ -119,7 +97,6 @@ export const getComplejoById = async (id:number) => {
           localidad: true
         }
       },
-      solicitud: true,
       usuario: true,
       servicios: {
         include: {
@@ -152,14 +129,13 @@ export const getComplejoById = async (id:number) => {
 //     return prisma.complejo.delete({where:{id}})
 // }
 
-export const deleteComplejo_sol_dom = async (id: number) => {
+export const deleteComplejo = async (id: number) => {
     try {
         console.log(`🔍 [${new Date().toISOString()}] Looking for complejo with ID: ${id}`);
         
         const complejo = await prisma.complejo.findUnique({
             where: { id },
             include: {
-                solicitud: true,
                 domicilio: true,
                 usuario: {
                     include: {
@@ -195,7 +171,6 @@ export const deleteComplejo_sol_dom = async (id: number) => {
 
         console.log(`🗑️ [${new Date().toISOString()}] Deleting complejo and related entities:`, {
             complejoId: id,
-            solicitudId: complejo.solicitudId,
             domicilioId: complejo.domicilioId,
             usuarioId: complejo.usuarioId,
             canchasCount: complejo.canchas.length,
@@ -269,7 +244,6 @@ export const deleteComplejo_sol_dom = async (id: number) => {
 
             // 5. Eliminar el complejo, solicitud, domicilio Y el usuario dueño
             await tx.complejo.delete({ where: { id } });
-            await tx.solicitud.delete({ where: { id: complejo.solicitudId } });
             await tx.domicilio.delete({ where: { id: complejo.domicilioId } });
             await tx.usuario.delete({ where: { id: complejo.usuarioId } });
 

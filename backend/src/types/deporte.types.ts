@@ -1,12 +1,12 @@
 import { Cancha, Deporte } from "@prisma/client";
 
 export interface CreateDeporteResquest{
-    name: string;
+    nombre: string;
     icono?: string;
 }
 
 export interface UpdateDeporteResquest{
-    name?: string;
+    nombre?: string;
     icono?: string;
     cancha?: Cancha[];
 }

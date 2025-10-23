@@ -1,6 +1,7 @@
 // backend/src/controllers/complejo.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import * as complejoService from '../services/complejo.service';
+import { BadRequestError } from '../middlewares/handleError.middleware';
 
 export const crearComplejo = async (req: Request, res: Response, next:NextFunction) => {
   try {
@@ -14,7 +15,7 @@ export const crearComplejo = async (req: Request, res: Response, next:NextFuncti
 
 export const obtenerComplejos = async (req: Request, res: Response, next:NextFunction) => {
   try {
-    const complejos = await complejoService.getAllComplejos();
+    const complejos = await complejoService.getComplejos(req.query.estado == 'PENDIENTE')
     res.status(200).json({
       complejos,
       total: complejos.length,
@@ -81,7 +82,7 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
     }
 
     const complejoActualizado = await complejoService.updateComplejo(complejoId, req.body);
-    res.status(200).json({
+    return res.status(200).json({
       complejoActualizado,
       message:('complejo actualizado')
     });
@@ -91,16 +92,28 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Complejo no encontrado.' });
     }
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 };
+
+export const evaluarComplejo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const complejoId = parseInt(req.params.id, 10);
+    if (isNaN(complejoId)) throw new BadRequestError('Id debe ser un entero positivo');
+    const complejo = await complejoService.evaluarComplejo(complejoId, req.body);
+    return res.status(200).json({
+      complejo,
+      message: 'Complejo evaluado exitosamente'
+    })
+  } catch (e) { next(e) }
+}
 
 export const eliminarComplejo = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     console.log(`🗑️ [${new Date().toISOString()}] Attempting to delete complejo with ID: ${id}`);
     
-    await complejoService.deleteComplejo_sol_dom(id);
+    await complejoService.deleteComplejo(id);
     console.log(`✅ [${new Date().toISOString()}] Complejo deleted successfully with ID: ${id}`);
     
     res.status(200).json({ 

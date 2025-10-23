@@ -22,17 +22,7 @@ export async function getDeporteById(id: number): Promise<Deporte> {
 }
 
 export async function createDeporte(data: CreateDeporteResquest): Promise<Deporte>{
-    if(!data.name){
-        const error = new Error('Name is required');
-        (error as any).statusCode = 400;
-        throw error;
-    }
-    const created = await prisma.deporte.create({
-        data: {
-            nombre: data.name,
-            icono: data.icono || '⚽',
-        },
-    });
+    const created = await prisma.deporte.create({ data });
     return created;
 }
 
@@ -40,10 +30,7 @@ export async function updateDeporte(id:number, updateData: UpdateDeporteResquest
     try {
         const updated= await prisma.deporte.update({
             where: {id},
-            data: {
-                ...(updateData.name !== undefined ? {nombre: updateData.name} : {}),
-                ...(updateData.icono !== undefined ? {icono: updateData.icono} : {}),
-            },
+            data: updateData
         });
         return updated;
     } catch (e : any) {

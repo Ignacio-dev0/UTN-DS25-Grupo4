@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-// TEMPORALMENTE usando mock en lugar del servicio real
 import * as usuarioService from "../services/usuario.service";
-import { CreateUsuarioRequest, UsuarioListResponse, UpdateUsuarioRequest, UsuarioResponse } from "../types/usuario.type";
+import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
 
-export async function crearUsuario(req: Request<{}, UsuarioResponse, CreateUsuarioRequest>, res: Response<UsuarioResponse>) {
+export async function crearUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
     const newUsuario = await usuarioService.createUsuario(req.body);
     res.status(201).json({
@@ -106,7 +105,7 @@ export async function obtenerUsuarioPorEmail(req: Request<{email: string}>, res:
   }
 }
 
-export async function actualizarUsuario(req: Request<{id: string}, UsuarioResponse, UpdateUsuarioRequest>, res: Response<UsuarioResponse>) {
+export async function actualizarUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
     const { id } = req.params;
     const updateUsuario = await usuarioService.updateUsuario(parseInt(id), req.body);
@@ -128,38 +127,23 @@ export async function actualizarUsuario(req: Request<{id: string}, UsuarioRespon
   }
 }
 
-export async function eliminarUsuario(req: Request<{id: string}>, res: Response) {
+export async function eliminarUsuario(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
-    console.log(`🗑️ [${new Date().toISOString()}] Attempting to delete user with ID: ${id}`);
     
-    const deleted = await usuarioService.deleteUsuario(parseInt(id));
-    console.log(`✅ [${new Date().toISOString()}] User deleted successfully:`, deleted);
-    
-    res.json({ 
-      usuario: deleted, 
+    const id = parseInt(req.params.id, 10);
+    // Validaciones
+    if (isNaN(id)) throw new Error('El id debe ser un entero');
+    if (req.usuario.rol !== 'ADMINISTRADOR' || req.usuario.id !== id) {
+      throw new Error('No tienes permiso para esta accion');
+    }
+
+    const usuario = await usuarioService.deleteUsuario(id);
+    return res.status(200).json({ 
+      usuario, 
       message: "Usuario eliminado exitosamente" 
     });
-  } catch (error: any) {
-    console.error(`❌ [${new Date().toISOString()}] Error deleting user:`, {
-      id: req.params.id,
-      error: error.message,
-      stack: error.stack,
-      statusCode: error.statusCode
-    });
-    
-    if (error.statusCode === 404) {
-      return res.status(404).json({ 
-        error: 'Usuario no encontrado',
-        message: 'El usuario que intentas eliminar no existe'
-      });
-    }
-    res.status(500).json({ 
-      error: 'Error interno del servidor',
-      message: 'No se pudo eliminar el usuario',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
+
+  } catch (e) { next(e) }
 }
 
 // Nuevas funciones de autenticación
@@ -197,7 +181,7 @@ export async function login(req: Request, res: Response) {
       ok: true,
       user: {
         id: usuario.id,
-        email: usuario.correo, // Usar correo del schema
+        email: usuario.email, // Usar correo del schema
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         role: usuario.rol // Usar rol del schema
@@ -251,10 +235,10 @@ export async function register(req: Request, res: Response) {
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: email,
+      email: email,
       password, // En producción, hashear con bcrypt
-      name: nombre,
-      lastname: apellido,
+      nombre: nombre,
+      apellido: apellido,
       dni: dni, // Mantener como string según el tipo
       telefono,
       rol: rol
@@ -294,7 +278,7 @@ export async function register(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.correo,
+            email: newUsuario.email,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -312,7 +296,7 @@ export async function register(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.correo,
+          email: newUsuario.email,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
@@ -395,10 +379,10 @@ export async function registerWithImage(req: Request, res: Response) {
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: userEmail,
+      email: userEmail,
       password,
-      name: nombre,
-      lastname: apellido,
+      nombre: nombre,
+      apellido: apellido,
       dni: dni,
       telefono,
       rol: finalRole,
@@ -433,7 +417,7 @@ export async function registerWithImage(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.correo,
+            email: newUsuario.email,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -455,7 +439,7 @@ export async function registerWithImage(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.correo,
+          email: newUsuario.email,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
