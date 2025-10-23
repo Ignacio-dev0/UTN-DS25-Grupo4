@@ -71,17 +71,8 @@ export async function obtenerUsuarioPorId(req: Request<{id: string}>, res: Respo
       } as any);
     }
     
-    // No enviar la imagen base64 completa (muy grande)
-    // Solo indicar si tiene imagen y la URL
-    const { image, ...usuarioSinImagen } = usuario;
-    const responseUsuario: any = {
-      ...usuarioSinImagen,
-      hasImage: !!image,
-      imageUrl: image ? `/images/usuarios/${id}.jpg` : null
-    };
-    
     res.json({
-      usuario: responseUsuario,
+      usuario,
       message: 'Usuario obtenido exitosamente'
     });
   } catch (error) {
@@ -566,20 +557,17 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     // Actualizar usuario
     console.log('Datos a actualizar:', updateData);
     const usuarioActualizado = await usuarioService.updateUsuario(parseInt(id), updateData);
-    console.log('Usuario actualizado exitosamente:', usuarioActualizado);
-
-    // No enviar la imagen base64 en la respuesta (muy grande)
-    // Solo indicar que hay imagen disponible
-    const { image, ...usuarioSinImagen } = usuarioActualizado;
-    const responseUsuario = {
-      ...usuarioSinImagen,
-      hasImage: !!image,
-      imageUrl: image ? `/images/usuarios/${id}.jpg` : null
-    };
+    
+    // Log solo el tamaño de la imagen, no toda la imagen
+    if (usuarioActualizado.image) {
+      console.log(`Usuario actualizado exitosamente. Imagen tamaño: ${usuarioActualizado.image.length} caracteres`);
+    } else {
+      console.log('Usuario actualizado exitosamente (sin imagen)');
+    }
 
     res.status(200).json({
       message: 'Usuario actualizado exitosamente',
-      usuario: responseUsuario
+      usuario: usuarioActualizado
     });
 
   } catch (error: any) {

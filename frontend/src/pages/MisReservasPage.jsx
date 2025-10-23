@@ -54,8 +54,6 @@ function MisReservasPage() {
             try {
                 const response = await getUserProfile();
                 if (response.ok) {
-                    // Construir URL correcta para la imagen (sin /api)
-                    const baseUrl = API_BASE_URL.replace('/api', '');
                     const userData = {
                         id: response.user.id,
                         nombre: response.user.nombre,
@@ -65,9 +63,7 @@ function MisReservasPage() {
                         telefono: response.user.telefono || '',
                         direccion: response.user.direccion || '', // Campo de dirección libre
                         dni: response.user.dni,
-                        profileImageUrl: response.user.image ? 
-                            (response.user.image.startsWith('http') ? response.user.image : `${baseUrl}${response.user.image}`) 
-                            : 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
+                        profileImageUrl: response.user.image || 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
                     };
                     setUsuario(userData);
                     
