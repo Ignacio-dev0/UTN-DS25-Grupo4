@@ -14,19 +14,13 @@ export const createComplejo = async (data: CreateComplejoRequest) => {
         localidad: { connect: { id: domicilio.localidadId } },
       }
     });
-    
-    const nuevaSolicitud = await tx.solicitud.create({
-      data:{
-        cuit: solicitud.cuit,
-        usuario: { connect: { id: data.usuarioId } },
-      }
-    });
 
+    // Ya no creamos Solicitud - el complejo se crea directamente con estado APROBADO
     const nuevoComplejo = await tx.complejo.create({
       data: {
         ...complejo,
         cuit: solicitud.cuit,
-        solicitud: { connect: { id: nuevaSolicitud.id } },
+        estado: 'APROBADO', // Complejo creado directamente está aprobado
         usuario: { connect: { id: usuarioId } },
         domicilio: { connect: { id: nuevoDomicilio.id } },
       }
