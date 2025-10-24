@@ -53,17 +53,10 @@ export const getImageUrl = (imagePath) => {
   
   // Si viene de la base de datos, las imágenes están en /images/canchas/
   if (imagePath.includes('.jpg') || imagePath.includes('.png') || imagePath.includes('.jpeg')) {
-    // Manejar nombres de archivo con leading zeros que necesitan ser convertidos
-    // Por ejemplo: futbol5_03.jpg -> futbol5_3.jpg
-    let normalizedPath = imagePath;
-    
-    // Convertir números con leading zero a números sin leading zero
-    normalizedPath = normalizedPath.replace(/(_)0(\d+)(\.[a-z]+)$/i, '$1$2$3');
-    
-    // ✅ FIX: Las imágenes estáticas se sirven desde el backend
-    // Remover /api del API_BASE_URL para imágenes
+    // ✅ Las imágenes ya están normalizadas en la BD (futbol5_1.jpg sin leading zero)
+    // Las imágenes estáticas se sirven desde el backend
     const imageBaseUrl = API_BASE_URL.replace('/api', '');
-    return `${imageBaseUrl}/images/canchas/${normalizedPath}`;
+    return `${imageBaseUrl}/images/canchas/${imagePath}`;
   }
   
   // Si no, asumimos que es una ruta relativa dentro de /images/

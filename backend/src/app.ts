@@ -19,22 +19,19 @@ import cronogramaRoutes from './routes/cronograma.routes';
 import alquilerRoutes from './routes/alquiler.routes';
 import servicioRoutes from './routes/servicio.routes';
 import migrationRoutes from './routes/migration.routes';
+import debugRoutes from './routes/debug.routes';
 import { resetearTurnosDiarios } from './controllers/turnoAutomatico.controller';
-// import ownerRoutes from "./routes/owner.routes"
-// import domicilioRoutes from './routes/domicilio.routes';
-// import pagoRoutes from './routes/pago.routes';
-// import administradorRoutes from './routes/administrador.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración CORS más específica
+// Configuración CORS
 const allowedOrigins = [
-    'http://localhost:5173',           // Desarrollo local
-    'http://localhost:5174',           // Desarrollo local (puerto alternativo de Vite)
-    'http://localhost:3000',           // Desarrollo local alternativo
-    'https://canchaya.onrender.com',   // Frontend en producción
-    'https://front-canchaya.up.railway.app', // Frontend en Railway
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'https://canchaya.onrender.com',
+    'https://front-canchaya.up.railway.app',
 ];
 
 if (process.env.FRONTEND_URL) {
@@ -48,55 +45,20 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json({ limit: '10mb' })); // Aumentar límite para imágenes base64
+app.use(express.json({ limit: '10mb' }));
 
-// Middleware de logging para debugging
+// Middleware de logging
 app.use((req, res, next) => {
-    console.log(`🌐 [${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
-    if (req.method === 'POST' && req.url.includes('register')) {
-        console.log('📝 Body:', JSON.stringify(req.body, null, 2));
-    }
+    console.log(`🌐 [${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// Servir archivos estáticos (imágenes) desde la carpeta del frontend
-app.use('/images', express.static(path.join(__dirname, '../../frontend/public/images')));
-
-// Servir archivos estáticos (imágenes subidas) desde la carpeta del backend
+// Servir archivos estáticos (imágenes)
 const imagesPath = process.env.STATIC_FILES_PATH || path.join(__dirname, '../public/images');
-
-// Servir imágenes subidas también desde /images (para compatibilidad con rutas guardadas en DB)
 app.use('/images', express.static(imagesPath));
-
-// Logging para debugging en Railway (debe ir ANTES del middleware estático)
-app.use('/api/images', (req, res, next) => {
-    console.log(`📷 [${new Date().toISOString()}] Requesting image: ${req.url}`);
-    console.log(`📂 Images path: ${imagesPath}`);
-    next();
-});
-
 app.use('/api/images', express.static(imagesPath));
 
-// Middleware para manejar errores 404 de imágenes de forma más silenciosa
-app.use('/api/images', (req, res, next) => {
-    res.status(404).json({ 
-        error: 'Imagen no encontrada', 
-        path: req.url,
-        message: 'La imagen solicitada no existe en el servidor'
-    });
-});
-
-// //con esto intento manejar el tipo bigint en las respuestas json
-// app.set('json replacer', (key: string, value:any)=>{
-//     if (typeof value === 'bigint'){
-//         return value.toString();
-//     }
-//     return value;
-// });
-
-// (MAURO)=> puse cuit como string en lugar de bigint para sacar este GPT-codigo horrible que solo GPT-entiende >:(
-
-// app.use('/api/turnos',            turnoRoutes);
+// Rutas de API
 app.use('/api/administradores',   administradorRoutes);
 app.use('/api/auth',              authRoutes);
 app.use('/api/deportes',          deporteRoutes);
@@ -104,7 +66,7 @@ app.use('/api/resenas',           resenaRoutes);
 app.use("/api/usuarios",          usuarioRoutes);
 app.use('/api/complejos',         complejoRoutes); 
 app.use('/api/canchas',           canchaRoutes);
-app.use('/api/admin/solicitudes', solicitudRoutes);   // ---> Se ve horrible identado en columnas jaja
+app.use('/api/admin/solicitudes', solicitudRoutes);
 app.use('/api/horarios',          horarioRoutes);
 app.use('/api/horarios-deshabilitados', horarioDeshabilitadoRoutes);
 app.use('/api/turnos',            turnoRoutes);
@@ -113,78 +75,47 @@ app.use('/api/servicios',         servicioRoutes);
 app.use('/api/localidades',       localidadRoutes);
 app.use('/api/alquileres',        alquilerRoutes);
 app.use('/api/admin',             migrationRoutes);
-// app.use('/api/owners',            ownerRoutes);
-// app.use('/api/domicilios',        domicilioRoutes);
-// app.use('/api/pagos',             pagoRoutes);
-// app.use('/api/administradores',   administradorRoutes);
+app.use('/api',                   debugRoutes);
 
-// Middleware de manejo de errores global (debe ir después de todas las rutas)
+// Middleware de manejo de errores global
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('💥 ERROR GLOBAL MIDDLEWARE:', {
-        url: req.url,
-        method: req.method,
-        body: req.body,
-        error: err.message,
-        stack: err.stack
-    });
+    console.error('💥 ERROR:', err.message);
 
-    // Error de validación de Zod
     if (err.name === 'ZodError') {
-        return res.status(400).json({
-            message: 'Error de validación',
-            errors: err.issues,
-            details: 'Los datos enviados no cumplen con el formato requerido'
-        });
+        return res.status(400).json({ message: 'Error de validación', errors: err.issues });
     }
 
-    // Error de Prisma (base de datos)
     if (err.code) {
-        // Error de constraint único
-        if (err.code === 'P2002') {
-            return res.status(409).json({
-                message: 'Error de duplicación',
-                details: 'Ya existe un registro con esos datos únicos'
-            });
-        }
-        // Error de foreign key
-        if (err.code === 'P2003') {
-            return res.status(400).json({
-                message: 'Error de referencia',
-                details: 'Los datos referenciados no existen'
-            });
-        }
-        // Error de not found
-        if (err.code === 'P2025') {
-            return res.status(404).json({
-                message: 'Registro no encontrado',
-                details: 'El recurso solicitado no existe'
-            });
-        }
+        if (err.code === 'P2002') return res.status(409).json({ message: 'Ya existe un registro con esos datos' });
+        if (err.code === 'P2003') return res.status(400).json({ message: 'Error de referencia: datos no existen' });
+        if (err.code === 'P2025') return res.status(404).json({ message: 'Registro no encontrado' });
     }
 
-    // Error con código de estado personalizado
     if (err.statusCode) {
-        return res.status(err.statusCode).json({
-            message: err.message || 'Error en el servidor',
-            details: err.details || 'Se produjo un error procesando la solicitud'
-        });
+        return res.status(err.statusCode).json({ message: err.message || 'Error en el servidor' });
     }
 
-    // Error genérico del servidor
     res.status(500).json({
         message: 'Error interno del servidor',
-        details: process.env.NODE_ENV === 'development' ? err.message : 'Ocurrió un error inesperado'
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
 });
 
-// Health check endpoint para Render
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        service: 'CanchaYa Backend API'
-    });
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    
+    // Job automático cada 24 horas para resetear turnos
+    setInterval(async () => {
+        try {
+            console.log('🔄 Ejecutando job de reseteo automático de turnos...');
+            const turnosReseteados = await resetearTurnosDiarios();
+            console.log(`✅ Job completado: ${turnosReseteados} turnos reseteados`);
+        } catch (error) {
+            console.error('❌ Error en job de reseteo de turnos:', error);
+        }
+    }, 24 * 60 * 60 * 1000);
 });
+
 
 // Endpoint para diagnosticar archivos estáticos
 app.get('/api/debug/images', async (req, res) => {
