@@ -59,7 +59,7 @@ function MisReservasPage() {
                         nombre: response.user.nombre,
                         apellido: response.user.apellido,
                         rol: 'Jugador Apasionado', // Esto se puede personalizar según el rol
-                        email: response.user.correo,
+                        email: response.user.email,
                         telefono: response.user.telefono || '',
                         direccion: response.user.direccion || '', // Campo de dirección libre
                         dni: response.user.dni,
@@ -422,10 +422,17 @@ function MisReservasPage() {
                 let nuevaImagenUrl = usuario.profileImageUrl; // Mantener la actual por defecto
                 
                 if (response.user.image) {
-                    // Si el servidor devolvió una nueva imagen
-                    nuevaImagenUrl = response.user.image.startsWith('http') ? 
-                        response.user.image : 
-                        `${API_BASE_URL}${response.user.image}`;
+                    // La imagen puede ser: URL http, ruta relativa, o base64
+                    if (response.user.image.startsWith('data:')) {
+                        // Es base64, usar directamente
+                        nuevaImagenUrl = response.user.image;
+                    } else if (response.user.image.startsWith('http')) {
+                        // Es URL completa
+                        nuevaImagenUrl = response.user.image;
+                    } else {
+                        // Es ruta relativa
+                        nuevaImagenUrl = `${API_BASE_URL}${response.user.image}`;
+                    }
                 } else if (datosActualizados.profileImageData) {
                     // Si se subió una nueva imagen pero aún no tenemos la URL del servidor
                     nuevaImagenUrl = datosActualizados.profileImageUrl || datosActualizados.profileImageData;
@@ -461,8 +468,8 @@ function MisReservasPage() {
                     ...response.user, // Sobrescribir con los datos actualizados del servidor
                     rol: rolMapeado, // Usar el rol mapeado al formato del frontend
                     role: rolMapeado, // También mantener 'role' para compatibilidad
-                    correo: response.user.correo || contextUser.email || contextUser.correo,
-                    email: response.user.correo || contextUser.email || contextUser.correo,
+                    correo: response.user.email || contextUser.email,
+                    email: response.user.email || contextUser.email,
                     profileImageUrl: nuevaImagenUrl,
                     nombre: response.user.nombre || datosActualizados.nombre,
                     apellido: response.user.apellido || datosActualizados.apellido,

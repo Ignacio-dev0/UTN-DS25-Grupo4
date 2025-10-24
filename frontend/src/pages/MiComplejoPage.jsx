@@ -281,10 +281,13 @@ function MiComplejoPage() {
           console.log("Datos del complejo guardados correctamente:", responseData);
           alert('✅ Información del complejo actualizada correctamente');
           
-          // Actualizar el estado local con los datos guardados
+          // Actualizar el estado local con los datos devueltos por el backend
+          const complejoActualizado = responseData.complejo || responseData;
           setInfoDelComplejo(prev => ({
             ...prev,
-            ...datosParaActualizar
+            ...complejoActualizado,
+            // Mantener servicios como IDs
+            servicios: prev.servicios
           }));
         } else {
           const errorData = await response.json();

@@ -321,7 +321,7 @@ function GestionUsuarios() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-gray-700">{usuario.correo}</td>
+                    <td className="py-3 px-4 text-gray-700">{usuario.email}</td>
                     <td className="py-3 px-4">{getRolBadge(usuario.rol)}</td>
                     <td className="py-3 px-4 text-gray-700">
                       {usuario.rol === 'DUENIO' && usuario.complejo ? (

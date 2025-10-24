@@ -37,13 +37,18 @@ router.get(
 router.put(
   '/:id',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   validate(canchaSchema.updateCancha),
   canchaController.actualizarCancha
 );
 
 // Ruta para actualización parcial de una cancha (ej: solo precioDesde)
-router.patch('/:id', canchaController.actualizarCancha);
+router.patch(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR', 'DUENIO'),
+  canchaController.actualizarCancha
+);
 
 // Ruta para eliminar una cancha por su ID
 router.delete(

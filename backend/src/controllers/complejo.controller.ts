@@ -76,14 +76,15 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
   try {
     const complejoId = Number(req.params.id);
 
-    if(!await complejoService.esDuenioDeComplejo(complejoId, req.usuario.id)) {
+    // Permitir actualización si es ADMINISTRADOR o si es el dueño del complejo
+    if(req.usuario.rol !== 'ADMINISTRADOR' && !await complejoService.esDuenioDeComplejo(complejoId, req.usuario.id)) {
       throw new Error('No tienes permiso para actualizar este complejo.');
     }
 
     const complejoActualizado = await complejoService.updateComplejo(complejoId, req.body);
     res.status(200).json({
-      complejoActualizado,
-      message:('complejo actualizado')
+      complejo: complejoActualizado,
+      message: 'Complejo actualizado'
     });
   } catch (error: any) {
     console.error('Error en actualizarComplejo:', error);

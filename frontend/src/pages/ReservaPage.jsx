@@ -195,45 +195,11 @@ function ReservaPage() {
         };
         
         // Función para determinar el estado del turno
-        // IMPORTANTE: Los turnos antes de la hora actual SIEMPRE deben estar finalizados
+        // IMPORTANTE: Ahora usamos el campo 'yaPaso' que viene del backend
         const determinarEstadoTurno = (turno) => {
-          // 🔴 PRIMERO: Verificar si el turno está en el pasado (MÁXIMA PRIORIDAD)
-          try {
-            const ahora = new Date();
-            const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-            
-            // Parsear la fecha del turno
-            let fechaTurnoStr = turno.fecha;
-            if (typeof fechaTurnoStr === 'object' && fechaTurnoStr.toISOString) {
-              fechaTurnoStr = fechaTurnoStr.toISOString().split('T')[0];
-            } else if (fechaTurnoStr.includes('T')) {
-              fechaTurnoStr = fechaTurnoStr.split('T')[0];
-            }
-            
-            const [year, month, day] = fechaTurnoStr.split('-').map(Number);
-            const fechaTurno = new Date(year, month - 1, day);
-            
-            // Si el turno es de una fecha anterior a hoy, está finalizado
-            if (fechaTurno < hoy) {
-              return 'finalizado';
-            }
-            
-            // Si el turno es de hoy, verificar la hora
-            if (fechaTurno.getTime() === hoy.getTime()) {
-              const horaTurno = new Date(turno.horaInicio);
-              const horas = horaTurno.getUTCHours();
-              const minutos = horaTurno.getUTCMinutes();
-              
-              const horaActual = ahora.getHours();
-              const minutosActuales = ahora.getMinutes();
-              
-              // Si la hora ya pasó, está finalizado SIN EXCEPCIÓN
-              if (horas < horaActual || (horas === horaActual && minutos < minutosActuales)) {
-                return 'finalizado';
-              }
-            }
-          } catch (error) {
-            console.warn('Error determinando si turno está en el pasado:', error, turno);
+          // 🔴 PRIMERO: Si el backend indica que el turno ya pasó, está FINALIZADO
+          if (turno.yaPaso === true) {
+            return 'finalizado';
           }
           
           // 🟡 SEGUNDO: Verificar estados especiales (solo para turnos futuros)

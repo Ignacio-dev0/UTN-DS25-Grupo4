@@ -6,11 +6,10 @@ function ModalUsuario({ isOpen, usuarioActual, onSave, onClose }) {
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
-    correo: '',
+    email: '',
     dni: '',
     telefono: '',
-    direccion: '',
-    rol: 'player',
+    rol: 'CLIENTE',
     password: '',
     image: ''
   });
@@ -26,11 +25,10 @@ function ModalUsuario({ isOpen, usuarioActual, onSave, onClose }) {
         id: usuarioActual.id,
         nombre: usuarioActual.nombre || '',
         apellido: usuarioActual.apellido || '',
-        correo: usuarioActual.correo || '',
+        email: usuarioActual.email || usuarioActual.correo || '',
         dni: usuarioActual.dni || '',
         telefono: usuarioActual.telefono || '',
-        direccion: usuarioActual.direccion || '',
-        rol: usuarioActual.rol || 'player',
+        rol: usuarioActual.rol || 'CLIENTE',
         password: '', // No mostramos la contraseña actual
         image: usuarioActual.image || ''
       });
@@ -38,11 +36,10 @@ function ModalUsuario({ isOpen, usuarioActual, onSave, onClose }) {
       setFormData({
         nombre: '',
         apellido: '',
-        correo: '',
+        email: '',
         dni: '',
         telefono: '',
-        direccion: '',
-        rol: 'player',
+        rol: 'CLIENTE',
         password: '',
         image: ''
       });
@@ -90,10 +87,10 @@ function ModalUsuario({ isOpen, usuarioActual, onSave, onClose }) {
       newErrors.apellido = 'El apellido es requerido';
     }
 
-    if (!formData.correo.trim()) {
-      newErrors.correo = 'El correo es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
-      newErrors.correo = 'Formato de correo inválido';
+    if (!formData.email.trim()) {
+      newErrors.email = 'El correo es requerido';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Formato de correo inválido';
     }
 
     if (!formData.dni.trim()) {
@@ -236,16 +233,16 @@ return (
                     </label>
                     <input
                         type="email"
-                        name="correo"
-                        value={formData.correo}
+                        name="email"
+                        value={formData.email}
                         onChange={handleChange}
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary ${
-                            errors.correo ? 'border-red-500' : 'border-gray-300'
+                            errors.email ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="usuario@ejemplo.com"
                     />
-                    {errors.correo && (
-                        <p className="text-red-500 text-sm mt-1">{errors.correo}</p>
+                    {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                     )}
                 </div>
 
@@ -293,21 +290,6 @@ return (
                     </div>
                 </div>
 
-                {/* Dirección */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Dirección
-                    </label>
-                    <input
-                        type="text"
-                        name="direccion"
-                        value={formData.direccion}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Ingrese la dirección"
-                    />
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Rol */}
                     <div>
@@ -320,9 +302,9 @@ return (
                             onChange={handleChange}
                             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                            <option value="player">Jugador</option>
-                            <option value="owner">Dueño de Complejo</option>
-                            <option value="admin">Administrador</option>
+                            <option value="CLIENTE">Cliente</option>
+                            <option value="DUENIO">Dueño de Complejo</option>
+                            <option value="ADMINISTRADOR">Administrador</option>
                         </select>
                     </div>
 

@@ -7,7 +7,8 @@ import * as complejoService from '../services/complejo.service';
 export async function crearCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
     const complejo = await complejoService.getComplejoById(req.body.complejoId);
-    if (complejo.usuarioId !== req.usuario.id) {
+    // Permitir si es ADMINISTRADOR o si es dueño del complejo
+    if (req.usuario.rol !== 'ADMINISTRADOR' && complejo.usuarioId !== req.usuario.id) {
       throw new Error('No tienes permiso para crear una cancha en este complejo.');
     }
     console.log('🔍 CREAR CANCHA - Datos recibidos:', JSON.stringify(req.body, null, 2));
@@ -90,7 +91,8 @@ export async function actualizarCancha(req: Request, res: Response<CanchaRespons
   try {
     const canchaId = Number(req.params.id);
     const { usuario } = req
-    if(!(await canchaService.esDuenioDeCancha(canchaId, usuario.id))) {
+    // Permitir si es ADMINISTRADOR o si es dueño de la cancha
+    if(usuario.rol !== 'ADMINISTRADOR' && !(await canchaService.esDuenioDeCancha(canchaId, usuario.id))) {
       throw new Error('No tienes permiso para actualizar esta cancha.');
     }
     const cancha = await canchaService.actualizarCancha(canchaId, req.body);

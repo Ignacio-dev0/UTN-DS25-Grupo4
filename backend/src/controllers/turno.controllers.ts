@@ -143,7 +143,8 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
         const turnos = await turnoService.getTurnosPorSemana(canchaId, semanaOffset);
         console.log(`✅ Turnos encontrados para semana ${semanaOffset}: ${turnos.length}`);
         
-        // Agregar el campo 'dia' (día de la semana) a cada turno
+        // Agregar el campo 'dia' (día de la semana) y detectar si el turno ya pasó
+        const ahora = new Date();
         const turnosConDia = turnos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
             const fechaStr = turno.fecha.toISOString().split('T')[0]; // "2025-10-22"
@@ -153,16 +154,31 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
             const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
             const dia = diasSemana[fecha.getDay()]; // getDay() usa timezone local
             
+            // Determinar si el turno ya pasó (fecha + hora anterior a ahora)
+            const horaInicioDate = new Date(turno.horaInicio);
+            const fechaHoraTurno = new Date(
+                year, 
+                month - 1, 
+                day, 
+                horaInicioDate.getUTCHours(), 
+                horaInicioDate.getUTCMinutes()
+            );
+            const yaPaso = fechaHoraTurno < ahora;
+            
             const turnoFormateado = {
                 ...turno,
                 dia,
+                yaPaso, // Agregar flag para indicar si el turno ya pasó
                 // Asegurar que deshabilitado siempre tenga un valor (false si es null/undefined)
                 deshabilitado: turno.deshabilitado ?? false
             };
             
-            // Debug: loguear turnos deshabilitados
+            // Debug: loguear turnos deshabilitados o pasados
             if (turnoFormateado.deshabilitado) {
                 console.log(`🟠 Turno deshabilitado encontrado: ID ${turno.id}, ${dia} ${turno.horaInicio}`);
+            }
+            if (yaPaso) {
+                console.log(`⏰ Turno pasado: ID ${turno.id}, ${dia} ${turno.horaInicio}`);
             }
             
             return turnoFormateado;
@@ -204,11 +220,29 @@ export async function getTurnosDisponiblesPorSemana(req: Request, res: Response)
 
         const turnos = await turnoService.getTurnosPorSemana(canchaId, semanaOffset);
         
-        // Filtrar solo turnos disponibles
-        const turnosDisponibles = turnos.filter(turno => !turno.reservado && !turno.alquilerId);
+        // Agregar fecha/hora actual para comparar
+        const ahora = new Date();
         
-        // Agregar el campo 'dia' a cada turno
-        const turnosConDia = turnosDisponibles.map(turno => {
+        // Filtrar solo turnos disponibles (no reservados, no ocupados, no pasados)
+        const turnosFuturos = turnos.filter(turno => {
+            // Calcular si el turno ya pasó
+            const fechaStr = turno.fecha.toISOString().split('T')[0];
+            const [year, month, day] = fechaStr.split('-').map(Number);
+            const horaInicioDate = new Date(turno.horaInicio);
+            const fechaHoraTurno = new Date(
+                year, 
+                month - 1, 
+                day, 
+                horaInicioDate.getUTCHours(), 
+                horaInicioDate.getUTCMinutes()
+            );
+            
+            // Solo incluir turnos futuros que no estén reservados ni ocupados
+            return fechaHoraTurno >= ahora && !turno.reservado && !turno.alquilerId;
+        });
+        
+        // Agregar el campo 'dia' y 'yaPaso' a cada turno
+        const turnosConDia = turnosFuturos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
             const fechaStr = turno.fecha.toISOString().split('T')[0]; // "2025-10-22"
             const [year, month, day] = fechaStr.split('-').map(Number);
@@ -219,7 +253,9 @@ export async function getTurnosDisponiblesPorSemana(req: Request, res: Response)
             
             return {
                 ...turno,
-                dia
+                dia,
+                yaPaso: false, // Todos estos turnos son futuros por el filtro anterior
+                deshabilitado: turno.deshabilitado ?? false
             };
         });
         

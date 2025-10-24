@@ -40,7 +40,7 @@ router.get(
 router.put(
   '/:id',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   validate(validationComplejo.updateComplejoSchema),
   complejoController.actualizarComplejo
 );

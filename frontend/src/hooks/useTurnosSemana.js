@@ -27,26 +27,12 @@ export const useTurnosSemana = (canchaId) => {
       return `${horas}:${minutos}`;
     };
 
-    // Determinar estado basado en fecha actual y datos del turno
+    // Determinar estado basado en datos del turno
+    // IMPORTANTE: Ahora el backend envía el campo 'yaPaso' que indica si el turno ya pasó
     const determinarEstado = (turno) => {
-      const ahora = new Date();
-      
-      // Extraer la fecha del turno (solo año-mes-día)
-      const fechaTurnoStr = turno.fecha.split('T')[0]; // "2025-10-19"
-      
-      // Extraer hora y minutos del campo horaInicio (viene como ISO: "1970-01-01T10:00:00.000Z")
-      // La hora UTC representa la hora REAL del turno (ej: 10:00 UTC = 10:00 en el sistema)
-      const horaTurno = new Date(turno.horaInicio);
-      const horasUTC = horaTurno.getUTCHours(); // 10
-      const minutosUTC = horaTurno.getUTCMinutes(); // 0
-      
-      // Crear fecha y hora del turno en timezone local
-      // Parseamos la fecha y establecemos la hora local directamente
-      const fechaHoraTurno = new Date(fechaTurnoStr + 'T00:00:00');
-      fechaHoraTurno.setHours(horasUTC, minutosUTC, 0, 0);
-      
-      // Si el turno (fecha + hora) ya pasó, está finalizado
-      if (fechaHoraTurno < ahora) {
+      // Si el backend indica que el turno ya pasó, está FINALIZADO
+      // Esto aplica tanto si el turno estaba disponible como si estaba ocupado/reservado
+      if (turno.yaPaso === true) {
         return 'finalizado';
       }
       

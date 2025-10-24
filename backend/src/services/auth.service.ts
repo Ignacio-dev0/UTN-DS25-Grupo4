@@ -5,13 +5,13 @@ import { Prisma, Usuario, Administrador } from '@prisma/client';
 import { LoginUsuarioBody, RegistroUsuarioBody } from '../validations/auth.validation';
 
 export async function login(data: LoginUsuarioBody) {
-  // 1. Buscar usuario (Usuario usa 'correo', Administrador usa 'email')
+  // 1. Buscar usuario (tanto Usuario como Administrador usan 'email')
   const { email, password } = data;
-  const usuario = await prisma.usuario.findUnique({ where: { correo: email } })
+  const usuario = await prisma.usuario.findUnique({ where: { email } })
     || await prisma.administrador.findUnique({ where: { email } });
 
   if (!usuario) {
-    const error = new Error('correo no registrado');
+    const error = new Error('email no registrado');
     (error as any).statusCode = 401;
     throw error;
   }
@@ -24,13 +24,11 @@ export async function login(data: LoginUsuarioBody) {
     throw error;
   }
   
-  // 3. Generar JWT (Usuario tiene 'correo', Administrador tiene 'email')
-  const userEmail = 'correo' in usuario ? usuario.correo : usuario.email;
-  
+  // 3. Generar JWT
   const token = jwt.sign(
     {
       id: usuario.id,
-      email: userEmail,
+      email: usuario.email,
       rol: usuario.rol
     },
     process.env.JWT_SECRET!,
@@ -52,15 +50,11 @@ export async function register(data: RegistroUsuarioBody) {
     const isAdminEmail = await prisma.administrador.findUnique({
       where: { email: data.email }
     })
-    if(isAdminEmail) throw new Error('correo ya registrado');
-    
-    // Separar email del resto de los datos
-    const { email, ...restData } = data;
+    if(isAdminEmail) throw new Error('email ya registrado');
     
     const usuario = await prisma.usuario.create({
       data: {
-        ...restData,
-        correo: email, // Mapear email del body a correo en la DB
+        ...data,
         password: hashedPassword
       }
     })
@@ -69,7 +63,7 @@ export async function register(data: RegistroUsuarioBody) {
     const token = jwt.sign(
       {
         id: usuario.id,
-        email: usuario.correo,
+        email: usuario.email,
         rol: usuario.rol
       },
       process.env.JWT_SECRET!,
@@ -84,7 +78,7 @@ export async function register(data: RegistroUsuarioBody) {
     }
   } catch (error) {
     throw (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
-      ? new Error('Correo ya registrado')
+      ? new Error('Email ya registrado')
       : error
   }
 }

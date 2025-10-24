@@ -194,7 +194,7 @@ export const updateUserProfile = async (userData) => {
       const updateData = {
         nombre: userData.nombre || currentUser.nombre,
         apellido: userData.apellido || currentUser.apellido,
-        correo: currentUser.correo || currentUser.email,
+        email: currentUser.email,
         dni: currentUser.dni || '',
         telefono: userData.telefono || '',
         direccion: userData.direccion || '',

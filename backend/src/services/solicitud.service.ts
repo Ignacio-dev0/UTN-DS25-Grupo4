@@ -3,7 +3,6 @@ import prisma from "../config/prisma";
 
 import * as soliTypes from "../types/solicitud.types"
 import { da } from "zod/v4/locales/index.cjs";
-import { Solicitud } from "@prisma/client";
 import { primitiveTypes } from "zod/v4/core/util.cjs";
 
 export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) => {
@@ -160,13 +159,22 @@ export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitud
 //   return solicitudesTransformadas;
 // }
 
-export async function getRequestById (id:number): Promise<Solicitud>{
-    const soli = await prisma.solicitud.findUnique({
-        where:{id}//no se si tenemos que traer toda la info de la soli o solo cuit-usuario-estado
+export async function getRequestById (id:number): Promise<any>{
+    const soli = await prisma.complejo.findUnique({
+        where:{id},
+        include: {
+            usuario: true,
+            administrador: true,
+            domicilio: {
+                include: {
+                    localidad: true
+                }
+            }
+        }
     });
 
     if(!soli){
-        const error = new Error('solicitud no encontrada');
+        const error = new Error('complejo no encontrado');
         (error as any).statusCode = 404;
         throw error;
     };
@@ -174,18 +182,19 @@ export async function getRequestById (id:number): Promise<Solicitud>{
     return soli;
 } 
 
-export async function getAllRequest (): Promise<Solicitud[]>{
-    return prisma.solicitud.findMany({
+// Adaptado para trabajar con Complejo.estado en lugar de modelo Solicitud
+export async function getAllRequest (): Promise<any[]>{
+    // Obtener todos los complejos con estado PENDIENTE
+    return prisma.complejo.findMany({
+        where: {
+            estado: 'PENDIENTE'
+        },
         include: {
             usuario: true,
-            admin: true,
-            complejo: {
+            administrador: true,
+            domicilio: {
                 include: {
-                    domicilio: {
-                        include: {
-                            localidad: true
-                        }
-                    }
+                    localidad: true
                 }
             }
         }
@@ -193,13 +202,14 @@ export async function getAllRequest (): Promise<Solicitud[]>{
 }
 
 export async function deleteSoli(id: number) {
-    return prisma.solicitud.delete({where:{id}})
+    // Como no existe más Solicitud, eliminar un complejo pendiente
+    return prisma.complejo.delete({where:{id}})
 }
 
 
 // import prisma from '../config/prisma';
 
-import { EstadoSolicitud } from '@prisma/client';
+import { EstadoComplejo } from '@prisma/client';
 import { createComplejo } from './complejo.service';
 import { CreateSolicitudRequest, UpdateSolicitudRequest } from '../types/solicitud.types';
 

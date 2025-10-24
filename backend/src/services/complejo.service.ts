@@ -93,9 +93,7 @@ export const getAllComplejos = async () => {
 export const getComplejosAprobados = async () => {
   return await prisma.complejo.findMany({
     where: {
-      solicitud: {
-        estado: 'APROBADA'
-      }
+      estado: 'APROBADO'
     },
     include: { 
       domicilio: {
@@ -103,8 +101,8 @@ export const getComplejosAprobados = async () => {
           localidad: true
         }
       },
-      solicitud: true,
-      usuario: true 
+      usuario: true,
+      administrador: true
     },
   });
 };
@@ -119,7 +117,7 @@ export const getComplejoById = async (id:number) => {
           localidad: true
         }
       },
-      solicitud: true,
+      administrador: true,
       usuario: true,
       servicios: {
         include: {
@@ -159,7 +157,7 @@ export const deleteComplejo_sol_dom = async (id: number) => {
         const complejo = await prisma.complejo.findUnique({
             where: { id },
             include: {
-                solicitud: true,
+                administrador: true,
                 domicilio: true,
                 usuario: {
                     include: {
@@ -195,7 +193,7 @@ export const deleteComplejo_sol_dom = async (id: number) => {
 
         console.log(`🗑️ [${new Date().toISOString()}] Deleting complejo and related entities:`, {
             complejoId: id,
-            solicitudId: complejo.solicitudId,
+            // solicitudId: complejo.solicitudId, // REMOVED: Solicitud model no longer exists
             domicilioId: complejo.domicilioId,
             usuarioId: complejo.usuarioId,
             canchasCount: complejo.canchas.length,
@@ -267,9 +265,9 @@ export const deleteComplejo_sol_dom = async (id: number) => {
             // 4. Eliminar las canchas
             await tx.cancha.deleteMany({ where: { complejoId: id } });
 
-            // 5. Eliminar el complejo, solicitud, domicilio Y el usuario dueño
+            // 5. Eliminar el complejo, domicilio Y el usuario dueño
             await tx.complejo.delete({ where: { id } });
-            await tx.solicitud.delete({ where: { id: complejo.solicitudId } });
+            // await tx.solicitud.delete({ where: { id: complejo.solicitudId } }); // REMOVED: Solicitud model no longer exists
             await tx.domicilio.delete({ where: { id: complejo.domicilioId } });
             await tx.usuario.delete({ where: { id: complejo.usuarioId } });
 

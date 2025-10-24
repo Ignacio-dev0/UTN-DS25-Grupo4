@@ -9,7 +9,6 @@ export async function getAllUsuarios(): Promise<Usuario[]> {
     orderBy: { nombre: 'asc' },
     include: {
       complejo: true,
-      solicitudes: true,
       reservas: true
     }
   });
@@ -21,7 +20,6 @@ export async function getUsuarioById(id: number): Promise<Usuario | null>{
         where: { id },
         include: {
           complejo: true,
-          solicitudes: true,
           reservas: {
             include: {
               turnos: {
@@ -43,9 +41,9 @@ export async function getUsuarioById(id: number): Promise<Usuario | null>{
 }
 
 export async function getUsuarioByEmail(email: string): Promise<Usuario | any>{
-    // Primero buscar en Usuario (campo 'correo')
+    // Primero buscar en Usuario
     let usuario = await prisma.usuario.findUnique({ 
-        where: { correo: email }
+        where: { email }
     });
     
     // Si no se encuentra, buscar en Administrador
@@ -58,7 +56,6 @@ export async function getUsuarioByEmail(email: string): Promise<Usuario | any>{
             // Devolver el administrador con formato compatible
             return {
                 id: admin.id,
-                correo: admin.email,
                 email: admin.email,
                 password: admin.password,
                 rol: admin.rol,
@@ -87,13 +84,9 @@ export async function createUsuario(data: CrearUsuarioData): Promise<Usuario>{
     // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(data.password, 10);
     
-    // Separar email del resto de los datos y mapear a correo
-    const { email, ...restData } = data;
-    
     const created = await prisma.usuario.create({ 
         data: {
-            ...restData,
-            correo: email, // Mapear email del body a correo en la DB
+            ...data,
             password: hashedPassword
         }
     });
@@ -114,7 +107,7 @@ export async function updateUsuario(id: number, updateData: ActualizarUsuarioDat
                 ...(dataToUpdate.apellido !== undefined ? { apellido: dataToUpdate.apellido } : {}),
                 ...(dataToUpdate.nombre !== undefined ? { nombre: dataToUpdate.nombre } : {}),
                 ...(dataToUpdate.dni !== undefined ? { dni: dataToUpdate.dni } : {}),
-                ...(dataToUpdate.correo !== undefined ? { correo: dataToUpdate.correo } : {}),
+                ...(dataToUpdate.email !== undefined ? { email: dataToUpdate.email } : {}),
                 ...(dataToUpdate.password !== undefined ? { password: dataToUpdate.password } : {}),
                 ...(dataToUpdate.telefono !== undefined ? { telefono: dataToUpdate.telefono } : {}),
                 ...(dataToUpdate.direccion !== undefined ? { direccion: dataToUpdate.direccion } : {}),
@@ -142,7 +135,6 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
             where: { id },
             include: {
                 complejo: true,
-                solicitudes: true,
                 reservas: {  // reservas son Alquiler[]
                     include: {
                         turnos: true,
@@ -162,7 +154,6 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
 
         console.log(`📊 [${new Date().toISOString()}] User relationships:`, {
             hasComplejo: !!usuario.complejo,
-            hasSolicitud: !!usuario.solicitudes,
             reservasCount: usuario.reservas.length
         });
 
@@ -205,23 +196,6 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
                     await tx.alquiler.delete({
                         where: { id: alquiler.id }
                     });
-                }
-            }
-
-            // Eliminar solicitud (si existe y no está asociada a complejo)
-            if (usuario.solicitudes) {
-                console.log(`🗑️ [${new Date().toISOString()}] Checking solicitud ID: ${usuario.solicitudes.id}`);
-                // Solo eliminar solicitud si no está asociada a un complejo
-                const complejoAssociated = await tx.complejo.findFirst({
-                    where: { solicitudId: usuario.solicitudes.id }
-                });
-                if (!complejoAssociated) {
-                    console.log(`🗑️ [${new Date().toISOString()}] Deleting solicitud ID: ${usuario.solicitudes.id}`);
-                    await tx.solicitud.delete({
-                        where: { id: usuario.solicitudes.id }
-                    });
-                } else {
-                    console.log(`⚠️ [${new Date().toISOString()}] Cannot delete solicitud - associated with complejo ID: ${complejoAssociated.id}`);
                 }
             }
 

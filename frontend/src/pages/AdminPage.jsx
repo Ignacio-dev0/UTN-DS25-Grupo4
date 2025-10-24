@@ -43,7 +43,7 @@ function AdminPage() {
             imagen: solicitud.image || solicitud.complejo?.image || null,
             // Información adicional del usuario
             usuarioNombre: `${solicitud.usuario?.nombre || ''} ${solicitud.usuario?.apellido || ''}`.trim() || 'Usuario sin nombre',
-            usuarioCorreo: solicitud.usuario?.correo || 'Sin correo',
+            usuarioCorreo: solicitud.usuario?.email || 'Sin correo',
             usuarioTelefono: solicitud.usuario?.telefono || 'Sin teléfono',
             localidad: solicitud.complejo?.domicilio?.localidad?.nombre || 'No especificado'
           }));

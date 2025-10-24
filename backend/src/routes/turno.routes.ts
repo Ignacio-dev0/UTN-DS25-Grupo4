@@ -12,14 +12,14 @@ const router = Router()
 router.post(
   '/regenerar/:canchaId',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   turnoAutomaticoController.regenerarTurnosSemanales
 );
 
 router.put(
   '/individual/:turnoId',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   turnoAutomaticoController.actualizarTurnoIndividual
 );
 
@@ -49,7 +49,7 @@ router.post(
 router.post(
   '/',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   validate(crearTurnoSchema),
   turnoController.createTurno
 );
@@ -83,21 +83,21 @@ router.get('/cancha/:canchaId/disponibles/hoy', turnoController.getTurnosDisponi
 router.post(
   '/:id/deshabilitar',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   turnoController.deshabilitarTurno
 );
 
 router.post(
   '/:id/habilitar',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   turnoController.habilitarTurno
 );
 
 router.put(
   '/:id',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   validate(actualizarTurnoSchema),
   turnoController.updateTurno
 );
@@ -105,7 +105,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  authorize('DUENIO'),
+  authorize('ADMINISTRADOR', 'DUENIO'),
   turnoController.deleteTurno
 );
 
