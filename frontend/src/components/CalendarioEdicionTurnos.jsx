@@ -611,21 +611,30 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                 // Determinar el estado del turno
                 let estadoTurno, clasesBoton, esEditable;
                 
-                // Un turno está pasado si:
-                // 1. La fecha es anterior a hoy, O
-                // 2. Es hoy pero la hora ya pasó
-                const hoyInicio = new Date();
-                hoyInicio.setHours(0, 0, 0, 0);
-                
-                const fechaDiaInicio = new Date(fechaDia);
-                fechaDiaInicio.setHours(0, 0, 0, 0);
-                
-                const esHoy = fechaDiaInicio.getTime() === hoyInicio.getTime();
-                const horaActual = new Date().getHours();
-                const horaTurno = parseInt(hora.split(':')[0]);
-                
-                // Un turno está pasado solo si la hora ya finalizó (no si está en curso)
-                const esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno < horaActual);
+                // Determinar si el turno ya pasó
+                // Priorizar el campo yaPaso del backend si está disponible en el turno
+                let esPasado;
+                if (turno && typeof turno.yaPaso === 'boolean') {
+                  // Usar el campo del backend si está disponible
+                  esPasado = turno.yaPaso;
+                } else {
+                  // Calcular localmente si no viene del backend
+                  // Un turno está pasado si:
+                  // 1. La fecha es anterior a hoy, O
+                  // 2. Es hoy pero la hora ya pasó
+                  const hoyInicio = new Date();
+                  hoyInicio.setHours(0, 0, 0, 0);
+                  
+                  const fechaDiaInicio = new Date(fechaDia);
+                  fechaDiaInicio.setHours(0, 0, 0, 0);
+                  
+                  const esHoy = fechaDiaInicio.getTime() === hoyInicio.getTime();
+                  const horaActual = new Date().getHours();
+                  const horaTurno = parseInt(hora.split(':')[0]);
+                  
+                  // Un turno está pasado solo si la hora ya finalizó (no si está en curso)
+                  esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno < horaActual);
+                }
                 
                 // Normalizar el día para comparar con horarios deshabilitados (sin tildes)
                 const diaNormalizado = dia
@@ -637,8 +646,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   h => h.dia === diaNormalizado && h.hora === hora
                 );
                 
-                if (esPasado) {
-                  // Turno finalizado (pasado)
+                if (turno && esPasado) {
+                  // Turno finalizado (pasado) - SOLO si el turno existe
                   estadoTurno = 'finalizado';
                   clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 relative text-white font-bold bg-gray-400";
                   esEditable = false;
