@@ -5,6 +5,7 @@ import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx';
 import GestionDeportes from '../components/GestionDeportes.jsx';
 import GestionLocalidades from '../components/GestionLocalidades.jsx';
 import GestionUsuarios from '../components/GestionUsuarios.jsx';
+import GestionResenas from '../components/GestionResenas.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { API_BASE_URL } from '../config/api.js';
 
@@ -197,6 +198,9 @@ function AdminPage() {
             <button onClick={() => setActiveTab('usuarios')} className={getTabClass('usuarios')}>
               Usuarios
             </button>
+            <button onClick={() => setActiveTab('resenas')} className={getTabClass('resenas')}>
+              Reseñas
+            </button>
         </nav>
       </div>
       <div>
@@ -244,6 +248,10 @@ function AdminPage() {
 
         {activeTab === 'usuarios' && (
           <GestionUsuarios />
+        )}
+
+        {activeTab === 'resenas' && (
+          <GestionResenas />
         )}
         
       </div>

@@ -31,7 +31,6 @@ const RESEÑAS_VISIBLES = 3; // Mostrar 3 reseñas a la vez
 function CarruselReseñas({ reseñas }) {
   const [indiceActual, setIndiceActual] = useState(0);
   const [animando, setAnimando] = useState(false);
-  const [direccion, setDireccion] = useState('siguiente');
 
   if (!reseñas || reseñas.length === 0) {
     return (
@@ -46,7 +45,6 @@ function CarruselReseñas({ reseñas }) {
 
   const handleAnterior = () => {
     if (totalReseñas <= 1 || animando) return;
-    setDireccion('anterior');
     setAnimando(true);
     
     setTimeout(() => {
@@ -54,12 +52,11 @@ function CarruselReseñas({ reseñas }) {
         prevIndice === 0 ? totalReseñas - 1 : prevIndice - 1
       );
       setAnimando(false);
-    }, 100);
+    }, 500); // Duración de la animación CSS
   };
 
   const handleSiguiente = () => {
     if (totalReseñas <= 1 || animando) return;
-    setDireccion('siguiente');
     setAnimando(true);
     
     setTimeout(() => {
@@ -67,7 +64,7 @@ function CarruselReseñas({ reseñas }) {
         prevIndice === totalReseñas - 1 ? 0 : prevIndice + 1
       );
       setAnimando(false);
-    }, 100);
+    }, 500); // Duración de la animación CSS
   };
 
   return (
@@ -88,13 +85,7 @@ function CarruselReseñas({ reseñas }) {
         {/* Ventana del Carrusel - muestra 3 reseñas a la vez */}
         <div className="overflow-hidden w-full max-w-5xl">
           {/* Track del Carrusel */}
-          <div className={`flex gap-6 transition-all duration-500 ease-in-out ${
-            animando 
-              ? direccion === 'siguiente' 
-                ? 'translate-x-[-50px] opacity-80' 
-                : 'translate-x-[50px] opacity-80'
-              : 'translate-x-0 opacity-100'
-          }`}>
+          <div className={`flex gap-6 transition-all duration-500 ease-in-out`}>
             {/* Renderizar 3 reseñas visibles con loop infinito */}
             {[0, 1, 2].map((offset) => {
               const index = (indiceActual + offset) % totalReseñas;
@@ -103,11 +94,7 @@ function CarruselReseñas({ reseñas }) {
               return (
                 <div 
                   key={`${reseña.id}-${offset}`}
-                  className={`flex-shrink-0 w-[300px] h-[200px] bg-accent p-6 rounded-lg shadow-md flex flex-col justify-between transition-all duration-500 ${
-                    animando 
-                      ? 'scale-95'
-                      : 'scale-100'
-                  }`}
+                  className={`flex-shrink-0 w-[300px] h-[200px] bg-accent p-6 rounded-lg shadow-md flex flex-col justify-between transition-all duration-500 hover:shadow-xl hover:scale-105`}
                 >
                   {/* Contenido de la tarjeta */}
                   <div>
