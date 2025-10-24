@@ -96,8 +96,8 @@ function CarruselReseñas({ reseñas }) {
               transform: `translateX(-${indiceActual * (CARD_WIDTH + GAP)}px)`
             }}
           >
-            {/* Renderizar todas las reseñas + copias para efecto infinito */}
-            {[...reseñas, ...reseñas.slice(0, RESEÑAS_VISIBLES)].map((reseña, idx) => (
+            {/* Renderizar solo las reseñas necesarias para mostrar 3 a la vez */}
+            {reseñas.map((reseña, idx) => (
               <div 
                 key={`${reseña.id}-${idx}`}
                 className="flex-shrink-0 w-[300px] h-[200px] bg-accent p-6 rounded-lg shadow-md flex flex-col justify-between hover:shadow-xl transition-shadow"
