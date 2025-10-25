@@ -335,7 +335,8 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 					}
 				}
 			}, 
-			pago: true 
+			pago: true,
+			resenia: true // Incluir reseña para verificar si ya fue reseñado
 		},
 		orderBy: {
 			createdAt: 'desc' // Más recientes primero

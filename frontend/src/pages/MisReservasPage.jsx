@@ -213,6 +213,9 @@ function MisReservasPage() {
                     // Formatear fecha a DD/MM/YYYY
                     const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
                     
+                    // Verificar si el alquiler ya tiene una reseña
+                    const yaFueReseñado = alquiler.resenia ? true : false;
+                    
                     return {
                         id: alquiler.id,
                         canchaId: primerTurno.cancha?.id || null, // Agregar canchaId para navegación
@@ -223,7 +226,7 @@ function MisReservasPage() {
                         horaFin: horaFin,
                         total: alquiler.turnos.reduce((sum, turno) => sum + turno.precio, 0),
                         estado: estado,
-                        reseñada: false, // Por ahora false, se puede implementar en el futuro
+                        reseñada: yaFueReseñado, // Verificar si ya tiene reseña
                         userId: usuarioId
                     };
                 });
