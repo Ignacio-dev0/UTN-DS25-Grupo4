@@ -16,7 +16,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  authorize('DUENIO'),
+  authorize('DUENIO', 'ADMINISTRADOR'),
   validate(canchaSchema.createCancha),
   canchaController.crearCancha
 );
