@@ -213,8 +213,8 @@ function MisReservasPage() {
                     // Formatear fecha a DD/MM/YYYY
                     const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
                     
-                    // Verificar si el alquiler ya tiene una reseña
-                    const yaFueReseñado = alquiler.resenia ? true : false;
+                    // Verificar si el USUARIO ya dejó una reseña en esta CANCHA (en cualquier alquiler)
+                    const usuarioYaReseñoCancha = alquiler.usuarioYaReseñoCancha || false;
                     
                     return {
                         id: alquiler.id,
@@ -226,7 +226,7 @@ function MisReservasPage() {
                         horaFin: horaFin,
                         total: alquiler.turnos.reduce((sum, turno) => sum + turno.precio, 0),
                         estado: estado,
-                        reseñada: yaFueReseñado, // Verificar si ya tiene reseña
+                        reseñada: usuarioYaReseñoCancha, // Verificar si usuario ya reseñó esta cancha
                         userId: usuarioId
                     };
                 });
@@ -328,10 +328,18 @@ function MisReservasPage() {
                 const result = await response.json();
                 console.log('Reseña creada exitosamente:', result);
                 
-                // Actualizar estado local solo si la reseña se guardó exitosamente
-                setReservas(reservas.map(r => 
-                    r.id === datosReseña.reservaId ? { ...r, reseñada: true } : r
-                ));
+                // Obtener el canchaId de la reserva que se acaba de reseñar
+                const reservaReseñada = reservas.find(r => r.id === datosReseña.reservaId);
+                const canchaIdReseñada = reservaReseñada?.canchaId;
+                
+                // Actualizar estado local: marcar como reseñada TODOS los alquileres de esa cancha
+                setReservas(reservas.map(r => {
+                    // Si es la misma cancha, marcar como reseñada
+                    if (r.canchaId === canchaIdReseñada) {
+                        return { ...r, reseñada: true };
+                    }
+                    return r;
+                }));
                 alert('¡Reseña guardada exitosamente!');
             } else {
                 let errorData;

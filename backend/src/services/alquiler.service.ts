@@ -349,7 +349,37 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 		(error as any).statusCode = 404;
 		throw error;
 	}
-	return alquiler;
+	
+	// Para cada alquiler, verificar si el usuario ya dejó una reseña en esa cancha
+	// (no solo en este alquiler específico, sino en CUALQUIER alquiler de esa cancha)
+	const alquileresConInfoReseña = await Promise.all(
+		alquiler.map(async (alq) => {
+			if (alq.turnos.length === 0) return { ...alq, usuarioYaReseñoCancha: false };
+			
+			const canchaId = alq.turnos[0].cancha.id;
+			
+			// Buscar si existe alguna reseña del usuario para esta cancha
+			const reseñaExistente = await prisma.resenia.findFirst({
+				where: {
+					alquiler: {
+						clienteId: clienteId,
+						turnos: {
+							some: {
+								canchaId: canchaId
+							}
+						}
+					}
+				}
+			});
+			
+			return {
+				...alq,
+				usuarioYaReseñoCancha: reseñaExistente !== null
+			};
+		})
+	);
+	
+	return alquileresConInfoReseña;
 }
 
 export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {
