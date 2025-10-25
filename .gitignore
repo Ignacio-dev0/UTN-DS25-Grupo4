@@ -17,5 +17,6 @@ dist/
 build/
 *.log
 
-backend/scripts/
+# Excluir solo el script de recalcular precios
+backend/scripts/recalcular-precios.ts
 
