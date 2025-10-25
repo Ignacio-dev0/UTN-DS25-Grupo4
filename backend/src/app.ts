@@ -55,14 +55,16 @@ app.use((req, res, next) => {
 });
 
 // Servir archivos estáticos (imágenes)
-// En producción: /app/public/images (desde raíz del proyecto)
+// En producción Railway: /app/dist/public/images (copiadas por Dockerfile)
 // En desarrollo: ../public/images (relativo a dist/)
 const imagesPath = process.env.STATIC_FILES_PATH || 
     (process.env.NODE_ENV === 'production' 
-        ? path.join(__dirname, '../../public/images')  // Desde dist/ subir 2 niveles a /app/
+        ? path.join(__dirname, '../public/images')  // Desde /app/dist/ a /app/dist/public/images
         : path.join(__dirname, '../public/images'));   // Desarrollo
 
 console.log(`📂 Images path: ${imagesPath}`);
+console.log(`📂 __dirname: ${__dirname}`);
+console.log(`📂 NODE_ENV: ${process.env.NODE_ENV}`);
 
 app.use('/images', express.static(imagesPath));
 app.use('/api/images', express.static(imagesPath));
