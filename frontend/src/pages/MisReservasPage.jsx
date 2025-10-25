@@ -93,8 +93,6 @@ function MisReservasPage() {
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
         try {
-            console.log('🔍 CARGANDO RESERVAS - Usuario ID:', usuarioId);
-            console.log('🔍 URL de consulta:', `${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`, {
                 headers: {
@@ -102,22 +100,9 @@ function MisReservasPage() {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('📡 Respuesta del servidor - Status:', response.status, 'OK:', response.ok);
+            
             if (response.ok) {
                 const data = await response.json();
-                console.log('📦 Datos recibidos:', data);
-                console.log('📊 Total de alquileres:', data.alquileres?.length || 0);
-                
-                // DEBUG: Ver estructura de UN alquiler completo
-                if (data.alquileres && data.alquileres.length > 0) {
-                    const primerAlquiler = data.alquileres[0];
-                    console.log('🔍 ESTRUCTURA DE ALQUILER:', primerAlquiler);
-                    if (primerAlquiler.turnos && primerAlquiler.turnos.length > 0) {
-                        console.log('🔍 ESTRUCTURA DE TURNO:', primerAlquiler.turnos[0]);
-                        console.log('  - horaInicio:', primerAlquiler.turnos[0].horaInicio, 'tipo:', typeof primerAlquiler.turnos[0].horaInicio);
-                        console.log('  - horaFin:', primerAlquiler.turnos[0].horaFin, 'tipo:', typeof primerAlquiler.turnos[0].horaFin);
-                    }
-                }
                 
                 // Filtrar solo alquileres que tengan turnos
                 const alquileresConTurnos = (data.alquileres || []).filter(alquiler => 
@@ -126,9 +111,13 @@ function MisReservasPage() {
                 console.log('✅ Alquileres con turnos:', alquileresConTurnos.length);
                 
                 const reservasFormateadas = alquileresConTurnos.map(alquiler => {
-                    const primerTurno = alquiler.turnos[0];
-                    const ultimoTurno = alquiler.turnos[alquiler.turnos.length - 1];
-                    const cantidadTurnos = alquiler.turnos.length;
+                    // Ordenar los turnos por horaInicio para asegurar el orden correcto
+                    const turnosOrdenados = [...alquiler.turnos].sort((a, b) => {
+                        return new Date(a.horaInicio).getTime() - new Date(b.horaInicio).getTime();
+                    });
+                    
+                    const primerTurno = turnosOrdenados[0];
+                    const ultimoTurno = turnosOrdenados[turnosOrdenados.length - 1];
                     
                     // Validación adicional por si acaso
                     if (!primerTurno || !primerTurno.fecha || !primerTurno.cancha) {
@@ -158,25 +147,12 @@ function MisReservasPage() {
                     const horaInicio = parsearHora(primerTurno.horaInicio);
                     
                     // Calcular hora de fin del último turno
-                    let horaFin;
-                    if (ultimoTurno.horaFin) {
-                        // Si el turno tiene horaFin, usarla
-                        horaFin = parsearHora(ultimoTurno.horaFin);
-                    } else {
-                        // Si no, sumar 1 hora a la hora de inicio del último turno
-                        const horaInicioUltimo = parsearHora(ultimoTurno.horaInicio);
-                        const [horaNum, minNum] = horaInicioUltimo.split(':').map(Number);
-                        const horaFinNum = (horaNum + 1) % 24;
-                        horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minNum.toString().padStart(2, '0')}`;
-                    }
-                    
-                    // DEBUG: Ver qué hora se parseó (solo para el primer alquiler)
-                    if (alquiler.id === data.alquileres[0]?.id) {
-                        console.log('🔍 DEBUG HORARIOS:');
-                        console.log('  - Cantidad de turnos:', cantidadTurnos);
-                        console.log('  - Hora inicio (primer turno):', horaInicio);
-                        console.log('  - Hora fin (último turno):', horaFin);
-                    }
+                    // Siempre calcular sumando 1 hora a la hora de inicio del último turno
+                    // (ya que los turnos no tienen campo horaFin en la base de datos)
+                    const horaInicioUltimo = parsearHora(ultimoTurno.horaInicio);
+                    const [horaNum, minNum] = horaInicioUltimo.split(':').map(Number);
+                    const horaFinNum = (horaNum + 1) % 24;
+                    const horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minNum.toString().padStart(2, '0')}`;
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';
@@ -202,12 +178,9 @@ function MisReservasPage() {
                     // Construir fecha/hora de fin del turno
                     const fechaHoraFinTurno = new Date(anio, mes, dia, horaFinParsed, minFinParsed);
                     
-                    console.log(`⏰ Turno ${alquiler.id}: Fin=${fechaHoraFinTurno.toLocaleString()}, Ahora=${ahora.toLocaleString()}, Estado=${estado}`);
-                    
                     // Si el turno ya terminó (hora de fin pasó), marcar como finalizado
                     if ((estado === 'Confirmada' || estado === 'Pendiente') && ahora > fechaHoraFinTurno) {
                         estado = 'Finalizada';
-                        console.log(`🏁 ✅ Turno auto-finalizado: ${alquiler.id}`);
                     }
 
                     // Formatear fecha a DD/MM/YYYY
@@ -233,7 +206,6 @@ function MisReservasPage() {
                 
                 // Filtrar los null (alquileres con datos incompletos)
                 const reservasValidas = reservasFormateadas.filter(r => r !== null);
-                console.log('✅ Reservas válidas después de formatear:', reservasValidas.length);
                 
                 // Ordenar reservas por estado (pendientes primero) y luego por fecha más reciente
                 const reservasOrdenadas = reservasValidas.sort((a, b) => {
@@ -394,35 +366,14 @@ function MisReservasPage() {
                     r.id === reservaId ? { ...r, estado: 'Cancelada' } : r
                 ));
                 
-                // Liberar el turno si la reserva estaba pendiente
-                const reserva = reservas.find(r => r.id === reservaId);
-                if (reserva && reserva.estado === 'Pendiente') {
-                    try {
-                        const turnoResponse = await fetch(`http://localhost:3000/api/turnos/individual/${reserva.turnoId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify({ reservado: false })
-                        });
-                        
-                        if (turnoResponse.ok) {
-                            console.log('Turno liberado exitosamente');
-                        } else {
-                            console.error('Error al liberar el turno');
-                        }
-                    } catch (error) {
-                        console.error('Error al liberar turno:', error);
-                    }
-                }
-                
-                console.log('Reserva cancelada exitosamente');
+                console.log('✅ Reserva cancelada exitosamente');
+                alert('Reserva cancelada exitosamente');
             } else {
-                throw new Error('Error al cancelar la reserva');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al cancelar la reserva');
             }
         } catch (error) {
-            console.error('Error al cancelar reserva:', error);
+            console.error('💥 Error al cancelar reserva:', error);
             alert('Error al cancelar la reserva: ' + error.message);
         }
     };

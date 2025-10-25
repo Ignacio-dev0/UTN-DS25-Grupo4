@@ -87,16 +87,18 @@ function GestionLocalidades() {
               ? { ...l, nombre: localidadGuardada.nombre } 
               : l
           ));
+          alert('Localidad actualizada exitosamente');
         } else {
           // Agregar nueva localidad a la lista
           const nuevaLocalidad = data.localidad || data;
           setLocalidades(prev => [...prev, nuevaLocalidad]);
+          alert('Localidad creada exitosamente');
         }
         
         handleCloseModalLocalidad();
       } else {
         const errorData = await response.json();
-        alert(errorData.message || 'Error al guardar localidad');
+        alert(errorData.error || errorData.message || 'Error al guardar localidad');
       }
     } catch (error) {
       console.error('Error guardando localidad:', error);

@@ -45,7 +45,7 @@ router.post(
 router.patch(
   '/:id',
   authenticate,
-  authorize('ADMINISTRADOR'),
+  authorize('CLIENTE', 'ADMINISTRADOR'),
   validate(alquilerSchema.actualizarAlquiler),
   alquilerController.actualizarAlquiler
 );
