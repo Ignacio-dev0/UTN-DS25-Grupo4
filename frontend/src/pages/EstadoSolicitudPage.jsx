@@ -85,7 +85,7 @@ function EstadoSolicitudPage() {
           message: '¡Felicitaciones! Tu complejo ha sido aprobado. Ya puedes gestionar tus canchas y turnos.',
           color: 'green'
         };
-      case 'RECHAZADA':
+      case 'RECHAZADO':
         return {
           icon: <FaTimesCircle className="mx-auto h-20 w-20 text-red-500 mb-6" />,
           title: 'Solicitud Rechazada',

@@ -114,14 +114,16 @@ function AdminPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ estado: 'RECHAZADA' }),
+        body: JSON.stringify({ estado: 'RECHAZADO' }),
       });
 
       if (response.ok) {
         alert('Solicitud rechazada correctamente');
         fetchSolicitudes();
       } else {
-        alert('Error al rechazar solicitud');
+        const errorData = await response.json();
+        console.error('Error del servidor:', errorData);
+        alert(`Error al rechazar solicitud: ${errorData.error || 'Error desconocido'}`);
       }
     } catch (error) {
       console.error('Error rechazando solicitud:', error);
