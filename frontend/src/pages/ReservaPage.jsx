@@ -411,13 +411,14 @@ function ReservaPage() {
       console.log('🆔 Usuario ID que se enviará:', parseInt(user.id));
 
       // Llamar al backend para crear el alquiler/reserva
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/alquileres`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          usuarioId: parseInt(user.id),
           turnosIds: turnosIds
         }),
       });
