@@ -127,6 +127,8 @@ function MisReservasPage() {
                 
                 const reservasFormateadas = alquileresConTurnos.map(alquiler => {
                     const primerTurno = alquiler.turnos[0];
+                    const ultimoTurno = alquiler.turnos[alquiler.turnos.length - 1];
+                    const cantidadTurnos = alquiler.turnos.length;
                     
                     // Validación adicional por si acaso
                     if (!primerTurno || !primerTurno.fecha || !primerTurno.cancha) {
@@ -136,39 +138,45 @@ function MisReservasPage() {
                     
                     const fecha = new Date(primerTurno.fecha);
                     
-                    // Parsear horaInicio (viene como DateTime ISO: "1970-01-01T20:00:00.000Z")
-                    let horaInicio, horaFin;
-                    
-                    if (typeof primerTurno.horaInicio === 'string') {
-                        // Si es string ISO, extraer la hora de la parte de tiempo
-                        // Formato: "1970-01-01T20:00:00.000Z" -> extraer "20:00"
-                        const timeMatch = primerTurno.horaInicio.match(/T(\d{2}:\d{2})/);
-                        if (timeMatch) {
-                            horaInicio = timeMatch[1]; // "20:00"
-                        } else {
-                            // Fallback: parsear como Date
-                            const d = new Date(primerTurno.horaInicio);
-                            horaInicio = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                    // Función auxiliar para parsear hora desde ISO string
+                    const parsearHora = (horaISO) => {
+                        if (typeof horaISO === 'string') {
+                            const timeMatch = horaISO.match(/T(\d{2}:\d{2})/);
+                            if (timeMatch) {
+                                return timeMatch[1]; // "20:00"
+                            }
+                            const d = new Date(horaISO);
+                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                        } else if (horaISO instanceof Date || horaISO) {
+                            const d = new Date(horaISO);
+                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
                         }
-                    } else if (primerTurno.horaInicio instanceof Date || primerTurno.horaInicio) {
-                        // Si es Date object, formatear a HH:MM
-                        const d = new Date(primerTurno.horaInicio);
-                        horaInicio = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                        return '00:00';
+                    };
+                    
+                    // Parsear hora de inicio del primer turno
+                    const horaInicio = parsearHora(primerTurno.horaInicio);
+                    
+                    // Calcular hora de fin del último turno
+                    let horaFin;
+                    if (ultimoTurno.horaFin) {
+                        // Si el turno tiene horaFin, usarla
+                        horaFin = parsearHora(ultimoTurno.horaFin);
                     } else {
-                        horaInicio = '00:00';
+                        // Si no, sumar 1 hora a la hora de inicio del último turno
+                        const horaInicioUltimo = parsearHora(ultimoTurno.horaInicio);
+                        const [horaNum, minNum] = horaInicioUltimo.split(':').map(Number);
+                        const horaFinNum = (horaNum + 1) % 24;
+                        horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minNum.toString().padStart(2, '0')}`;
                     }
                     
                     // DEBUG: Ver qué hora se parseó (solo para el primer alquiler)
                     if (alquiler.id === data.alquileres[0]?.id) {
-                        console.log('🔍 DEBUG HORA INICIO:');
-                        console.log('  - primerTurno.horaInicio RAW:', primerTurno.horaInicio);
-                        console.log('  - horaInicio parseada:', horaInicio);
+                        console.log('🔍 DEBUG HORARIOS:');
+                        console.log('  - Cantidad de turnos:', cantidadTurnos);
+                        console.log('  - Hora inicio (primer turno):', horaInicio);
+                        console.log('  - Hora fin (último turno):', horaFin);
                     }
-                    
-                    // Calcular horaFin sumando 1 hora a horaInicio (duración estándar de turno)
-                    const [horaInicioNum, minInicioNum] = horaInicio.split(':').map(Number);
-                    const horaFinNum = (horaInicioNum + 1) % 24; // Sumar 1 hora
-                    horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minInicioNum.toString().padStart(2, '0')}`;
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';

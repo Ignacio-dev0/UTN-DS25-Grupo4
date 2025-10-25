@@ -66,7 +66,10 @@ function ListaReservas({ reservas, onCancelReserva, onDejarReseña, onPagarReser
             <div key={reserva.id} className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex-grow">
                 <p className="font-semibold text-primary text-lg">{reserva.complejo} - {reserva.cancha}</p>
-                <p className="text-sm text-secondary">Fecha: {reserva.fecha} a las {reserva.hora}</p>
+                <p className="text-sm text-secondary">
+                  Fecha: {reserva.fecha} a las {reserva.hora}
+                  {reserva.horaFin && reserva.horaFin !== reserva.hora && ` - ${reserva.horaFin}`}
+                </p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <span className={`font-bold text-xs px-3 py-1 rounded-full ${getStatusClass(reserva.estado)}`}>
