@@ -48,23 +48,36 @@ export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>
     console.log('✅ Complejo actualizado en la base de datos:', complejo);
     
     // Si hay servicios para actualizar, manejar la relación ComplejoServicio
-    if (servicios && servicios.length >= 0) {
+    if (servicios !== undefined) {
       console.log('🔄 Actualizando servicios:', servicios);
+      console.log('🔍 Tipo de servicios:', typeof servicios, Array.isArray(servicios));
+      console.log('� Primer elemento:', servicios[0], typeof servicios[0]);
+      
+      // Validar que servicios sea un array de números
+      if (!Array.isArray(servicios)) {
+        throw new Error('servicios debe ser un array');
+      }
+      
+      // Filtrar solo números válidos
+      const serviciosIds = servicios.filter(s => typeof s === 'number' && s > 0);
+      console.log('✅ IDs de servicios válidos:', serviciosIds);
       
       // Primero eliminar todas las relaciones existentes
-      await prisma.complejoServicio.deleteMany({
+      const deleted = await prisma.complejoServicio.deleteMany({
         where: { complejoId: id }
       });
+      console.log(`🗑️ Eliminadas ${deleted.count} relaciones anteriores`);
       
       // Luego crear las nuevas relaciones
-      if (servicios.length > 0) {
-        await prisma.complejoServicio.createMany({
-          data: servicios.map(servicioId => ({
+      if (serviciosIds.length > 0) {
+        const created = await prisma.complejoServicio.createMany({
+          data: serviciosIds.map(servicioId => ({
             complejoId: id,
             servicioId,
             disponible: true
           }))
         });
+        console.log(`✅ Creadas ${created.count} nuevas relaciones`);
       }
       
       console.log('✅ Servicios actualizados correctamente');

@@ -86,10 +86,12 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
 
       console.log('Enviando datos de cancha:', canchaData);
 
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/canchas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(canchaData),
       });
@@ -210,7 +212,7 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
                 cancha={cancha}
               />
               {isEditing && (
-                <div className="absolute top-2 right-2 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-2 right-2 flex items-center space-x-2 transition-opacity duration-300">
                   <button 
                     onClick={() => {
                       console.log(`👁️  Click en botón para cancha ${cancha.id}, estado actual:`, cancha.estado);

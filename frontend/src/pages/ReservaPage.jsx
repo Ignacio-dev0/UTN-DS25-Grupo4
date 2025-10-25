@@ -58,6 +58,34 @@ const getCoordinatesForLocation = (domicilio) => {
     if (coords) {
       lat = coords.lat;
       lng = coords.lng;
+      
+      // Ajuste fino basado en la calle/altura para La Plata (sistema de calles numeradas)
+      if (localidad === 'la plata' && domicilio.calle && domicilio.altura) {
+        const calle = domicilio.calle.toLowerCase();
+        const altura = parseInt(domicilio.altura);
+        
+        // La Plata tiene un sistema de cuadrícula con calles numeradas
+        // Calles (N-S) vs Avenidas (E-O)
+        if (calle.includes('calle') || /\bcalle\s+\d+/.test(calle)) {
+          // Calles van de N a S (aumenta latitud hacia el sur)
+          const numCalle = parseInt(calle.match(/\d+/)?.[0] || 0);
+          if (numCalle > 0) {
+            lat = -34.9214 + (numCalle - 50) * 0.0012; // Offset aproximado
+          }
+        } else if (calle.includes('avenida') || calle.includes('diagonal')) {
+          // Avenidas van de E a O (aumenta longitud hacia el oeste)
+          const numAvenida = parseInt(calle.match(/\d+/)?.[0] || 0);
+          if (numAvenida > 0) {
+            lng = -57.9545 - (numAvenida - 7) * 0.0012; // Offset aproximado
+          }
+        }
+        
+        // Ajuste por altura de la calle (cuadras)
+        if (altura > 0) {
+          const cuadras = Math.floor(altura / 100);
+          lng += cuadras * 0.0014; // Cada cuadra ~140m en longitud
+        }
+      }
     }
   }
   
@@ -134,13 +162,16 @@ function ReservaPage() {
 
         // Cargar servicios del complejo desde la API
         if (cancha.complejoId) {
+          console.log('🔍 Cargando servicios para complejoId:', cancha.complejoId);
           const serviciosResponse = await fetch(`${API_BASE_URL}/servicios`);
           if (serviciosResponse.ok) {
             const serviciosData = await serviciosResponse.json();
+            console.log('📦 Todos los servicios:', serviciosData);
             const serviciosDelComplejo = serviciosData.servicios
               .filter(servicio => 
                 servicio.complejos.some(cs => cs.complejoId === cancha.complejoId && cs.disponible)
               );
+            console.log('✅ Servicios filtrados para el complejo:', serviciosDelComplejo);
             setServiciosCompleto(serviciosDelComplejo);
           }
         }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaTrash, FaPause, FaPlay } from 'react-icons/fa';
 import { API_BASE_URL } from '../config/api.js';
 
 const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
@@ -337,7 +338,10 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
         }
         
         // Si el turno ya existe, recargar datos para sincronizar
-        if (response.status === 400 && errorData.error === 'Ya existe un turno en ese horario') {
+        if (response.status === 400 && (
+          errorData.error === 'Ya existe un turno en ese horario' || 
+          errorData.error === 'Ya existe un turno con esos datos'
+        )) {
           console.log('⚠️ Turno ya existe, recargando datos...');
           // Recargar turnos desde la BD para sincronizar
           try {
@@ -386,7 +390,28 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
               }));
               
               onTurnosChange(turnosFormateados);
-              alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+              
+              // Encontrar el turno que ya existe y actualizarlo con el nuevo precio
+              const turnoExistente = turnosFormateados.find(t => 
+                String(t.dia).toUpperCase() === dia && t.hora === hora
+              );
+              
+              if (turnoExistente) {
+                console.log('🔄 Turno encontrado, actualizando precio a:', precio);
+                await actualizarTurnoEnBD(turnoExistente.id, { precio });
+                
+                // Actualizar estado local con el nuevo precio
+                const turnosConPrecioActualizado = turnosFormateados.map(t =>
+                  t.id === turnoExistente.id ? { ...t, precio } : t
+                );
+                onTurnosChange(turnosConPrecioActualizado);
+                recalcularPrecioDesdeLocal(turnosConPrecioActualizado);
+                
+                alert(`✅ Precio del turno actualizado a $${precio.toLocaleString('es-AR')}`);
+              } else {
+                alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+              }
+              
               return; // No lanzar error, solo informar
             }
           } catch (reloadError) {
@@ -743,10 +768,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                             }}
                             className={`absolute bottom-1 right-1 h-5 w-5 rounded flex items-center justify-center ${
                               (turno.reservado || turno.alquilerId) 
-                                ? 'bg-gray-300 cursor-not-allowed opacity-50' 
-                                : turno.deshabilitado 
-                                  ? 'bg-yellow-500 hover:bg-yellow-600 cursor-pointer' 
-                                  : 'bg-gray-400 hover:bg-gray-500 cursor-pointer'
+                                ? 'cursor-not-allowed opacity-50' 
+                                : 'hover:bg-orange-500 cursor-pointer'
                             }`}
                             title={
                               (turno.reservado || turno.alquilerId)
@@ -756,7 +779,11 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                                   : 'Disponible - Clic para deshabilitar temporalmente'
                             }
                           >
-                            <span className="text-xs">{turno.deshabilitado ? '▶️' : '⏸️'}</span>
+                            {turno.deshabilitado ? (
+                              <FaPlay className="text-xs text-white" />
+                            ) : (
+                              <FaPause className="text-xs text-white" />
+                            )}
                           </div>
                           <div 
                             onClick={(e) => {
@@ -770,8 +797,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                             }}
                             className={`absolute top-1 left-1 h-4 w-4 rounded flex items-center justify-center ${
                               (turno.reservado || turno.alquilerId)
-                                ? 'bg-gray-300 cursor-not-allowed opacity-50'
-                                : 'hover:bg-red-700 cursor-pointer'
+                                ? 'cursor-not-allowed opacity-50'
+                                : 'hover:bg-canchaRed cursor-pointer'
                             }`}
                             title={
                               (turno.reservado || turno.alquilerId)
@@ -779,7 +806,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                                 : 'Eliminar turno permanentemente'
                             }
                           >
-                            <span className="text-white text-xs">🗑️</span>
+                            <FaTrash className="text-white text-xs" />
                           </div>
                         </>
                       )}
@@ -819,7 +846,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
               </div>
               
               <p className="text-xs text-gray-500">
-                Si solo quieres deshabilitar temporalmente, usa el botón ⏸️ en lugar de eliminar.
+                Si solo quieres deshabilitar temporalmente, usa el botón de pausa en lugar de eliminar.
               </p>
             </div>
 
@@ -828,9 +855,17 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
               <button
                 onClick={confirmarEliminarTemporal}
                 disabled={guardandoCambios}
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {guardandoCambios ? '⏳ Eliminando...' : '🗑️ Eliminar Permanentemente'}
+                {guardandoCambios ? (
+                  <>
+                    <span className="animate-spin">⏳</span> Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <FaTrash className="text-white" /> Eliminar Permanentemente
+                  </>
+                )}
               </button>
 
               {/* Cancelar */}

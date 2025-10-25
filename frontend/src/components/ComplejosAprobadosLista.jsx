@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import ModalConfirmacion from './ModalConfirmacion';
 import { TrashIcon } from '@heroicons/react/24/solid';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaBuilding } from 'react-icons/fa';
 
 // Función para obtener clases CSS del badge de estado
 const getStatusClass = (estado) => {
@@ -65,7 +65,9 @@ function ComplejosAprobadosLista({ complejos, onRemove, onToggleVisibility }) {
   if (!complejos || complejos.length === 0) {
     return (
       <div className="p-8">
-        <h2 className="text-2xl font-bold text-secondary mb-6">Complejos</h2>
+        <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-6">
+          <FaBuilding /> Gestión de Complejos
+        </h2>
         <p className="text-gray-600">No hay complejos para mostrar.</p>
       </div>
     );
@@ -73,7 +75,9 @@ function ComplejosAprobadosLista({ complejos, onRemove, onToggleVisibility }) {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-secondary mb-6">Complejos</h2>
+      <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-6">
+        <FaBuilding /> Gestión de Complejos
+      </h2>
       
       {/* Botones de Filtro */}
       <div className="flex flex-wrap gap-2 mb-6">

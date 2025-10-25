@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import SolicitudDetalle from '../components/SolicitudDetalle.jsx';
 import ListaSolicitudes from '../components/ListaSolicitudes.jsx';
-import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx'; 
+import ComplejosAprobadosLista from '../components/ComplejosAprobadosLista.jsx';
 import GestionDeportes from '../components/GestionDeportes.jsx';
 import GestionLocalidades from '../components/GestionLocalidades.jsx';
 import GestionUsuarios from '../components/GestionUsuarios.jsx';
+import GestionAdministradores from '../components/GestionAdministradores.jsx';
 import GestionResenas from '../components/GestionResenas.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
-import { API_BASE_URL } from '../config/api.js';
-
-function AdminPage() {
+import { API_BASE_URL } from '../config/api.js';function AdminPage() {
   const [activeTab, setActiveTab] = useState('solicitudes');
   const [solicitudes, setSolicitudes] = useState([]);
   const [complejosAprobados, setComplejosAprobados] = useState([]);
@@ -38,15 +37,16 @@ function AdminPage() {
             cuit: solicitud.cuit,
             estado: solicitud.estado,
             // Datos transformados para el componente SolicitudDetalle
-            nombreComplejo: solicitud.complejo?.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
-            calle: solicitud.complejo?.domicilio?.calle || 'No especificado',
-            altura: solicitud.complejo?.domicilio?.altura || 'No especificado',
-            imagen: solicitud.image || solicitud.complejo?.image || null,
+            // ✅ solicitud ES el complejo, no tiene .complejo anidado
+            nombreComplejo: solicitud.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
+            calle: solicitud.domicilio?.calle || 'No especificado',
+            altura: solicitud.domicilio?.altura || 'No especificado',
+            imagen: solicitud.image || null,
             // Información adicional del usuario
             usuarioNombre: `${solicitud.usuario?.nombre || ''} ${solicitud.usuario?.apellido || ''}`.trim() || 'Usuario sin nombre',
             usuarioCorreo: solicitud.usuario?.email || 'Sin correo',
             usuarioTelefono: solicitud.usuario?.telefono || 'Sin teléfono',
-            localidad: solicitud.complejo?.domicilio?.localidad?.nombre || 'No especificado'
+            localidad: solicitud.domicilio?.localidad?.nombre || 'No especificado'
           }));
         setSolicitudes(solicitudesPendientes);
         setSolicitudSeleccionada(solicitudesPendientes[0] || null);
@@ -283,7 +283,7 @@ function AdminPage() {
               )}
           </button>
           <button onClick={() => setActiveTab('complejos')} className={getTabClass('complejos')}>
-              Complejos
+              Gestión Complejos
             </button>
             <button onClick={() => setActiveTab('deportes')} className={getTabClass('deportes')}>
               Deportes
@@ -293,6 +293,9 @@ function AdminPage() {
             </button>
             <button onClick={() => setActiveTab('usuarios')} className={getTabClass('usuarios')}>
               Usuarios
+            </button>
+            <button onClick={() => setActiveTab('administradores')} className={getTabClass('administradores')}>
+              Gestión Administradores
             </button>
             <button onClick={() => setActiveTab('resenas')} className={getTabClass('resenas')}>
               Reseñas
@@ -345,6 +348,10 @@ function AdminPage() {
 
         {activeTab === 'usuarios' && (
           <GestionUsuarios />
+        )}
+
+        {activeTab === 'administradores' && (
+          <GestionAdministradores />
         )}
 
         {activeTab === 'resenas' && (

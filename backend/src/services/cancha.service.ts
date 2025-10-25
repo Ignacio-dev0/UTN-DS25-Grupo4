@@ -453,60 +453,50 @@ export async function obtenerCanchasPorComplejoId(
     }
   });
 
-  // Agregar precio mínimo de cada cancha (solo del día actual)
-  const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-  const hoy = diasSemana[new Date().getDay()];
-  
-  const canchasConPrecios = canchas.map(cancha => {
-    // Filtrar solo los cronogramas del día actual
-    const cronogramasHoy = cancha.cronograma?.filter(c => c.diaSemana === hoy) || [];
-    
-    // Encontrar el precio más barato SOLO de hoy
-    const precioMinimo = cronogramasHoy.length > 0 
-      ? Math.min(...cronogramasHoy.map(c => c.precio))
-      : 0;
-      
-    return {
-      ...cancha,
-      precioDesde: precioMinimo
-    };
-  });
-
-  console.log('🖼️ CANCHA SERVICE - Canchas con imágenes:', 
-    canchasConPrecios.map(c => ({ 
+  // El precioDesde ya está calculado y guardado en la BD por recalcularPrecioDesde()
+  // Solo necesitamos devolverlo tal cual
+  console.log('🖼️ CANCHA SERVICE - Canchas con precios:', 
+    canchas.map(c => ({ 
       id: c.id, 
       nroCancha: c.nroCancha, 
+      precioDesde: c.precioDesde,
+      precioHora: c.precioHora,
       image: c.image,
       imageLength: c.image?.length 
     }))
   );
 
-  return canchasConPrecios;
+  return canchas;
 };
 
 export async function actualizarCancha (id: number, data: UpdateCanchaData) {
-	console.log('🔧 ACTUALIZAR CANCHA - ID:', id);
-	console.log('📦 Datos recibidos:', data);
-	
-	const { deporteId, ...cancha } = data;
-  
-  const updateData: any = { ...cancha };
-  
-  // Solo conectar deporte si deporteId está definido
-  if (deporteId !== undefined) {
-    updateData.deporte = { connect: { id: deporteId } };
-  }
-  
-  console.log('💾 Datos que se van a actualizar:', updateData);
-  
-  const canchaActualizada = await prisma.cancha.update({
-    where: { id },
-    data: updateData
-  });
-  
-  console.log('✅ Cancha actualizada:', { id: canchaActualizada.id, activa: canchaActualizada.activa });
-  
-  return canchaActualizada;
+	try {
+		console.log('🔧 ACTUALIZAR CANCHA - ID:', id);
+		console.log('📦 Datos recibidos:', data);
+		
+		const { deporteId, ...cancha } = data;
+	  
+	  const updateData: any = { ...cancha };
+	  
+	  // Solo conectar deporte si deporteId está definido
+	  if (deporteId !== undefined) {
+	    updateData.deporte = { connect: { id: deporteId } };
+	  }
+	  
+	  console.log('💾 Datos que se van a actualizar:', updateData);
+	  
+	  const canchaActualizada = await prisma.cancha.update({
+	    where: { id },
+	    data: updateData
+	  });
+	  
+	  console.log('✅ Cancha actualizada:', { id: canchaActualizada.id, activa: canchaActualizada.activa });
+	  
+	  return canchaActualizada;
+	} catch (error) {
+		console.error('❌ Error en actualizarCancha:', error);
+		throw error;
+	}
 };
 
 export async function eliminarCancha(id: number) {

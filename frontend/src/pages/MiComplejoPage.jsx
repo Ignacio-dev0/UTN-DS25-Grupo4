@@ -33,18 +33,25 @@ function MiComplejoPage() {
       // Para dueños, verificar que tengan una solicitud aprobada
       if (user?.rol === 'owner') {
         try {
-          const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
           if (response.ok) {
             const data = await response.json();
-            const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
+            // El backend devuelve complejos, no solicitudes
+            const complejoUsuario = data.solicitudes?.find(c => c.usuarioId === user.id);
             
-            if (!solicitud || solicitud.estado !== 'APROBADO') {
+            if (!complejoUsuario || complejoUsuario.estado !== 'APROBADO') {
               navigate('/estado-solicitud');
               return;
             }
 
             // Verificar que el complejoId corresponde al usuario
-            if (solicitud.complejo?.id !== parseInt(complejoId)) {
+            if (complejoUsuario.id !== parseInt(complejoId)) {
               navigate('/estado-solicitud');
               return;
             }
@@ -153,7 +160,8 @@ function MiComplejoPage() {
         
         // Solo verificar estado si no es admin
         if (user?.rol !== 'admin') {
-          if (complejo.activo === false || complejo.solicitud?.estado !== 'APROBADO') {
+          // El backend devuelve estado directamente en el complejo (PENDIENTE, APROBADO, RECHAZADO, OCULTO)
+          if (complejo.estado !== 'APROBADO') {
             setError('El complejo no está disponible o está suspendido');
             return;
           }
@@ -256,10 +264,13 @@ function MiComplejoPage() {
           descripcion: infoDelComplejo.descripcion?.trim() || "",
           image: infoDelComplejo.image || null,
           horarios: infoDelComplejo.horarios?.trim() || "",
-          servicios: infoDelComplejo.servicios || []
+          servicios: Array.isArray(infoDelComplejo.servicios) 
+            ? infoDelComplejo.servicios.filter(s => typeof s === 'number')
+            : []
         };
         
-        console.log('Datos a enviar:', datosParaActualizar);
+        console.log('🔍 Datos a enviar:', datosParaActualizar);
+        console.log('🔍 Servicios (tipo):', typeof infoDelComplejo.servicios, infoDelComplejo.servicios);
         console.log('Tamaño de la imagen:', datosParaActualizar.image ? `${(datosParaActualizar.image.length / 1024).toFixed(2)} KB` : 'Sin imagen');
         
         const token = localStorage.getItem('token');
@@ -350,10 +361,12 @@ function MiComplejoPage() {
     console.log('➡️  Nuevo estado activa:', nuevaActiva);
     
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ activa: nuevaActiva }),
       });
@@ -382,11 +395,13 @@ function MiComplejoPage() {
   // Crear turnos para una cancha específica
   const crearTurnos = async (canchaId, turnos) => {
     try {
+      const token = localStorage.getItem('token');
       const promises = turnos.map(turno => 
         fetch(`${API_BASE_URL}/turnos`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
             ...turno,

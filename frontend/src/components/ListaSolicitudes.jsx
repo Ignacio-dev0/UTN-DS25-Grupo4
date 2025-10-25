@@ -1,9 +1,12 @@
 import React from 'react';
+import { FaClipboardList } from 'react-icons/fa';
 
 function ListaSolicitudes({ solicitudes, onSelect, solicitudActiva }) {
   return (
     <div className="w-1/3 p-8">
-      <h2 className="text-xl font-bold text-gray-800 mb-6">Solicitudes</h2>
+      <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6">
+        <FaClipboardList /> Solicitudes
+      </h2>
       <div className="grid grid-cols-2 gap-4">
         {solicitudes.map(solicitud => (
           <button 

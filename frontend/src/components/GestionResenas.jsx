@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { StarIcon, TrashIcon, MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { FaStar } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { API_BASE_URL } from '../config/api.js';
 
@@ -153,7 +154,9 @@ function GestionResenas() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Gestión de Reseñas</h2>
+        <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+          <FaStar /> Gestión de Reseñas
+        </h2>
         <p className="text-gray-600 mt-1">
           Mostrando {resenasFiltradas.length} de {resenas.length} reseñas
         </p>
@@ -369,20 +372,15 @@ function GestionResenas() {
                       <button
                         onClick={() => handleEliminar(resena.id)}
                         disabled={eliminando === resena.id}
-                        className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors ${
+                        className={`text-canchaRed hover:text-white hover:bg-canchaRed p-2 rounded-full transition-colors shadow-md ${
                           eliminando === resena.id ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
+                        title="Eliminar reseña"
                       >
                         {eliminando === resena.id ? (
-                          <>
-                            <span className="animate-spin mr-2">⏳</span>
-                            Eliminando...
-                          </>
+                          <span className="animate-spin">⏳</span>
                         ) : (
-                          <>
-                            <TrashIcon className="h-4 w-4 mr-1" />
-                            Eliminar
-                          </>
+                          <TrashIcon className="w-5 h-5" />
                         )}
                       </button>
                     </td>

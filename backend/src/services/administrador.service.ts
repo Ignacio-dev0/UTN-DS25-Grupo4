@@ -1,56 +1,67 @@
-// DEPRECADO: La tabla Administrador fue eliminada
-// Ahora se usa Usuario con rol ADMINISTRADOR
-// Este archivo se mantiene comentado por si se necesita restaurar la funcionalidad
-
-/*
 import prisma from '../config/prisma';
 import { Prisma, Administrador } from '@prisma/client';
-import { CreateAdministradorRequest, AdministradorResponse, AdministradorListResponse } from '../types/administrador.types';
 import bcrypt from 'bcrypt';
 
-export async function crearAdministrador(data: CreateAdministradorRequest): Promise<Administrador> {
+export async function crearAdministrador(data: { email: string; password: string }): Promise<Administrador> {
   try {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    data.password = hashedPassword;
-    return await prisma.administrador.create({ data });
+    return await prisma.administrador.create({ 
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        rol: 'ADMINISTRADOR'
+      }
+    });
   } catch (error) {
     throw (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
-      ? new Error('Correo ya registrado')
-      : error
+      ? new Error('Email ya registrado')
+      : error;
   }
 }
 
-export async function obtenerAdministradorPorId(id: number): Promise<Administrador> {
+export async function obtenerAdministradorPorId(id: number): Promise<Administrador | null> {
   return await prisma.administrador.findUnique({
     where: { id },
     include: { complejosEvaluados: true }
   });
 }
 
-export async function obtenerAdministradores(): Promise<Administrador[]> {
-  return await prisma.administrador.findMany();
+export async function obtenerAdministradores(): Promise<any[]> {
+  return await prisma.administrador.findMany({
+    select: {
+      id: true,
+      email: true,
+      rol: true
+      // No incluir password
+    }
+  });
+}
+
+export async function actualizarAdministrador(id: number, data: { email?: string; password?: string }): Promise<Administrador> {
+  try {
+    const updateData: any = {};
+    
+    if (data.email) {
+      updateData.email = data.email;
+    }
+    
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    return await prisma.administrador.update({
+      where: { id },
+      data: updateData
+    });
+  } catch (error) {
+    throw (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+      ? new Error('Email ya registrado')
+      : error;
+  }
 }
 
 export async function eliminarAdministrador(id: number): Promise<Administrador> {
   return await prisma.administrador.delete({
     where: { id }
   });
-}
-*/
-
-// Exportar funciones vacías para no romper imports
-export async function crearAdministrador(): Promise<any> {
-  throw new Error('Función deprecada - usar Usuario con rol ADMINISTRADOR');
-}
-
-export async function obtenerAdministradorPorId(): Promise<any> {
-  throw new Error('Función deprecada - usar Usuario con rol ADMINISTRADOR');
-}
-
-export async function obtenerAdministradores(): Promise<any[]> {
-  throw new Error('Función deprecada - usar Usuario con rol ADMINISTRADOR');
-}
-
-export async function eliminarAdministrador(): Promise<any> {
-  throw new Error('Función deprecada - usar Usuario con rol ADMINISTRADOR');
 }

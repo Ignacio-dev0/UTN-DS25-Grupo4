@@ -98,7 +98,26 @@ export async function getSolById(req:Request, res:Response) {
 
 export async function getAllSol(req:Request, res:Response){
     try{
-        const solicitudes = await soliServ.getAllRequest();
+        // Si es DUENIO, incluir solicitudes aprobadas/rechazadas también
+        const includeApproved = req.usuario.rol === 'DUENIO';
+        let solicitudes = await soliServ.getAllRequest(includeApproved);
+        
+        // Si es DUENIO, solo mostrar sus propias solicitudes
+        if (req.usuario.rol === 'DUENIO') {
+            const usuarioId = parseInt(req.query.usuarioId as string) || req.usuario.id;
+            
+            // Verificar que el DUENIO solo pueda ver sus propias solicitudes
+            if (usuarioId !== req.usuario.id) {
+                return res.status(403).json({ 
+                    error: 'No tiene permiso para ver solicitudes de otros usuarios',
+                    solicitudes: [],
+                    total: 0
+                });
+            }
+            
+            solicitudes = solicitudes.filter(s => s.usuarioId === usuarioId);
+        }
+        
         res.json({
             solicitudes,
             total: solicitudes.length

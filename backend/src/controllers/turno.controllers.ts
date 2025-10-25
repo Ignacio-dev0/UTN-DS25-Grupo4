@@ -145,6 +145,8 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
         
         // Agregar el campo 'dia' (día de la semana) y detectar si el turno ya pasó
         const ahora = new Date();
+        console.log(`🕐 Hora actual del servidor: ${ahora.toISOString()} (local: ${ahora.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
+        
         const turnosConDia = turnos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
             const fechaStr = turno.fecha.toISOString().split('T')[0]; // "2025-10-22"
@@ -165,6 +167,16 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
             );
             const yaPaso = fechaHoraTurno < ahora;
             
+            // Debug detallado para el primer turno del sábado
+            if (dia === 'SABADO' && horaInicioDate.getUTCHours() <= 10) {
+                console.log(`🔍 DEBUG TURNO: ${dia} ${horaInicioDate.getUTCHours()}:${horaInicioDate.getUTCMinutes().toString().padStart(2, '0')}`);
+                console.log(`  - turno.fecha: ${turno.fecha.toISOString()}`);
+                console.log(`  - turno.horaInicio: ${turno.horaInicio.toISOString()}`);
+                console.log(`  - fechaHoraTurno: ${fechaHoraTurno.toISOString()} (local: ${fechaHoraTurno.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
+                console.log(`  - ahora: ${ahora.toISOString()} (local: ${ahora.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
+                console.log(`  - yaPaso: ${yaPaso} (fechaHoraTurno < ahora: ${fechaHoraTurno.getTime()} < ${ahora.getTime()})`);
+            }
+            
             const turnoFormateado = {
                 ...turno,
                 dia,
@@ -176,9 +188,6 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
             // Debug: loguear turnos deshabilitados o pasados
             if (turnoFormateado.deshabilitado) {
                 console.log(`🟠 Turno deshabilitado encontrado: ID ${turno.id}, ${dia} ${turno.horaInicio}`);
-            }
-            if (yaPaso) {
-                console.log(`⏰ Turno pasado: ID ${turno.id}, ${dia} ${turno.horaInicio}`);
             }
             
             return turnoFormateado;

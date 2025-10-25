@@ -4,12 +4,14 @@
 import prisma from "../config/prisma";
 import { EstadoComplejo } from '@prisma/client';
 
-// Obtener todas las solicitudes pendientes (complejos con estado PENDIENTE)
-export async function getAllRequest(): Promise<any[]> {
+// Obtener todas las solicitudes (complejos filtrados por estado)
+export async function getAllRequest(includeApproved: boolean = false): Promise<any[]> {
+  const whereCondition = includeApproved 
+    ? { estado: { in: ['PENDIENTE', 'APROBADO', 'RECHAZADO'] as EstadoComplejo[] } }
+    : { estado: 'PENDIENTE' as EstadoComplejo };
+    
   return prisma.complejo.findMany({
-    where: {
-      estado: 'PENDIENTE'
-    },
+    where: whereCondition,
     include: {
       usuario: true,
       administrador: true,

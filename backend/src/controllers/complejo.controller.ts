@@ -75,6 +75,10 @@ export const obtenerComplejoPorId = async (req: Request, res: Response, next:Nex
 export const actualizarComplejo = async (req: Request, res: Response, next:NextFunction) => {
   try {
     const complejoId = Number(req.params.id);
+    
+    console.log('🔍 [CONTROLLER] Actualizando complejo:', complejoId);
+    console.log('🔍 [CONTROLLER] Body recibido:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [CONTROLLER] Usuario:', { id: req.usuario.id, rol: req.usuario.rol });
 
     // Permitir actualización si es ADMINISTRADOR o si es el dueño del complejo
     if(req.usuario.rol !== 'ADMINISTRADOR' && !await complejoService.esDuenioDeComplejo(complejoId, req.usuario.id)) {
@@ -87,7 +91,7 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
       message: 'Complejo actualizado'
     });
   } catch (error: any) {
-    console.error('Error en actualizarComplejo:', error);
+    console.error('❌ Error en actualizarComplejo:', error);
     // Prisma tira un error específico si el registro a actualizar no existe
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Complejo no encontrado.' });

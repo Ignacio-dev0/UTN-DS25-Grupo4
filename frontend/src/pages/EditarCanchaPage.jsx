@@ -7,7 +7,67 @@ import GaleriaFotosEditable from '../components/GaleriaFotosEditable.jsx';
 import InfoCanchaEditable from '../components/InfoCanchaEditable';
 import CalendarioEdicionTurnos from '../components/CalendarioEdicionTurnos.jsx';
 
-function EditarCanchaPage() {
+// Función helper para obtener coordenadas aproximadas por localidad
+  const getCoordinatesForLocation = (domicilio) => {
+    // Coordenadas por defecto (La Plata centro)
+    let lat = -34.9214;
+    let lng = -57.9545;
+    
+    if (domicilio?.localidad?.nombre) {
+      const localidad = domicilio.localidad.nombre.toLowerCase();
+      
+      // Coordenadas aproximadas para distintas localidades del Gran La Plata
+      const coordenadasLocalidades = {
+        'la plata': { lat: -34.9214, lng: -57.9545 },
+        'berisso': { lat: -34.8713, lng: -57.8794 },
+        'ensenada': { lat: -34.8670, lng: -57.9123 },
+        'city bell': { lat: -34.8617, lng: -58.0470 },
+        'gonnet': { lat: -34.8742, lng: -58.0171 },
+        'villa elisa': { lat: -34.8442, lng: -58.0865 },
+        'manuel b. gonnet': { lat: -34.8742, lng: -58.0171 },
+        'ringuelet': { lat: -34.9067, lng: -57.9861 },
+        'tolosa': { lat: -34.9043, lng: -57.9697 },
+        'los hornos': { lat: -34.9667, lng: -57.9667 },
+        'altos de san lorenzo': { lat: -34.9833, lng: -57.9500 }
+      };
+      
+      const coords = coordenadasLocalidades[localidad];
+      if (coords) {
+        lat = coords.lat;
+        lng = coords.lng;
+        
+        // Ajuste fino basado en la calle/altura para La Plata (sistema de calles numeradas)
+        if (localidad === 'la plata' && domicilio.calle && domicilio.altura) {
+          const calle = domicilio.calle.toLowerCase();
+          const altura = parseInt(domicilio.altura);
+          
+          // La Plata tiene un sistema de cuadrícula con calles numeradas
+          // Calles (N-S) vs Avenidas (E-O)
+          if (calle.includes('calle') || /\bcalle\s+\d+/.test(calle)) {
+            // Calles van de N a S (aumenta latitud hacia el sur)
+            const numCalle = parseInt(calle.match(/\d+/)?.[0] || 0);
+            if (numCalle > 0) {
+              lat = -34.9214 + (numCalle - 50) * 0.0012; // Offset aproximado
+            }
+          } else if (calle.includes('avenida') || calle.includes('diagonal')) {
+            // Avenidas van de E a O (aumenta longitud hacia el oeste)
+            const numAvenida = parseInt(calle.match(/\d+/)?.[0] || 0);
+            if (numAvenida > 0) {
+              lng = -57.9545 - (numAvenida - 7) * 0.0012; // Offset aproximado
+            }
+          }
+          
+          // Ajuste por altura de la calle (cuadras)
+          if (altura > 0) {
+            const cuadras = Math.floor(altura / 100);
+            lng += cuadras * 0.0014; // Cada cuadra ~140m en longitud
+          }
+        }
+      }
+    }
+    
+    return { lat, lng };
+  };function EditarCanchaPage() {
   const { canchaId } = useParams();
   const navigate = useNavigate();
   
@@ -31,6 +91,24 @@ function EditarCanchaPage() {
         }
         const canchaData = await canchaResponse.json();
         const canchaInfo = canchaData.cancha || canchaData;
+        
+        // Cargar reseñas de la cancha
+        let puntajeCancha = 0;
+        let cantidadReseñas = 0;
+        try {
+          const reseñasResponse = await fetch(`${API_BASE_URL}/resenas/cancha/${canchaId}`);
+          if (reseñasResponse.ok) {
+            const reseñasData = await reseñasResponse.json();
+            const reseñas = reseñasData.resenas || reseñasData || [];
+            cantidadReseñas = reseñas.length;
+            if (cantidadReseñas > 0) {
+              const sumaSum = reseñas.reduce((sum, r) => sum + (r.puntaje || 0), 0);
+              puntajeCancha = sumaSum / cantidadReseñas;
+            }
+          }
+        } catch (error) {
+          console.warn('Error al cargar reseñas:', error);
+        }
         
         // Cargar turnos reales usando el mismo endpoint que reservas (solo futuros)
         const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
@@ -100,13 +178,23 @@ function EditarCanchaPage() {
         
         console.log("📸 Imágenes cargadas:", { imagenPrincipal, otrasImagenes });
         
+        // Obtener coordenadas del complejo o aproximadas por localidad
+        const coordenadas = getCoordinatesForLocation(canchaInfo.complejo?.domicilio);
+        const complejoConCoordenadas = {
+          ...canchaInfo.complejo,
+          lat: canchaInfo.complejo?.lat || coordenadas.lat,
+          lng: canchaInfo.complejo?.lng || coordenadas.lng
+        };
+        
         setCancha({
           ...canchaInfo,
           imageUrl: imagenPrincipal, // Imagen principal
           otrasImagenes: otrasImagenes, // Resto de imágenes
-          turnos: turnosFormateados
+          turnos: turnosFormateados,
+          puntaje: puntajeCancha,
+          cantidadReseñas: cantidadReseñas
         });
-        setComplejo(canchaInfo.complejo);
+        setComplejo(complejoConCoordenadas);
         
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -145,10 +233,12 @@ function EditarCanchaPage() {
       
       console.log("📸 Enviando imágenes:", todasLasImagenes);
       
+      const token = localStorage.getItem('token');
       const canchaResponse = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           nroCancha: parseInt(cancha.nroCancha),
@@ -244,10 +334,12 @@ function EditarCanchaPage() {
             
             // Actualizar en el backend
             try {
+              const token = localStorage.getItem('token');
               const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`, {
                 method: 'PATCH',
                 headers: {
                   'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                   precioDesde: nuevoPrecioDesde,

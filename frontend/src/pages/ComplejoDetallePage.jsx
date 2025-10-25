@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CanchaCard from '../components/CanchaCard.jsx';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { FaArrowLeft } from 'react-icons/fa';
 import { API_BASE_URL } from '../config/api.js';
 
@@ -58,7 +59,7 @@ function ComplejoDetallePage() {
   }, [complejoId]);
 
   if (loading) {
-    return <div className="text-center p-10">Cargando información del complejo...</div>;
+    return <LoadingSpinner message="Cargando información del complejo..." />;
   }
 
   if (error || !complejo) {

@@ -25,6 +25,13 @@ router.post(
   administradorController.crearAdministrador
 );
 
+router.put(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  administradorController.actualizarAdministrador
+);
+
 router.delete(
   '/:id',
   authenticate,

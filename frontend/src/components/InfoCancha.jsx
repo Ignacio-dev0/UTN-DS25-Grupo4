@@ -72,11 +72,23 @@ function InfoCancha({ cancha, complejo }) {
         </div>
         <div className="flex flex-col">
           <h3 className="text-xl font-bold mb-2 text-primary">Ubicación</h3>
+          {complejo.domicilio && (
+            <p className="text-gray-700 mb-3">
+              {complejo.domicilio.calle} {complejo.domicilio.altura}, {complejo.domicilio.localidad?.nombre || 'Localidad'}
+            </p>
+          )}
           <div className="rounded-lg overflow-hidden border-4 border-accent shadow-lg h-80 lg:h-full">
-            <MapContainer center={position} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+            <MapContainer 
+              center={position} 
+              zoom={13} 
+              maxZoom={16}
+              scrollWheelZoom={false} 
+              style={{ height: '100%', width: '100%' }}
+            >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={16}
               />
               <Marker position={position}>
                 <Popup>

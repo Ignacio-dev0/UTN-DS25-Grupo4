@@ -22,7 +22,7 @@ router.post(
 router.get(
   '/',
   authenticate,
-  authorize('ADMINISTRADOR'),
+  authorize('ADMINISTRADOR', 'DUENIO'), // Permitir también a DUENIO
   solicitudController.getAllSol
 );
 

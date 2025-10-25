@@ -40,7 +40,13 @@ export function AuthProvider({ children }) {
     if (!user || user.rol !== 'owner') return false;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);

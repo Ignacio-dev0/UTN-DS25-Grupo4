@@ -145,8 +145,13 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
   };
 
   const handleServiciosChange = (nuevosServicios) => {
+    console.log('🔍 [ComplejoInfo] handleServiciosChange llamado con:', nuevosServicios);
+    console.log('🔍 [ComplejoInfo] Tipo:', typeof nuevosServicios, 'Es array:', Array.isArray(nuevosServicios));
     onComplejoChange({ ...complejo, servicios: nuevosServicios });
   };
+
+  // Debug: log servicios cuando renderiza
+  console.log('🔍 [ComplejoInfo] Renderizando con complejo.servicios:', complejo?.servicios);
 
   return (
     <div className="w-full md:w-1/3 p-4">

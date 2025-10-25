@@ -57,7 +57,7 @@ export const getImageUrl = (imagePath) => {
     // Las imágenes estáticas se sirven desde el backend
     const imageBaseUrl = API_BASE_URL.replace('/api', '');
     // Limpiar cualquier prefijo "api" pegado al nombre del archivo
-    const cleanImagePath = imagePath.replace(/^api/, '');
+    const cleanImagePath = imagePath.replace(/^api/, '').replace(/^\//, '');
     return `${imageBaseUrl}/images/canchas/${cleanImagePath}`;
   }
   

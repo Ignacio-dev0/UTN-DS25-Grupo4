@@ -201,30 +201,8 @@ function CanchaCard({ cancha }) {
     return '/canchaYa.png';
   };
 
-  // Function to calculate the cheapest price from available turns today
-  const calcularPrecioMinimo = () => {
-    if (turnosHoy.length > 0) {
-      // Use actual turn prices for today
-      const precios = turnosHoy
-        .map(t => t.precio)
-        .filter(precio => precio > 0);
-      
-      return precios.length > 0 ? Math.min(...precios) : null;
-    }
-    
-    // Fallback to cronograma if no turn data available
-    if (!cancha.cronograma || cancha.cronograma.length === 0) {
-      return null;
-    }
-    
-    const precios = cancha.cronograma
-      .map(c => c.precio)
-      .filter(precio => precio > 0);
-    
-    return precios.length > 0 ? Math.min(...precios) : null;
-  };
-
-  const precioDesde = calcularPrecioMinimo();
+  // Usar el precioDesde que viene del backend (ya está calculado y actualizado)
+  const precioDesde = cancha.precioDesde > 0 ? cancha.precioDesde : null;
   
   // Eliminamos logs repetitivos - solo para debug detallado
   // console.log('CanchaCard - turnosHoy:', turnosHoy);
