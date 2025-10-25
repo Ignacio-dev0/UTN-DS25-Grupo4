@@ -156,6 +156,68 @@ function AdminPage() {
       setLoadingComplejos(false);
     }
   };
+
+  const handleToggleVisibility = async (complejo) => {
+    const nuevoEstado = complejo.estado === 'OCULTO' ? 'APROBADO' : 'OCULTO';
+    const accion = nuevoEstado === 'OCULTO' ? 'ocultar' : 'mostrar';
+    
+    if (!window.confirm(`¿Estás seguro de que quieres ${accion} el complejo "${complejo.nombre}"?\n\nEsto ${accion === 'ocultar' ? 'ocultará' : 'mostrará'} también todas sus canchas.`)) return;
+    
+    try {
+      setLoadingComplejos(true);
+      const token = localStorage.getItem('token');
+      
+      // Actualizar estado del complejo
+      const response = await fetch(`${API_BASE_URL}/complejos/${complejo.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+
+      if (response.ok) {
+        // Obtener las canchas del complejo para actualizar su estado
+        const canchasResponse = await fetch(`${API_BASE_URL}/canchas?complejoId=${complejo.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (canchasResponse.ok) {
+          const canchasData = await canchasResponse.json();
+          const canchas = canchasData.canchas || canchasData || [];
+          
+          // Actualizar cada cancha del complejo
+          const nuevaActiva = nuevoEstado === 'APROBADO'; // true si se muestra, false si se oculta
+          const updatePromises = canchas.map(cancha => 
+            fetch(`${API_BASE_URL}/canchas/${cancha.id}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ activa: nuevaActiva })
+            })
+          );
+
+          await Promise.all(updatePromises);
+        }
+
+        alert(`Complejo ${accion === 'ocultar' ? 'ocultado' : 'mostrado'} correctamente junto con sus canchas`);
+        fetchComplejosAprobados();
+      } else {
+        alert(`Error al ${accion} complejo`);
+        setLoadingComplejos(false);
+      }
+    } catch (error) {
+      console.error(`Error ${accion}ndo complejo:`, error);
+      alert(`Error al ${accion} complejo`);
+      setLoadingComplejos(false);
+    }
+  };
   
   // Cargar datos al cambiar de tab
   useEffect(() => {
@@ -234,6 +296,7 @@ function AdminPage() {
             <ComplejosAprobadosLista 
               complejos={complejosAprobados}
               onRemove={handleRemoveApproved}
+              onToggleVisibility={handleToggleVisibility}
             />
           )
         )}
