@@ -6,7 +6,7 @@ import { MdRestaurant, MdFamilyRestroom } from "react-icons/md";
 import { GiTrophy, GiPartyPopper } from "react-icons/gi";
 import { PiTShirtFill, PiCarFill } from "react-icons/pi";
 import ServiciosSelector from './ServiciosSelector';
-import { API_BASE_URL } from '../config/api.js';
+import { API_BASE_URL, getImageUrl } from '../config/api.js';
 
 const ServicioItem = ({ servicioData, todosLosServicios }) => {
   // Handle both formats: direct service object or service ID
@@ -145,8 +145,13 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
   };
 
   const handleServiciosChange = (nuevosServicios) => {
+    console.log('🔍 [ComplejoInfo] handleServiciosChange llamado con:', nuevosServicios);
+    console.log('🔍 [ComplejoInfo] Tipo:', typeof nuevosServicios, 'Es array:', Array.isArray(nuevosServicios));
     onComplejoChange({ ...complejo, servicios: nuevosServicios });
   };
+
+  // Debug: log servicios cuando renderiza
+  console.log('🔍 [ComplejoInfo] Renderizando con complejo.servicios:', complejo?.servicios);
 
   return (
     <div className="w-full md:w-1/3 p-4">
@@ -182,25 +187,15 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
 
       <div className="relative bg-accent h-64 rounded-lg flex items-center justify-center mb-6">
         <img 
-          src={
-            complejo.image 
-              ? (complejo.image.startsWith('data:image') 
-                  ? complejo.image  // Base64 directo
-                  : complejo.image.startsWith('http') 
-                    ? `${complejo.image}?t=${Date.now()}` 
-                    : `${API_BASE_URL}${complejo.image}?t=${Date.now()}`)
-              : "/images/placeholder.png"
-          } 
+          src={complejo.image ? getImageUrl(complejo.image) : "/canchaYa.png"} 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
           onClick={handleImageClick}
           loading="lazy"
           onError={(e) => {
-            console.error('❌ Error cargando imagen del complejo');
-            // Evitar loop infinito de errores
-            if (e.target.src !== "/images/placeholder.png") {
-              e.target.src = "/images/placeholder.png";
-            }
+            // Silenciosamente usar placeholder si falla
+            e.target.onerror = null; // Prevenir loop infinito
+            e.target.src = "/canchaYa.png";
           }}
         />
         {isEditing && (

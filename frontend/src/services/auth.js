@@ -44,6 +44,11 @@ export const login = async (email, password, rememberMe = false) => {
         rol: mapBackendRoleToFrontend(data.user.rol || data.user.role)
       };
 
+      // Guardar token en localStorage (siempre)
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
       // Guardar en localStorage si rememberMe está activado
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(user));
@@ -53,7 +58,8 @@ export const login = async (email, password, rememberMe = false) => {
 
       return {
         ok: true,
-        user
+        user,
+        token: data.token
       };
     }
 
@@ -136,9 +142,11 @@ export const getUserProfile = async () => {
       };
     }
 
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -180,34 +188,30 @@ export const updateUserProfile = async (userData) => {
 
     console.log('Datos recibidos para actualizar:', userData);
 
-    // Si hay imagen, usar FormData y el endpoint con imagen
+    // Si hay imagen, usar JSON con base64
     if (userData.profileImageData && userData.profileImageData.startsWith('data:')) {
-      // Convertir base64 a blob
-      const base64Data = userData.profileImageData.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      // Preparar datos para enviar como JSON
+      const updateData = {
+        nombre: userData.nombre || currentUser.nombre,
+        apellido: userData.apellido || currentUser.apellido,
+        email: currentUser.email,
+        dni: currentUser.dni || '',
+        telefono: userData.telefono || '',
+        direccion: userData.direccion || '',
+        rol: currentUser.rol || currentUser.role,
+        imagen: userData.profileImageData // Enviar base64 directamente
+      };
 
-      // Crear FormData
-      const formData = new FormData();
-      formData.append('nombre', userData.nombre || currentUser.nombre);
-      formData.append('apellido', userData.apellido || currentUser.apellido);
-      formData.append('correo', currentUser.correo || currentUser.email);
-      formData.append('dni', currentUser.dni);
-      formData.append('telefono', userData.telefono || '');
-      formData.append('direccion', userData.direccion || '');
-      formData.append('rol', currentUser.rol || currentUser.role);
-      formData.append('imagen', blob, 'profile.jpg');
+      console.log('Enviando con JSON (base64) al endpoint con imagen');
 
-      console.log('Enviando con FormData al endpoint con imagen');
-
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}/update-with-image`, {
         method: 'PUT',
-        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData),
       });
 
       const data = await response.json();
@@ -221,11 +225,14 @@ export const updateUserProfile = async (userData) => {
       }
 
       // Actualizar usuario en el storage
+      // El backend ahora devuelve imageUrl en lugar de image completa
+      const baseUrl = API_BASE_URL.replace('/api', '');
       const updatedUser = {
         ...currentUser,
         ...data.usuario,
         role: mapBackendRoleToFrontend(data.usuario.rol),
-        profileImageUrl: data.usuario.image ? `${API_BASE_URL}${data.usuario.image}` : currentUser.profileImageUrl
+        profileImageUrl: data.usuario.imageUrl ? `${baseUrl}${data.usuario.imageUrl}` : 
+                         (data.usuario.hasImage ? `${baseUrl}/api/usuarios/${currentUser.id}/image` : currentUser.profileImageUrl)
       };
 
       if (localStorage.getItem('user')) {
@@ -249,10 +256,12 @@ export const updateUserProfile = async (userData) => {
 
       console.log('Enviando datos sin imagen:', updateData);
 
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/usuarios/${currentUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateData),
       });

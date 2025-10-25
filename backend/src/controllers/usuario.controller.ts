@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 // TEMPORALMENTE usando mock en lugar del servicio real
 import * as usuarioService from "../services/usuario.service";
-import { CreateUsuarioRequest, UsuarioListResponse, UpdateUsuarioRequest, UsuarioResponse } from "../types/usuario.type";
+import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
 
-export async function crearUsuario(req: Request<{}, UsuarioResponse, CreateUsuarioRequest>, res: Response<UsuarioResponse>) {
+export async function crearUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
     const newUsuario = await usuarioService.createUsuario(req.body);
     res.status(201).json({
@@ -33,6 +33,26 @@ export async function obtenerUsuarios(req: Request, res: Response<UsuarioListRes
     res.json({
       usuarios,
       total: usuarios.length
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function obtenerImagenUsuario(req: Request<{id: string}>, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const usuario = await usuarioService.getUsuarioById(parseInt(id));
+    
+    if (!usuario || !usuario.image) {
+      return res.status(404).json({
+        error: 'Imagen no encontrada'
+      });
+    }
+    
+    // Devolver la imagen base64
+    res.json({
+      image: usuario.image
     });
   } catch (error) {
     next(error);
@@ -81,7 +101,7 @@ export async function obtenerUsuarioPorEmail(req: Request<{email: string}>, res:
   }
 }
 
-export async function actualizarUsuario(req: Request<{id: string}, UsuarioResponse, UpdateUsuarioRequest>, res: Response<UsuarioResponse>) {
+export async function actualizarUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
     const { id } = req.params;
     const updateUsuario = await usuarioService.updateUsuario(parseInt(id), req.body);
@@ -140,16 +160,20 @@ export async function eliminarUsuario(req: Request<{id: string}>, res: Response)
 // Nuevas funciones de autenticación
 export async function login(req: Request, res: Response) {
   try {
+    console.log('🔐 LOGIN REQUEST - Body:', { email: req.body.email, hasPassword: !!req.body.password });
     const { email, password } = req.body;
     
     if (!email || !password) {
+      console.log('❌ LOGIN FAILED - Missing credentials');
       return res.status(400).json({
         ok: false,
         error: 'Email y contraseña son requeridos'
       });
     }
 
+    console.log('🔍 Buscando usuario con email:', email);
     const usuario = await usuarioService.getUsuarioByEmail(email);
+    console.log('👤 Usuario encontrado:', usuario ? 'Sí' : 'No');
     
     if (!usuario) {
       return res.status(401).json({
@@ -167,23 +191,40 @@ export async function login(req: Request, res: Response) {
       });
     }
 
+    // Generar token JWT
+    const jwt = require('jsonwebtoken');
+    console.log('🔑 Generando JWT con secret:', process.env.JWT_SECRET ? 'Configurado' : 'NO CONFIGURADO');
+    const token = jwt.sign(
+      {
+        id: usuario.id,
+        email: usuario.email,
+        rol: usuario.rol
+      },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+    console.log('✅ Token generado exitosamente');
+
     // Login exitoso
     res.json({
       ok: true,
       user: {
         id: usuario.id,
-        email: usuario.correo, // Usar correo del schema
+        email: usuario.email,
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         role: usuario.rol // Usar rol del schema
       },
+      token,
       message: 'Login exitoso'
     });
 
   } catch (error) {
+    console.error('❌ ERROR EN LOGIN:', error);
     res.status(500).json({
       ok: false,
-      error: 'Error interno del servidor'
+      error: 'Error interno del servidor',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
     });
   }
 }
@@ -226,10 +267,10 @@ export async function register(req: Request, res: Response) {
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: email,
+      email: email,
       password, // En producción, hashear con bcrypt
-      name: nombre,
-      lastname: apellido,
+      nombre: nombre,
+      apellido: apellido,
       dni: dni, // Mantener como string según el tipo
       telefono,
       rol: rol
@@ -269,7 +310,7 @@ export async function register(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.correo,
+            email: newUsuario.email,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -287,7 +328,7 @@ export async function register(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.correo,
+          email: newUsuario.email,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
@@ -311,15 +352,12 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function registerWithImage(req: Request, res: Response) {
-  console.log('=== DEBUG registerWithImage ===');
-  console.log('BODY recibido:', req.body);
-  console.log('Archivo recibido:', req.file);
-  console.log('Nombre del campo esperado: imagen');
+  console.log('=== DEBUG registerWithImage (BASE64) ===');
+  console.log('BODY recibido:', { ...req.body, imagen: req.body.imagen ? `[base64 ${req.body.imagen.substring(0, 50)}...]` : null });
   
   try {
     const { 
-      correo,     // Frontend envía 'correo'
-      email,      // Mantener compatibilidad con 'email'
+      email,
       password, 
       nombre, 
       apellido, 
@@ -332,23 +370,22 @@ export async function registerWithImage(req: Request, res: Response) {
       nombreComplejo, 
       calle, 
       altura, 
-      localidadId 
+      localidadId,
+      imagen  // Base64 image
     } = req.body;
     
-    const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
+    // La imagen ahora viene como base64 en lugar de archivo
+    const imageBase64 = imagen || null;
     
-    // Usar correo o email (el que venga)
-    const userEmail = correo || email;
-    
-    if (!userEmail || !password || !nombre || !apellido || !dni) {
+    if (!email || !password || !nombre || !apellido || !dni) {
       return res.status(400).json({
         ok: false,
-        error: 'Todos los campos son requeridos (correo, password, nombre, apellido, dni)'
+        error: 'Todos los campos son requeridos (email, password, nombre, apellido, dni)'
       });
     }
 
     // Verificar si el email ya existe
-    const existingUserByEmail = await usuarioService.getUsuarioByEmail(userEmail);
+    const existingUserByEmail = await usuarioService.getUsuarioByEmail(email);
     if (existingUserByEmail) {
       return res.status(409).json({
         ok: false,
@@ -370,14 +407,14 @@ export async function registerWithImage(req: Request, res: Response) {
 
     // Crear nuevo usuario
     const newUsuario = await usuarioService.createUsuario({
-      correo: userEmail,
+      email,
       password,
-      name: nombre,
-      lastname: apellido,
+      nombre: nombre,
+      apellido: apellido,
       dni: dni,
       telefono,
       rol: finalRole,
-      image: imagePath || undefined
+      image: imageBase64 || undefined
     });
 
     // Si es dueño, crear la solicitud automáticamente
@@ -395,7 +432,7 @@ export async function registerWithImage(req: Request, res: Response) {
           cuit,
           complejo: {
             nombre: nombreComplejo,
-            imagen: imagePath,
+            imagen: imageBase64,
             domicilio: {
               calle,
               altura,
@@ -408,7 +445,7 @@ export async function registerWithImage(req: Request, res: Response) {
           ok: true,
           user: {
             id: newUsuario.id,
-            email: newUsuario.correo,
+            email: newUsuario.email,
             nombre: newUsuario.nombre,
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
@@ -430,7 +467,7 @@ export async function registerWithImage(req: Request, res: Response) {
         ok: true,
         user: {
           id: newUsuario.id,
-          email: newUsuario.correo,
+          email: newUsuario.email,
           nombre: newUsuario.nombre,
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
@@ -457,14 +494,13 @@ export async function registerWithImage(req: Request, res: Response) {
 export async function actualizarUsuarioConImagen(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { nombre, apellido, correo, dni, telefono, direccion, rol, password } = req.body;
-    const imagePath = req.file ? `/images/usuarios/${req.file.filename}` : null;
+    const { nombre, apellido, email, dni, telefono, direccion, rol, password, imagen } = req.body;
+    const imageBase64 = imagen || null;
     
     console.log('=== DEBUG: Actualizando usuario con imagen ===');
     console.log('ID:', id);
     console.log('Body completo:', req.body);
-    console.log('Archivo recibido:', req.file);
-    console.log('Imagen path:', imagePath);
+    console.log('Imagen recibida (base64):', imageBase64 ? 'Sí' : 'No');
 
     if (!id) {
       return res.status(400).json({
@@ -483,9 +519,9 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     // Preparar datos para actualizar
     const updateData: any = {};
     
-    if (nombre) updateData.name = nombre;
-    if (apellido) updateData.lastname = apellido;
-    if (correo) updateData.correo = correo;
+    if (nombre) updateData.nombre = nombre;
+    if (apellido) updateData.apellido = apellido;
+    if (email) updateData.email = email;
     if (dni && dni !== 'undefined') updateData.dni = dni;
     if (telefono) updateData.telefono = telefono;
     if (direccion) updateData.direccion = direccion;
@@ -511,12 +547,18 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     }
     
     if (password) updateData.password = password;
-    if (imagePath) updateData.image = imagePath;
+    if (imageBase64) updateData.image = imageBase64;
 
     // Actualizar usuario
     console.log('Datos a actualizar:', updateData);
     const usuarioActualizado = await usuarioService.updateUsuario(parseInt(id), updateData);
-    console.log('Usuario actualizado exitosamente:', usuarioActualizado);
+    
+    // Log solo el tamaño de la imagen, no toda la imagen
+    if (usuarioActualizado.image) {
+      console.log(`Usuario actualizado exitosamente. Imagen tamaño: ${usuarioActualizado.image.length} caracteres`);
+    } else {
+      console.log('Usuario actualizado exitosamente (sin imagen)');
+    }
 
     res.status(200).json({
       message: 'Usuario actualizado exitosamente',

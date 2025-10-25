@@ -3,66 +3,55 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  directUrl         = env("DATABASE_DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-
-
 model Usuario {
-  id          Int        @id @default(autoincrement())
-  apellido    String
-  nombre      String
-  dni         String     @unique
-  correo      String     @unique
-  password    String
-  telefono    String?
-  rol         Rol        @default(CLIENTE)
-  image       String?
-  direccion   String?
-  reservas    Alquiler[]
-  complejo    Complejo?
-  solicitudes Solicitud?
+  id        Int        @id @default(autoincrement())
+  apellido  String
+  nombre    String
+  dni       String     @unique
+  email     String     @unique
+  password  String
+  telefono  String?
+  rol       Rol        @default(CLIENTE)
+  image     String?
+  direccion String?
+  reservas  Alquiler[]
+  complejo  Complejo?
+
+  @@map("Usuario")
 }
 
 model Administrador {
-  id                   Int         @id @default(autoincrement())
-  password             String
-  rol                  Rol         @default(ADMINISTRADOR)
-  email                String      @unique
-  solicitudesEvaluadas Solicitud[]
-}
+  id                 Int        @id @default(autoincrement())
+  password           String
+  rol                Rol        @default(ADMINISTRADOR)
+  email              String     @unique
+  complejosEvaluados Complejo[]
 
-model Solicitud {
-  id        Int             @id @default(autoincrement())
-  cuit      String          @unique
-  estado    EstadoSolicitud @default(PENDIENTE)
-  usuarioId Int             @unique
-  adminId   Int?
-  image     String?
-  complejo  Complejo?
-  admin     Administrador?  @relation(fields: [adminId], references: [id])
-  usuario   Usuario         @relation(fields: [usuarioId], references: [id])
+  @@map("Administrador")
 }
 
 model Complejo {
-  id          Int                @id @default(autoincrement())
-  nombre      String
-  descripcion String?
-  puntaje     Float              @default(0.0)
-  precioDesde Float?             @default(0.0)  // Campo calculado para precio mínimo del complejo
-  image       String?
-  domicilioId Int                @unique
-  usuarioId   Int                @unique
-  solicitudId Int                @unique
-  cuit        String             @unique
-  horarios    String?
-  canchas     Cancha[]
-  domicilio   Domicilio          @relation("ComplejoDomicilio", fields: [domicilioId], references: [id])
-  solicitud   Solicitud          @relation(fields: [solicitudId], references: [id])
-  usuario     Usuario            @relation(fields: [usuarioId], references: [id])
-  servicios   ComplejoServicio[]
+  id              Int                @id @default(autoincrement())
+  nombre          String
+  descripcion     String?
+  puntaje         Float              @default(0.0)
+  precioDesde     Float?             @default(0.0) // Campo calculado para precio mínimo del complejo
+  image           String?
+  domicilioId     Int                @unique
+  usuarioId       Int                @unique
+  cuit            String             @unique
+  horarios        String?
+  estado          EstadoComplejo     @default(PENDIENTE)
+  canchas         Cancha[]
+  domicilio       Domicilio          @relation("ComplejoDomicilio", fields: [domicilioId], references: [id])
+  usuario         Usuario            @relation(fields: [usuarioId], references: [id])
+  servicios       ComplejoServicio[]
+  administradorId Int?
+  administrador   Administrador?     @relation(fields: [administradorId], references: [id])
 }
 
 model Domicilio {
@@ -81,21 +70,21 @@ model Localidad {
 }
 
 model Cancha {
-  id          Int                 @id @default(autoincrement())
-  nroCancha   Int
-  descripcion String?
-  puntaje     Float               @default(0.0)
-  precioDesde Float?              @default(0.0)  // Campo calculado para precio mínimo
-  image       String[]
-  complejoId  Int
-  deporteId   Int
-  nombre      String?
-  precioHora  Float?              @default(0.0)
-  activa      Boolean             @default(true)
-  complejo    Complejo            @relation(fields: [complejoId], references: [id])
-  deporte     Deporte             @relation(fields: [deporteId], references: [id])
-  cronograma  HorarioCronograma[]
-  turnos      Turno[]
+  id                     Int                    @id @default(autoincrement())
+  nroCancha              Int                    @default(autoincrement())
+  descripcion            String?
+  puntaje                Float                  @default(0.0)
+  precioDesde            Float?                 @default(0.0) // Campo calculado para precio mínimo
+  image                  String[]
+  complejoId             Int
+  deporteId              Int
+  nombre                 String?
+  precioHora             Float?                 @default(0.0)
+  activa                 Boolean                @default(true)
+  complejo               Complejo               @relation(fields: [complejoId], references: [id])
+  deporte                Deporte                @relation(fields: [deporteId], references: [id])
+  cronograma             HorarioCronograma[]
+  turnos                 Turno[]
   horariosDeshabilitados HorarioDeshabilitado[]
 
   @@unique([complejoId, nroCancha])
@@ -117,11 +106,12 @@ model Turno {
   horaInicio    DateTime  @db.Time(6)
   precio        Float
   reservado     Boolean   @default(false)
-  deshabilitado Boolean   @default(false)  // Turno temporalmente deshabilitado por el administrador
+  deshabilitado Boolean   @default(false) // Turno temporalmente deshabilitado por el administrador
   alquilerId    Int?
   canchaId      Int
   alquiler      Alquiler? @relation(fields: [alquilerId], references: [id])
   cancha        Cancha    @relation(fields: [canchaId], references: [id])
+
   @@index([canchaId, fecha, horaInicio], name: "idx_turno_cancha_fecha_hora")
   @@index([canchaId, reservado], name: "idx_turno_cancha_reservado")
 }
@@ -182,13 +172,13 @@ model ComplejoServicio {
 }
 
 model HorarioDeshabilitado {
-  id        Int       @id @default(autoincrement())
-  canchaId  Int
-  dia       DiaSemana
-  hora      String    // Formato "HH:00" (ej: "14:00")
-  motivo    String?   // Opcional: razón de la deshabilitación
-  creadoEn  DateTime  @default(now())
-  cancha    Cancha    @relation(fields: [canchaId], references: [id], onDelete: Cascade)
+  id       Int       @id @default(autoincrement())
+  canchaId Int
+  dia      DiaSemana
+  hora     String // Formato "HH:00" (ej: "14:00")
+  motivo   String? // Opcional: razón de la deshabilitación
+  creadoEn DateTime  @default(now())
+  cancha   Cancha    @relation(fields: [canchaId], references: [id], onDelete: Cascade)
 
   @@unique([canchaId, dia, hora])
   @@index([canchaId])
@@ -217,10 +207,11 @@ enum DiaSemana {
   DOMINGO
 }
 
-enum EstadoSolicitud {
+enum EstadoComplejo {
   PENDIENTE
-  APROBADA
-  RECHAZADA
+  APROBADO
+  RECHAZADO
+  OCULTO
 }
 
 enum Rol {

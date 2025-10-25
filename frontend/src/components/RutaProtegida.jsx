@@ -10,11 +10,7 @@ function RutaProtegida({ rolRequerido }) {
   }
 
   if (!isAuthenticated) {
-    const mensaje = rolRequerido === "normal" 
-      ? "Debes iniciar sesión como cliente para ver tus reservas."
-      : "Debes iniciar sesión para acceder a esta página.";
-    alert(mensaje);
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   
   if (user.rol !== rolRequerido) {

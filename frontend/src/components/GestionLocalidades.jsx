@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaPencilAlt, FaTrash, FaMapMarkerAlt } from 'react-icons/fa';
 import ModalLocalidad from './ModalLocalidad';
 import ModalConfirmacion from './ModalConfirmacion';
+import LoadingSpinner from './LoadingSpinner';
 
 import { API_BASE_URL } from '../config/api.js';
 
@@ -11,6 +12,15 @@ function GestionLocalidades() {
   const [isModalLocalidadOpen, setIsModalLocalidadOpen] = useState(false);
   const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
   const [localidadSeleccionada, setLocalidadSeleccionada] = useState(null);
+
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
 
   // Cargar localidades desde el backend
   useEffect(() => {
@@ -51,9 +61,7 @@ function GestionLocalidades() {
         // Actualizar localidad existente
         response = await fetch(`${API_BASE_URL}/localidades/${localidadGuardada.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             nombre: localidadGuardada.nombre
           }),
@@ -62,9 +70,7 @@ function GestionLocalidades() {
         // Crear nueva localidad
         response = await fetch(`${API_BASE_URL}/localidades`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             nombre: localidadGuardada.nombre
           }),
@@ -117,6 +123,7 @@ function GestionLocalidades() {
       console.log('Eliminando localidad:', localidadSeleccionada.id);
       const response = await fetch(`${API_BASE_URL}/localidades/${localidadSeleccionada.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       console.log('Response status:', response.status);
@@ -146,80 +153,81 @@ function GestionLocalidades() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="p-8">
+        <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-6">
+          <FaMapMarkerAlt /> Gestión de Localidades
+        </h2>
+        <LoadingSpinner message="Cargando localidades..." />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="bg-white text-primary p-6">
-          <div className="flex justify-between items-center border-b border-gray-200 pb-4">
-            <h2 className="text-2xl font-bold">Gestión de Localidades</h2>
-            <button
-              onClick={() => handleOpenModalLocalidad()}
-              className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
-            >
-              <FaPlus className="text-sm" />
-              Agregar Localidad
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {localidades.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-primary text-lg">No hay localidades registradas</p>
-              <p className="text-primary text-sm mt-2">Haz clic en "Agregar Localidad" para crear la primera</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {localidades.map((localidad) => (
-                <div
-                  key={localidad.id}
-                  className="bg-accent rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-200"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-primary mb-1">
-                        {localidad.nombre}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        ID: {localidad.id}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => handleOpenModalLocalidad(localidad)}
-                        className="text-secondary hover:text-white transition-colors duration-200 p-3 rounded-md hover:bg-secondary min-w-[40px] min-h-[40px] flex items-center justify-center"
-                        title="Editar localidad"
-                        type="button"
-                      >
-                        <FaPencilAlt className="text-lg" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('Botón eliminar presionado para:', localidad.nombre);
-                          handleDeleteLocalidad(localidad);
-                        }}
-                        className="text-red-500 hover:text-red-700 transition-colors duration-200 p-3 rounded-md hover:bg-red-100 min-w-[40px] min-h-[40px] flex items-center justify-center"
-                        title="Eliminar localidad"
-                        type="button"
-                      >
-                        <FaTrash className="text-lg" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="p-8">
+      {/* Título y botón separados */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+          <FaMapMarkerAlt /> Gestión de Localidades
+        </h2>
+        <button
+          onClick={() => handleOpenModalLocalidad()}
+          className="bg-secondary hover:bg-primary text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
+        >
+          <FaPlus className="text-sm" />
+          Agregar Localidad
+        </button>
       </div>
+
+      {/* Lista de localidades */}
+      {localidades.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 text-lg">No hay localidades registradas</p>
+          <p className="text-gray-400 text-sm mt-2">Haz clic en "Agregar Localidad" para crear la primera</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {localidades.map((localidad) => (
+            <div
+              key={localidad.id}
+              className="bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-200"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-primary mb-1">
+                    {localidad.nombre}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    ID: {localidad.id}
+                  </p>
+                </div>
+                <div className="flex gap-2 ml-4">
+                  <button
+                    onClick={() => handleOpenModalLocalidad(localidad)}
+                    className="text-primary hover:text-white hover:bg-primary p-2 rounded-full transition-colors shadow-md"
+                    title="Editar localidad"
+                    type="button"
+                  >
+                    <FaPencilAlt />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Botón eliminar presionado para:', localidad.nombre);
+                      handleDeleteLocalidad(localidad);
+                    }}
+                    className="text-canchaRed hover:text-white hover:bg-canchaRed p-2 rounded-full transition-colors shadow-md"
+                    title="Eliminar localidad"
+                    type="button"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal para agregar/editar localidad */}
       {isModalLocalidadOpen && (

@@ -56,15 +56,14 @@ function MisReservasPage() {
                 if (response.ok) {
                     const userData = {
                         id: response.user.id,
-                        nombre: `${response.user.nombre} ${response.user.apellido}`,
+                        nombre: response.user.nombre,
+                        apellido: response.user.apellido,
                         rol: 'Jugador Apasionado', // Esto se puede personalizar según el rol
-                        email: response.user.correo,
+                        email: response.user.email,
                         telefono: response.user.telefono || '',
                         direccion: response.user.direccion || '', // Campo de dirección libre
                         dni: response.user.dni,
-                        profileImageUrl: response.user.image ? 
-                            (response.user.image.startsWith('http') ? response.user.image : `${API_BASE_URL}${response.user.image}`) 
-                            : 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
+                        profileImageUrl: response.user.image || 'https://media.istockphoto.com/id/1690733685/es/vídeo/retrato-de-cabeza-feliz-hombre-hispano-guapo.jpg?s=640x640&k=20&c=3V2ex2y88SRJAqm01O0oiwfb0M4uTeaDS8PEDvN95Kw='
                     };
                     setUsuario(userData);
                     
@@ -96,7 +95,13 @@ function MisReservasPage() {
         try {
             console.log('🔍 CARGANDO RESERVAS - Usuario ID:', usuarioId);
             console.log('🔍 URL de consulta:', `${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
-            const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/alquileres?clienteId=${usuarioId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             console.log('📡 Respuesta del servidor - Status:', response.status, 'OK:', response.ok);
             if (response.ok) {
                 const data = await response.json();
@@ -122,6 +127,8 @@ function MisReservasPage() {
                 
                 const reservasFormateadas = alquileresConTurnos.map(alquiler => {
                     const primerTurno = alquiler.turnos[0];
+                    const ultimoTurno = alquiler.turnos[alquiler.turnos.length - 1];
+                    const cantidadTurnos = alquiler.turnos.length;
                     
                     // Validación adicional por si acaso
                     if (!primerTurno || !primerTurno.fecha || !primerTurno.cancha) {
@@ -131,39 +138,45 @@ function MisReservasPage() {
                     
                     const fecha = new Date(primerTurno.fecha);
                     
-                    // Parsear horaInicio (viene como DateTime ISO: "1970-01-01T20:00:00.000Z")
-                    let horaInicio, horaFin;
-                    
-                    if (typeof primerTurno.horaInicio === 'string') {
-                        // Si es string ISO, extraer la hora de la parte de tiempo
-                        // Formato: "1970-01-01T20:00:00.000Z" -> extraer "20:00"
-                        const timeMatch = primerTurno.horaInicio.match(/T(\d{2}:\d{2})/);
-                        if (timeMatch) {
-                            horaInicio = timeMatch[1]; // "20:00"
-                        } else {
-                            // Fallback: parsear como Date
-                            const d = new Date(primerTurno.horaInicio);
-                            horaInicio = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                    // Función auxiliar para parsear hora desde ISO string
+                    const parsearHora = (horaISO) => {
+                        if (typeof horaISO === 'string') {
+                            const timeMatch = horaISO.match(/T(\d{2}:\d{2})/);
+                            if (timeMatch) {
+                                return timeMatch[1]; // "20:00"
+                            }
+                            const d = new Date(horaISO);
+                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                        } else if (horaISO instanceof Date || horaISO) {
+                            const d = new Date(horaISO);
+                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
                         }
-                    } else if (primerTurno.horaInicio instanceof Date || primerTurno.horaInicio) {
-                        // Si es Date object, formatear a HH:MM
-                        const d = new Date(primerTurno.horaInicio);
-                        horaInicio = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+                        return '00:00';
+                    };
+                    
+                    // Parsear hora de inicio del primer turno
+                    const horaInicio = parsearHora(primerTurno.horaInicio);
+                    
+                    // Calcular hora de fin del último turno
+                    let horaFin;
+                    if (ultimoTurno.horaFin) {
+                        // Si el turno tiene horaFin, usarla
+                        horaFin = parsearHora(ultimoTurno.horaFin);
                     } else {
-                        horaInicio = '00:00';
+                        // Si no, sumar 1 hora a la hora de inicio del último turno
+                        const horaInicioUltimo = parsearHora(ultimoTurno.horaInicio);
+                        const [horaNum, minNum] = horaInicioUltimo.split(':').map(Number);
+                        const horaFinNum = (horaNum + 1) % 24;
+                        horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minNum.toString().padStart(2, '0')}`;
                     }
                     
                     // DEBUG: Ver qué hora se parseó (solo para el primer alquiler)
                     if (alquiler.id === data.alquileres[0]?.id) {
-                        console.log('🔍 DEBUG HORA INICIO:');
-                        console.log('  - primerTurno.horaInicio RAW:', primerTurno.horaInicio);
-                        console.log('  - horaInicio parseada:', horaInicio);
+                        console.log('🔍 DEBUG HORARIOS:');
+                        console.log('  - Cantidad de turnos:', cantidadTurnos);
+                        console.log('  - Hora inicio (primer turno):', horaInicio);
+                        console.log('  - Hora fin (último turno):', horaFin);
                     }
-                    
-                    // Calcular horaFin sumando 1 hora a horaInicio (duración estándar de turno)
-                    const [horaInicioNum, minInicioNum] = horaInicio.split(':').map(Number);
-                    const horaFinNum = (horaInicioNum + 1) % 24; // Sumar 1 hora
-                    horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minInicioNum.toString().padStart(2, '0')}`;
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';
@@ -200,6 +213,9 @@ function MisReservasPage() {
                     // Formatear fecha a DD/MM/YYYY
                     const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
                     
+                    // Verificar si el USUARIO ya dejó una reseña en esta CANCHA (en cualquier alquiler)
+                    const usuarioYaReseñoCancha = alquiler.usuarioYaReseñoCancha || false;
+                    
                     return {
                         id: alquiler.id,
                         canchaId: primerTurno.cancha?.id || null, // Agregar canchaId para navegación
@@ -210,7 +226,7 @@ function MisReservasPage() {
                         horaFin: horaFin,
                         total: alquiler.turnos.reduce((sum, turno) => sum + turno.precio, 0),
                         estado: estado,
-                        reseñada: false, // Por ahora false, se puede implementar en el futuro
+                        reseñada: usuarioYaReseñoCancha, // Verificar si usuario ya reseñó esta cancha
                         userId: usuarioId
                     };
                 });
@@ -312,10 +328,18 @@ function MisReservasPage() {
                 const result = await response.json();
                 console.log('Reseña creada exitosamente:', result);
                 
-                // Actualizar estado local solo si la reseña se guardó exitosamente
-                setReservas(reservas.map(r => 
-                    r.id === datosReseña.reservaId ? { ...r, reseñada: true } : r
-                ));
+                // Obtener el canchaId de la reserva que se acaba de reseñar
+                const reservaReseñada = reservas.find(r => r.id === datosReseña.reservaId);
+                const canchaIdReseñada = reservaReseñada?.canchaId;
+                
+                // Actualizar estado local: marcar como reseñada TODOS los alquileres de esa cancha
+                setReservas(reservas.map(r => {
+                    // Si es la misma cancha, marcar como reseñada
+                    if (r.canchaId === canchaIdReseñada) {
+                        return { ...r, reseñada: true };
+                    }
+                    return r;
+                }));
                 alert('¡Reseña guardada exitosamente!');
             } else {
                 let errorData;
@@ -354,9 +378,11 @@ function MisReservasPage() {
 
     const handleCancelReserva = async (reservaId) => {
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/alquileres/${reservaId}`, {
                 method: 'PATCH',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ estado: 'CANCELADO' }),
@@ -415,10 +441,17 @@ function MisReservasPage() {
                 let nuevaImagenUrl = usuario.profileImageUrl; // Mantener la actual por defecto
                 
                 if (response.user.image) {
-                    // Si el servidor devolvió una nueva imagen
-                    nuevaImagenUrl = response.user.image.startsWith('http') ? 
-                        response.user.image : 
-                        `${API_BASE_URL}${response.user.image}`;
+                    // La imagen puede ser: URL http, ruta relativa, o base64
+                    if (response.user.image.startsWith('data:')) {
+                        // Es base64, usar directamente
+                        nuevaImagenUrl = response.user.image;
+                    } else if (response.user.image.startsWith('http')) {
+                        // Es URL completa
+                        nuevaImagenUrl = response.user.image;
+                    } else {
+                        // Es ruta relativa
+                        nuevaImagenUrl = `${API_BASE_URL}${response.user.image}`;
+                    }
                 } else if (datosActualizados.profileImageData) {
                     // Si se subió una nueva imagen pero aún no tenemos la URL del servidor
                     nuevaImagenUrl = datosActualizados.profileImageUrl || datosActualizados.profileImageData;
@@ -428,6 +461,7 @@ function MisReservasPage() {
                 const updatedUserData = {
                     ...usuario,
                     nombre: datosActualizados.nombre || usuario.nombre,
+                    apellido: datosActualizados.apellido || usuario.apellido,
                     telefono: datosActualizados.telefono || usuario.telefono,
                     direccion: datosActualizados.direccion || usuario.direccion,
                     profileImageUrl: nuevaImagenUrl
@@ -453,10 +487,11 @@ function MisReservasPage() {
                     ...response.user, // Sobrescribir con los datos actualizados del servidor
                     rol: rolMapeado, // Usar el rol mapeado al formato del frontend
                     role: rolMapeado, // También mantener 'role' para compatibilidad
-                    correo: response.user.correo || contextUser.email || contextUser.correo,
-                    email: response.user.correo || contextUser.email || contextUser.correo,
+                    correo: response.user.email || contextUser.email,
+                    email: response.user.email || contextUser.email,
                     profileImageUrl: nuevaImagenUrl,
                     nombre: response.user.nombre || datosActualizados.nombre,
+                    apellido: response.user.apellido || datosActualizados.apellido,
                     telefono: response.user.telefono || datosActualizados.telefono,
                     direccion: response.user.direccion || datosActualizados.direccion
                 };
@@ -491,9 +526,11 @@ function MisReservasPage() {
 
     const handleConfirmarPago = async (datosPago) => {
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/alquileres/${reservaParaPagar.id}/pagar`, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({

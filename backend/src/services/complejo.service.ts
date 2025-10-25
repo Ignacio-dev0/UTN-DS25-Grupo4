@@ -14,19 +14,13 @@ export const createComplejo = async (data: CreateComplejoRequest) => {
         localidad: { connect: { id: domicilio.localidadId } },
       }
     });
-    
-    const nuevaSolicitud = await tx.solicitud.create({
-      data:{
-        cuit: solicitud.cuit,
-        usuario: { connect: { id: data.usuarioId } },
-      }
-    });
 
+    // Ya no creamos Solicitud - el complejo se crea directamente con estado APROBADO
     const nuevoComplejo = await tx.complejo.create({
       data: {
         ...complejo,
         cuit: solicitud.cuit,
-        solicitud: { connect: { id: nuevaSolicitud.id } },
+        estado: 'APROBADO', // Complejo creado directamente está aprobado
         usuario: { connect: { id: usuarioId } },
         domicilio: { connect: { id: nuevoDomicilio.id } },
       }
@@ -54,23 +48,36 @@ export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>
     console.log('✅ Complejo actualizado en la base de datos:', complejo);
     
     // Si hay servicios para actualizar, manejar la relación ComplejoServicio
-    if (servicios && servicios.length >= 0) {
+    if (servicios !== undefined) {
       console.log('🔄 Actualizando servicios:', servicios);
+      console.log('🔍 Tipo de servicios:', typeof servicios, Array.isArray(servicios));
+      console.log('� Primer elemento:', servicios[0], typeof servicios[0]);
+      
+      // Validar que servicios sea un array de números
+      if (!Array.isArray(servicios)) {
+        throw new Error('servicios debe ser un array');
+      }
+      
+      // Filtrar solo números válidos
+      const serviciosIds = servicios.filter(s => typeof s === 'number' && s > 0);
+      console.log('✅ IDs de servicios válidos:', serviciosIds);
       
       // Primero eliminar todas las relaciones existentes
-      await prisma.complejoServicio.deleteMany({
+      const deleted = await prisma.complejoServicio.deleteMany({
         where: { complejoId: id }
       });
+      console.log(`🗑️ Eliminadas ${deleted.count} relaciones anteriores`);
       
       // Luego crear las nuevas relaciones
-      if (servicios.length > 0) {
-        await prisma.complejoServicio.createMany({
-          data: servicios.map(servicioId => ({
+      if (serviciosIds.length > 0) {
+        const created = await prisma.complejoServicio.createMany({
+          data: serviciosIds.map(servicioId => ({
             complejoId: id,
             servicioId,
             disponible: true
           }))
         });
+        console.log(`✅ Creadas ${created.count} nuevas relaciones`);
       }
       
       console.log('✅ Servicios actualizados correctamente');
@@ -93,9 +100,7 @@ export const getAllComplejos = async () => {
 export const getComplejosAprobados = async () => {
   return await prisma.complejo.findMany({
     where: {
-      solicitud: {
-        estado: 'APROBADA'
-      }
+      estado: 'APROBADO'
     },
     include: { 
       domicilio: {
@@ -103,8 +108,8 @@ export const getComplejosAprobados = async () => {
           localidad: true
         }
       },
-      solicitud: true,
-      usuario: true 
+      usuario: true,
+      administrador: true
     },
   });
 };
@@ -119,7 +124,7 @@ export const getComplejoById = async (id:number) => {
           localidad: true
         }
       },
-      solicitud: true,
+      administrador: true,
       usuario: true,
       servicios: {
         include: {
@@ -159,7 +164,7 @@ export const deleteComplejo_sol_dom = async (id: number) => {
         const complejo = await prisma.complejo.findUnique({
             where: { id },
             include: {
-                solicitud: true,
+                administrador: true,
                 domicilio: true,
                 usuario: {
                     include: {
@@ -195,7 +200,7 @@ export const deleteComplejo_sol_dom = async (id: number) => {
 
         console.log(`🗑️ [${new Date().toISOString()}] Deleting complejo and related entities:`, {
             complejoId: id,
-            solicitudId: complejo.solicitudId,
+            // solicitudId: complejo.solicitudId, // REMOVED: Solicitud model no longer exists
             domicilioId: complejo.domicilioId,
             usuarioId: complejo.usuarioId,
             canchasCount: complejo.canchas.length,
@@ -267,9 +272,9 @@ export const deleteComplejo_sol_dom = async (id: number) => {
             // 4. Eliminar las canchas
             await tx.cancha.deleteMany({ where: { complejoId: id } });
 
-            // 5. Eliminar el complejo, solicitud, domicilio Y el usuario dueño
+            // 5. Eliminar el complejo, domicilio Y el usuario dueño
             await tx.complejo.delete({ where: { id } });
-            await tx.solicitud.delete({ where: { id: complejo.solicitudId } });
+            // await tx.solicitud.delete({ where: { id: complejo.solicitudId } }); // REMOVED: Solicitud model no longer exists
             await tx.domicilio.delete({ where: { id: complejo.domicilioId } });
             await tx.usuario.delete({ where: { id: complejo.usuarioId } });
 
@@ -287,4 +292,9 @@ export const deleteComplejo_sol_dom = async (id: number) => {
         });
         throw error;
     }
+}
+
+export async function esDuenioDeComplejo(complejoId: number, usuarioId: number): Promise<boolean> {
+  const complejo = await getComplejoById(complejoId);
+  return complejo.usuarioId === usuarioId;
 }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaPencilAlt, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaPencilAlt, FaTrash, FaFutbol } from 'react-icons/fa';
 import ModalDeporte from './ModalDeporte';
 import ModalConfirmacion from './ModalConfirmacion';
-
+import LoadingSpinner from './LoadingSpinner';
 import { API_BASE_URL } from '../config/api.js';
 
 function GestionDeportes() {
@@ -11,6 +11,15 @@ function GestionDeportes() {
   const [isModalDeporteOpen, setIsModalDeporteOpen] = useState(false);
   const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
   const [deporteSeleccionado, setDeporteSeleccionado] = useState(null);
+
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
 
   // Cargar deportes desde el backend
   useEffect(() => {
@@ -51,9 +60,7 @@ function GestionDeportes() {
         // Actualizar deporte existente
         response = await fetch(`${API_BASE_URL}/deportes/${deporteGuardado.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             name: deporteGuardado.nombre,
             icono: deporteGuardado.icono 
@@ -63,9 +70,7 @@ function GestionDeportes() {
         // Crear nuevo deporte
         response = await fetch(`${API_BASE_URL}/deportes`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ 
             name: deporteGuardado.nombre,
             icono: deporteGuardado.icono 
@@ -110,6 +115,7 @@ function GestionDeportes() {
     try {
       const response = await fetch(`${API_BASE_URL}/deportes/${deporteSeleccionado.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
@@ -131,18 +137,19 @@ function GestionDeportes() {
   if (loading) {
     return (
       <div className="p-8">
-        <h2 className="text-2xl font-bold text-secondary mb-6">Gestión de Deportes</h2>
-        <div className="flex justify-center items-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="ml-2">Cargando deportes...</span>
-        </div>
+        <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-6">
+          <FaFutbol /> Gestión de Deportes
+        </h2>
+        <LoadingSpinner message="Cargando deportes..." />
       </div>
     );
   }
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-secondary mb-6">Gestión de Deportes</h2>
+      <h2 className="text-2xl font-bold text-primary flex items-center gap-2 mb-6">
+        <FaFutbol /> Gestión de Deportes
+      </h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           <button 
               onClick={() => handleOpenModalDeporte()}

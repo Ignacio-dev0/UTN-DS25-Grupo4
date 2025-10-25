@@ -1,6 +1,7 @@
 import prisma from '../config/prisma';
 import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
+import { CrearAlquilerData } from '../validations/alquiler.validation';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	return await prisma.alquiler.findMany({
@@ -27,14 +28,10 @@ export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	});
 }
 
-export async function crearAlquiler(data: CreateAlquilerRequest) {
-	console.log('🔍 CREAR ALQUILER - Datos recibidos:', JSON.stringify(data, null, 2));
-	
-	const { usuarioId, turnosIds } = data;
-	
-	console.log('📋 CREAR ALQUILER - Usuario ID:', usuarioId, 'Turnos IDs:', turnosIds);
-	
-	if (turnosIds.length < 1) {
+export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) {
+  const { turnosIds } = data;
+
+  if (turnosIds.length < 1) {
 		throw new Error('Se debe seleccionar al menos un turno');
 	}
 	if (turnosIds.length > 3) {
@@ -44,8 +41,6 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 	// Si se envía el mismo turno múltiples veces, interpretamos que quiere bloques consecutivos
 	const turnoBase = turnosIds[0];
 	const cantidadBloques = turnosIds.length;
-	
-	console.log('🎯 TURNO BASE:', turnoBase, 'BLOQUES SOLICITADOS:', cantidadBloques);
 	
 	// Verificar que todos los turnos sean el mismo (si envían múltiples)
 	const todosIguales = turnosIds.every(id => id === turnoBase);
@@ -89,26 +84,30 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 		       horaInicioTurno.getUTCMinutes() === horaInicioCronograma.getUTCMinutes();
 	});
 
-	if (!horarioCronograma) {
-		console.log('❌ NO SE ENCONTRÓ HORARIO EN CRONOGRAMA');
+	let duracionFinal = 60; // Duración por defecto: 60 minutos
+
+	if (horarioCronograma) {
+		// Si hay cronograma, calcular duración del turno en minutos usando horaFin - horaInicio
+		const horaInicio = horarioCronograma.horaInicio;
+		const horaFin = horarioCronograma.horaFin;
+		const duracionMinutos = (horaFin.getUTCHours() * 60 + horaFin.getUTCMinutes()) - 
+		                       (horaInicio.getUTCHours() * 60 + horaInicio.getUTCMinutes());
+		
+		console.log(`⏱️ DURACIÓN DEL TURNO (cronograma): ${duracionMinutos} minutos (${horaInicio.getUTCHours()}:${horaInicio.getUTCMinutes().toString().padStart(2, '0')} - ${horaFin.getUTCHours()}:${horaFin.getUTCMinutes().toString().padStart(2, '0')})`);
+		
+		// Si la duración es válida, usarla
+		if (duracionMinutos > 0) {
+			duracionFinal = duracionMinutos;
+		}
+	} else {
+		console.log('⚠️ NO SE ENCONTRÓ HORARIO EN CRONOGRAMA - Usando duración por defecto de 60 minutos');
 		console.log('🔍 HORARIOS DISPONIBLES EN CRONOGRAMA:', turnoOriginal.cancha.cronograma.map(c => ({
 			horaInicio: c.horaInicio,
 			horaFin: c.horaFin
 		})));
 		console.log('🔍 HORA DEL TURNO:', turnoOriginal.horaInicio);
-		throw new Error('No se pudo determinar la duración del turno');
 	}
-
-	// Calcular duración del turno en minutos usando horaFin - horaInicio
-	const horaInicio = horarioCronograma.horaInicio;
-	const horaFin = horarioCronograma.horaFin;
-	const duracionMinutos = (horaFin.getUTCHours() * 60 + horaFin.getUTCMinutes()) - 
-	                       (horaInicio.getUTCHours() * 60 + horaInicio.getUTCMinutes());
 	
-	console.log(`⏱️ DURACIÓN DEL TURNO: ${duracionMinutos} minutos (${horaInicio.getUTCHours()}:${horaInicio.getUTCMinutes().toString().padStart(2, '0')} - ${horaFin.getUTCHours()}:${horaFin.getUTCMinutes().toString().padStart(2, '0')})`);
-
-	// Si la duración es 0 o negativa, usar 60 minutos por defecto
-	const duracionFinal = duracionMinutos > 0 ? duracionMinutos : 60;
 	console.log(`⏱️ DURACIÓN FINAL: ${duracionFinal} minutos`);
 
 	// Generar turnos consecutivos basados en el turno original
@@ -161,7 +160,7 @@ export async function crearAlquiler(data: CreateAlquilerRequest) {
 				select: {
 					nombre: true,
 					apellido: true,
-					correo: true
+					email: true
 				}
 			}
 		}
@@ -261,7 +260,7 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 				select: {
 					nombre: true,
 					apellido: true,
-					correo: true
+					email: true
 				}
 			}
 		}
@@ -340,7 +339,8 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 					}
 				}
 			}, 
-			pago: true 
+			pago: true,
+			resenia: true // Incluir reseña para verificar si ya fue reseñado
 		},
 		orderBy: {
 			createdAt: 'desc' // Más recientes primero
@@ -353,7 +353,37 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 		(error as any).statusCode = 404;
 		throw error;
 	}
-	return alquiler;
+	
+	// Para cada alquiler, verificar si el usuario ya dejó una reseña en esa cancha
+	// (no solo en este alquiler específico, sino en CUALQUIER alquiler de esa cancha)
+	const alquileresConInfoReseña = await Promise.all(
+		alquiler.map(async (alq) => {
+			if (alq.turnos.length === 0) return { ...alq, usuarioYaReseñoCancha: false };
+			
+			const canchaId = alq.turnos[0].cancha.id;
+			
+			// Buscar si existe alguna reseña del usuario para esta cancha
+			const reseñaExistente = await prisma.resenia.findFirst({
+				where: {
+					alquiler: {
+						clienteId: clienteId,
+						turnos: {
+							some: {
+								canchaId: canchaId
+							}
+						}
+					}
+				}
+			});
+			
+			return {
+				...alq,
+				usuarioYaReseñoCancha: reseñaExistente !== null
+			};
+		})
+	);
+	
+	return alquileresConInfoReseña;
 }
 
 export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {

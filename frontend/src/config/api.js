@@ -53,18 +53,17 @@ export const getImageUrl = (imagePath) => {
   
   // Si viene de la base de datos, las imágenes están en /images/canchas/
   if (imagePath.includes('.jpg') || imagePath.includes('.png') || imagePath.includes('.jpeg')) {
-    // Manejar nombres de archivo con leading zeros que necesitan ser convertidos
-    // Por ejemplo: futbol5_03.jpg -> futbol5_3.jpg
-    let normalizedPath = imagePath;
-    
-    // Convertir números con leading zero a números sin leading zero
-    normalizedPath = normalizedPath.replace(/(_)0(\d+)(\.[a-z]+)$/i, '$1$2$3');
-    
-    return `/images/canchas/${normalizedPath}`;
+    // ✅ Las imágenes ya están normalizadas en la BD (futbol5_1.jpg sin leading zero)
+    // Las imágenes estáticas se sirven desde el backend
+    const imageBaseUrl = API_BASE_URL.replace('/api', '');
+    // Limpiar cualquier prefijo "api" pegado al nombre del archivo
+    const cleanImagePath = imagePath.replace(/^api/, '').replace(/^\//, '');
+    return `${imageBaseUrl}/images/canchas/${cleanImagePath}`;
   }
   
   // Si no, asumimos que es una ruta relativa dentro de /images/
-  return `/images/${imagePath}`;
+  const imageBaseUrl = API_BASE_URL.replace('/api', '');
+  return `${imageBaseUrl}/images/${imagePath}`;
 };
 
 // Función helper para construir URLs de API
@@ -112,7 +111,9 @@ export const getPlaceholderImage = (deporteNombre = 'Cancha') => {
     }
   }
   
-  return `/images/canchas/${imageName}`;
+  // ✅ FIX: Las imágenes estáticas se sirven desde el backend
+  const imageBaseUrl = API_BASE_URL.replace('/api', '');
+  return `${imageBaseUrl}/images/canchas/${imageName}`;
 };
 
 // Función para obtener imagen específica de cancha basada en su ID y deporte
@@ -159,6 +160,8 @@ export const getCanchaImage = (canchaId, deporteNombre, nroCancha = null) => {
   const uniqueNumber = nroCancha ? (canchaId * 13 + nroCancha * 7) : (canchaId * 17);
   const imageNumber = (uniqueNumber % 8) + 1; // Cicla entre 1-8
   
-  return `/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
+  // ✅ FIX: Las imágenes estáticas se sirven desde el backend
+  const imageBaseUrl = API_BASE_URL.replace('/api', '');
+  return `${imageBaseUrl}/images/canchas/${deportePrefix}_${imageNumber}.jpg`;
 };
 

@@ -1,5 +1,5 @@
 // backend/prisma/seed_nuevo_esquema.ts
-import { PrismaClient, DiaSemana, Rol, EstadoSolicitud, EstadoAlquiler, MetodoPago } from '@prisma/client';
+import { PrismaClient, DiaSemana, Rol, EstadoComplejo, EstadoAlquiler, MetodoPago } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -18,7 +18,6 @@ async function main() {
     await prisma.horarioCronograma.deleteMany();
     await prisma.cancha.deleteMany();
     await prisma.complejo.deleteMany();
-    await prisma.solicitud.deleteMany();
     await prisma.administrador.deleteMany();
     await prisma.usuario.deleteMany();
     await prisma.domicilio.deleteMany();
@@ -90,16 +89,16 @@ async function main() {
     // Usuario administrador
     const adminUser = await prisma.usuario.create({
       data: {
-        nombre: 'Admin', apellido: 'Sistema', dni: '11111111', correo: 'admin@admin.com',
+        nombre: 'Admin', apellido: 'Sistema', dni: '11111111', email: 'admin@admin.com',
         password: hashedUserAdminPassword, telefono: '221-0000000', rol: Rol.ADMINISTRADOR,
       }
     });
 
     // 3 Clientes
     const clientesData = [
-      { nombre: 'Nacho', apellido: 'Benitez', dni: '40123456', correo: 'nacho.benitez@email.com', telefono: '221-5555555' },
-      { nombre: 'María', apellido: 'González', dni: '39876543', correo: 'maria.gonzalez@email.com', telefono: '221-5555556' },
-      { nombre: 'Carlos', apellido: 'Rodríguez', dni: '41234567', correo: 'carlos.rodriguez@email.com', telefono: '221-5555557' }
+      { nombre: 'Nacho', apellido: 'Benitez', dni: '40123456', email: 'nacho.benitez@email.com', telefono: '221-5555555' },
+      { nombre: 'María', apellido: 'González', dni: '39876543', email: 'maria.gonzalez@email.com', telefono: '221-5555556' },
+      { nombre: 'Carlos', apellido: 'Rodríguez', dni: '41234567', email: 'carlos.rodriguez@email.com', telefono: '221-5555557' }
     ];
 
     const clientes: any[] = [];
@@ -112,14 +111,14 @@ async function main() {
 
     // 8 Dueños (uno por complejo)
     const dueniosData = [
-      { nombre: 'Roberto', apellido: 'Méndez', dni: '30123456', correo: 'roberto.mendez@email.com', telefono: '221-6666666' },
-      { nombre: 'Ana', apellido: 'Martínez', dni: '29987654', correo: 'ana.martinez@email.com', telefono: '221-7777777' },
-      { nombre: 'Diego', apellido: 'Fernández', dni: '31456789', correo: 'diego.fernandez@email.com', telefono: '221-8888888' },
-      { nombre: 'Laura', apellido: 'Sánchez', dni: '32789012', correo: 'laura.sanchez@email.com', telefono: '221-9999999' },
-      { nombre: 'Jorge', apellido: 'López', dni: '28345678', correo: 'jorge.lopez@email.com', telefono: '221-1111111' },
-      { nombre: 'Patricia', apellido: 'García', dni: '33567890', correo: 'patricia.garcia@email.com', telefono: '221-2222222' },
-      { nombre: 'Alejandro', apellido: 'Ruiz', dni: '34678901', correo: 'alejandro.ruiz@email.com', telefono: '221-3333333' },
-      { nombre: 'Mónica', apellido: 'Torres', dni: '35789012', correo: 'monica.torres@email.com', telefono: '221-4444444' }
+      { nombre: 'Roberto', apellido: 'Méndez', dni: '30123456', email: 'roberto.mendez@email.com', telefono: '221-6666666' },
+      { nombre: 'Ana', apellido: 'Martínez', dni: '29987654', email: 'ana.martinez@email.com', telefono: '221-7777777' },
+      { nombre: 'Diego', apellido: 'Fernández', dni: '31456789', email: 'diego.fernandez@email.com', telefono: '221-8888888' },
+      { nombre: 'Laura', apellido: 'Sánchez', dni: '32789012', email: 'laura.sanchez@email.com', telefono: '221-9999999' },
+      { nombre: 'Jorge', apellido: 'López', dni: '28345678', email: 'jorge.lopez@email.com', telefono: '221-1111111' },
+      { nombre: 'Patricia', apellido: 'García', dni: '33567890', email: 'patricia.garcia@email.com', telefono: '221-2222222' },
+      { nombre: 'Alejandro', apellido: 'Ruiz', dni: '34678901', email: 'alejandro.ruiz@email.com', telefono: '221-3333333' },
+      { nombre: 'Mónica', apellido: 'Torres', dni: '35789012', email: 'monica.torres@email.com', telefono: '221-4444444' }
     ];
 
     const duenios: any[] = [];
@@ -132,11 +131,11 @@ async function main() {
 
     // 5 Usuarios adicionales para solicitudes pendientes
     const usuariosPendientesData = [
-      { nombre: 'Martín', apellido: 'Silva', dni: '39456789', correo: 'martin.silva@email.com', telefono: '221-3333334' },
-      { nombre: 'Carolina', apellido: 'Pérez', dni: '40567890', correo: 'carolina.perez@email.com', telefono: '221-4444445' },
-      { nombre: 'Rodrigo', apellido: 'Gómez', dni: '41678901', correo: 'rodrigo.gomez@email.com', telefono: '221-5555559' },
-      { nombre: 'Lucía', apellido: 'Ramírez', dni: '42789012', correo: 'lucia.ramirez@email.com', telefono: '221-6666668' },
-      { nombre: 'Sebastián', apellido: 'Moreno', dni: '43890123', correo: 'sebastian.moreno@email.com', telefono: '221-7777779' }
+      { nombre: 'Martín', apellido: 'Silva', dni: '39456789', email: 'martin.silva@email.com', telefono: '221-3333334' },
+      { nombre: 'Carolina', apellido: 'Pérez', dni: '40567890', email: 'carolina.perez@email.com', telefono: '221-4444445' },
+      { nombre: 'Rodrigo', apellido: 'Gómez', dni: '41678901', email: 'rodrigo.gomez@email.com', telefono: '221-5555559' },
+      { nombre: 'Lucía', apellido: 'Ramírez', dni: '42789012', email: 'lucia.ramirez@email.com', telefono: '221-6666668' },
+      { nombre: 'Sebastián', apellido: 'Moreno', dni: '43890123', email: 'sebastian.moreno@email.com', telefono: '221-7777779' }
     ];
 
     const usuariosPendientes: any[] = [];
@@ -184,17 +183,7 @@ async function main() {
     for (let i = 0; i < complejosData.length; i++) {
       const data = complejosData[i];
       
-      // Crear solicitud aprobada
-      const solicitud = await prisma.solicitud.create({
-        data: {
-          cuit: data.cuit,
-          estado: EstadoSolicitud.APROBADA,
-          usuarioId: duenios[i].id,
-          adminId: adminSistema.id,
-        }
-      });
-
-      // Crear complejo (sin imagen por ahora, se asignará después)
+      // Crear complejo APROBADO (sin imagen por ahora, se asignará después)
       const complejo = await prisma.complejo.create({
         data: {
           nombre: data.nombre,
@@ -205,30 +194,46 @@ async function main() {
           horarios: data.horarios,
           domicilioId: domicilios[i].id,
           usuarioId: duenios[i].id,
-          solicitudId: solicitud.id,
+          estado: EstadoComplejo.APROBADO,
+          administradorId: adminSistema.id,
         }
       });
       complejos.push(complejo);
     }
 
-    // 8. Crear 5 solicitudes PENDIENTES
-    console.log('📝 Creando 5 solicitudes pendientes...');
+    // 8. Crear 5 complejos PENDIENTES (sin aprobar aún)
+    console.log('📝 Creando 5 complejos pendientes...');
     
-    const solicitudesPendientes = [
-      { cuit: '20301234568', localidadIndex: 0 }, // La Plata
-      { cuit: '20301234569', localidadIndex: 1 }, // City Bell  
-      { cuit: '20301234570', localidadIndex: 2 }, // Gonnet
-      { cuit: '20301234571', localidadIndex: 3 }, // Ensenada
-      { cuit: '20301234572', localidadIndex: 4 }  // Los Hornos
+    const complejosPendientesData = [
+      { nombre: 'Complejo Pendiente 1', cuit: '20301234568', localidadIndex: 0, descripcion: 'Complejo en revisión', puntaje: 0, horarios: 'Por definir' },
+      { nombre: 'Complejo Pendiente 2', cuit: '20301234569', localidadIndex: 1, descripcion: 'Complejo en revisión', puntaje: 0, horarios: 'Por definir' },
+      { nombre: 'Complejo Pendiente 3', cuit: '20301234570', localidadIndex: 2, descripcion: 'Complejo en revisión', puntaje: 0, horarios: 'Por definir' },
+      { nombre: 'Complejo Pendiente 4', cuit: '20301234571', localidadIndex: 3, descripcion: 'Complejo en revisión', puntaje: 0, horarios: 'Por definir' },
+      { nombre: 'Complejo Pendiente 5', cuit: '20301234572', localidadIndex: 4, descripcion: 'Complejo en revisión', puntaje: 0, horarios: 'Por definir' }
     ];
 
-    for (let i = 0; i < solicitudesPendientes.length; i++) {
-      const solicitudData = solicitudesPendientes[i];
-      await prisma.solicitud.create({
+    for (let i = 0; i < complejosPendientesData.length; i++) {
+      const data = complejosPendientesData[i];
+      // Crear domicilio para el complejo pendiente
+      const domicilioPendiente = await prisma.domicilio.create({ 
+        data: { 
+          calle: 'Pendiente ' + (i+1), 
+          altura: 1000 + i, 
+          localidadId: localidades[data.localidadIndex].id 
+        } 
+      });
+      
+      await prisma.complejo.create({
         data: {
-          cuit: solicitudData.cuit,
-          estado: EstadoSolicitud.PENDIENTE,
+          nombre: data.nombre,
+          descripcion: data.descripcion,
+          puntaje: data.puntaje,
+          cuit: data.cuit,
+          image: null,
+          horarios: data.horarios,
+          domicilioId: domicilioPendiente.id,
           usuarioId: usuariosPendientes[i].id,
+          estado: EstadoComplejo.PENDIENTE,
         }
       });
     }

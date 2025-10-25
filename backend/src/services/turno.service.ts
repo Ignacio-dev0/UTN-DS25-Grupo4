@@ -2,6 +2,7 @@ import { number } from 'zod';
 import prisma from '../config/prisma';
 import { Turno} from '@prisma/client';
 import { CreateTurno, UpdateTurno } from '../types/turno.types';
+import { getNowInArgentina, getTodayStartInArgentina } from '../utils/timezone';
 
 // Cache simple en memoria para turnos por cancha
 interface CacheEntry {
@@ -25,12 +26,12 @@ function cleanExpiredCache() {
 // Función para generar turnos basados en el cronograma
 // Genera turnos para los próximos 8 días (7 para clientes + 1 extra para el dueño)
 export async function generarTurnosDesdeHoy() {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    const hoy = getTodayStartInArgentina();
     const fechaLimite = new Date(hoy);
     fechaLimite.setDate(hoy.getDate() + 8); // 8 días hacia adelante (incluye hoy)
 
     console.log(`🔄 Generando turnos desde ${hoy.toISOString()} hasta ${fechaLimite.toISOString()}`);
+    console.log(`🕐 Hora actual en Argentina: ${getNowInArgentina().toISOString()}`);
 
     // Obtener todas las canchas con sus cronogramas
     const canchas = await prisma.cancha.findMany({
@@ -294,9 +295,8 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
     try {
         console.log(`🔍 Servicio getTurnosPorSemana: cancha ${canchaId}, semana offset ${semanaOffset}`);
         
-        // Calcular fechas de inicio y fin de la semana
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+        // Calcular fechas de inicio y fin de la semana EN ARGENTINA
+        const hoy = getTodayStartInArgentina();
         
         const inicioSemana = new Date(hoy);
         inicioSemana.setDate(hoy.getDate() + (semanaOffset * 7));
@@ -304,7 +304,8 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
         const finSemana = new Date(inicioSemana);
         finSemana.setDate(inicioSemana.getDate() + 7);
         
-        console.log(`📅 Rango de fechas: ${inicioSemana.toISOString()} hasta ${finSemana.toISOString()}`);
+        console.log(`📅 Rango de fechas (Argentina): ${inicioSemana.toISOString()} hasta ${finSemana.toISOString()}`);
+        console.log(`🕐 Hora actual en Argentina: ${getNowInArgentina().toISOString()}`);
         
         const turnos = await prisma.turno.findMany({
             where: {

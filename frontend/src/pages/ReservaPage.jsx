@@ -5,7 +5,7 @@ import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
-import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
+import { API_BASE_URL } from '../config/api.js';
 
 // Función helper para construir la dirección completa
 const buildLocationString = (domicilio) => {
@@ -58,6 +58,34 @@ const getCoordinatesForLocation = (domicilio) => {
     if (coords) {
       lat = coords.lat;
       lng = coords.lng;
+      
+      // Ajuste fino basado en la calle/altura para La Plata (sistema de calles numeradas)
+      if (localidad === 'la plata' && domicilio.calle && domicilio.altura) {
+        const calle = domicilio.calle.toLowerCase();
+        const altura = parseInt(domicilio.altura);
+        
+        // La Plata tiene un sistema de cuadrícula con calles numeradas
+        // Calles (N-S) vs Avenidas (E-O)
+        if (calle.includes('calle') || /\bcalle\s+\d+/.test(calle)) {
+          // Calles van de N a S (aumenta latitud hacia el sur)
+          const numCalle = parseInt(calle.match(/\d+/)?.[0] || 0);
+          if (numCalle > 0) {
+            lat = -34.9214 + (numCalle - 50) * 0.0012; // Offset aproximado
+          }
+        } else if (calle.includes('avenida') || calle.includes('diagonal')) {
+          // Avenidas van de E a O (aumenta longitud hacia el oeste)
+          const numAvenida = parseInt(calle.match(/\d+/)?.[0] || 0);
+          if (numAvenida > 0) {
+            lng = -57.9545 - (numAvenida - 7) * 0.0012; // Offset aproximado
+          }
+        }
+        
+        // Ajuste por altura de la calle (cuadras)
+        if (altura > 0) {
+          const cuadras = Math.floor(altura / 100);
+          lng += cuadras * 0.0014; // Cada cuadra ~140m en longitud
+        }
+      }
     }
   }
   
@@ -134,13 +162,16 @@ function ReservaPage() {
 
         // Cargar servicios del complejo desde la API
         if (cancha.complejoId) {
+          console.log('🔍 Cargando servicios para complejoId:', cancha.complejoId);
           const serviciosResponse = await fetch(`${API_BASE_URL}/servicios`);
           if (serviciosResponse.ok) {
             const serviciosData = await serviciosResponse.json();
+            console.log('📦 Todos los servicios:', serviciosData);
             const serviciosDelComplejo = serviciosData.servicios
               .filter(servicio => 
                 servicio.complejos.some(cs => cs.complejoId === cancha.complejoId && cs.disponible)
               );
+            console.log('✅ Servicios filtrados para el complejo:', serviciosDelComplejo);
             setServiciosCompleto(serviciosDelComplejo);
           }
         }
@@ -195,45 +226,11 @@ function ReservaPage() {
         };
         
         // Función para determinar el estado del turno
-        // IMPORTANTE: Los turnos antes de la hora actual SIEMPRE deben estar finalizados
+        // IMPORTANTE: Ahora usamos el campo 'yaPaso' que viene del backend
         const determinarEstadoTurno = (turno) => {
-          // 🔴 PRIMERO: Verificar si el turno está en el pasado (MÁXIMA PRIORIDAD)
-          try {
-            const ahora = new Date();
-            const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-            
-            // Parsear la fecha del turno
-            let fechaTurnoStr = turno.fecha;
-            if (typeof fechaTurnoStr === 'object' && fechaTurnoStr.toISOString) {
-              fechaTurnoStr = fechaTurnoStr.toISOString().split('T')[0];
-            } else if (fechaTurnoStr.includes('T')) {
-              fechaTurnoStr = fechaTurnoStr.split('T')[0];
-            }
-            
-            const [year, month, day] = fechaTurnoStr.split('-').map(Number);
-            const fechaTurno = new Date(year, month - 1, day);
-            
-            // Si el turno es de una fecha anterior a hoy, está finalizado
-            if (fechaTurno < hoy) {
-              return 'finalizado';
-            }
-            
-            // Si el turno es de hoy, verificar la hora
-            if (fechaTurno.getTime() === hoy.getTime()) {
-              const horaTurno = new Date(turno.horaInicio);
-              const horas = horaTurno.getUTCHours();
-              const minutos = horaTurno.getUTCMinutes();
-              
-              const horaActual = ahora.getHours();
-              const minutosActuales = ahora.getMinutes();
-              
-              // Si la hora ya pasó, está finalizado SIN EXCEPCIÓN
-              if (horas < horaActual || (horas === horaActual && minutos < minutosActuales)) {
-                return 'finalizado';
-              }
-            }
-          } catch (error) {
-            console.warn('Error determinando si turno está en el pasado:', error, turno);
+          // 🔴 PRIMERO: Si el backend indica que el turno ya pasó, está FINALIZADO
+          if (turno.yaPaso === true) {
+            return 'finalizado';
           }
           
           // 🟡 SEGUNDO: Verificar estados especiales (solo para turnos futuros)
@@ -321,17 +318,27 @@ function ReservaPage() {
     let imageUrl;
     let otrasImagenes = [];
     
+    // Función helper para procesar imágenes
+    const processImageUrl = (image) => {
+      if (!image) return '/canchaYa.png';
+      // Si es base64, usarla directamente
+      if (image.startsWith('data:image')) return image;
+      // Si es un nombre de archivo, intentar cargar desde el servidor
+      if (image.includes('.jpg') || image.includes('.png') || image.includes('.jpeg')) {
+        return `http://localhost:3000/images/canchas/${image}`;
+      }
+      return '/canchaYa.png';
+    };
+    
     if (cancha.image && cancha.image.length > 0) {
-      // Si la cancha tiene imágenes en la BD
-      imageUrl = getImageUrl(cancha.image[0]); // Primera imagen como principal
+      imageUrl = processImageUrl(cancha.image[0]);
       
       // Resto de imágenes como thumbnails
       if (cancha.image.length > 1) {
-        otrasImagenes = cancha.image.slice(1).map(img => getImageUrl(img));
+        otrasImagenes = cancha.image.slice(1).map(img => processImageUrl(img));
       }
     } else {
-      // Si no hay imágenes en la BD, generar basada en el deporte y ID único
-      imageUrl = getCanchaImage(cancha.id, deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
+      imageUrl = '/canchaYa.png';
     }
     
     return {
@@ -349,6 +356,13 @@ function ReservaPage() {
 
   const handleConfirmarReserva = async (turnosSeleccionados) => {
     if (!turnosSeleccionados || turnosSeleccionados.length === 0 || !cancha || !complejo) return false;
+    
+    // Verificar que todos los turnos sean del mismo día
+    const diasUnicos = new Set(turnosSeleccionados.map(t => t.dia));
+    if (diasUnicos.size > 1) {
+      alert('❌ Solo puedes reservar turnos del mismo día.\n\nPor favor, selecciona turnos de un único día para continuar.');
+      return false;
+    }
     
     // Verificar autenticación
     if (!isAuthenticated || !user) {
@@ -374,11 +388,16 @@ function ReservaPage() {
       // Agrupar turnos por día y ordenar por hora
       const turnosPorDia = {};
       turnosSeleccionados.forEach(turnoSel => {
+        console.log('🔍 Buscando turno:', { dia: turnoSel.dia, hora: turnoSel.hora, turnoSel });
+        
         const turnoCompleto = turnos.find(t => 
           t.dia === turnoSel.dia && t.hora === turnoSel.hora
         );
         
+        console.log('🔍 Turno encontrado:', { id: turnoCompleto?.id, dia: turnoCompleto?.dia, hora: turnoCompleto?.hora });
+        
         if (!turnoCompleto || !turnoCompleto.id) {
+          console.error('❌ No se encontró el turno:', { turnoSel, todosLosTurnos: turnos });
           throw new Error(`No se pudo encontrar el turno para ${turnoSel.dia} a las ${turnoSel.hora}`);
         }
         
@@ -391,6 +410,12 @@ function ReservaPage() {
         });
       });
       
+      console.log('📊 Turnos agrupados por día:', Object.keys(turnosPorDia).map(dia => ({
+        dia,
+        cantidad: turnosPorDia[dia].length,
+        turnos: turnosPorDia[dia].map(t => ({ id: t.id, hora: t.hora }))
+      })));
+      
       // Procesar cada día
       Object.values(turnosPorDia).forEach(turnosDia => {
         // Ordenar por hora
@@ -399,6 +424,8 @@ function ReservaPage() {
           const horaB = parseInt(b.hora.split(':')[0]);
           return horaA - horaB;
         });
+        
+        console.log('📊 Turnos del día ordenados:', turnosDia.map(t => ({ id: t.id, hora: t.hora })));
         
         // Si hay más de un turno en el mismo día, duplicar IDs para turnos consecutivos
         if (turnosDia.length > 1) {
@@ -413,35 +440,39 @@ function ReservaPage() {
             }
           }
           
+          console.log('🔍 Turnos consecutivos?', sonConsecutivos);
+          
           if (sonConsecutivos) {
             // Duplicar el primer ID para indicar turnos consecutivos
+            console.log('✅ Duplicando primer turno:', turnosDia[0].id, 'x', turnosDia.length);
             turnosDia.forEach(() => {
               turnosIds.push(turnosDia[0].id);
             });
           } else {
             // Turnos no consecutivos, agregar IDs normalmente
+            console.log('✅ Turnos NO consecutivos, agregando IDs individuales');
             turnosDia.forEach(turno => {
               turnosIds.push(turno.id);
             });
           }
         } else {
           // Un solo turno
+          console.log('✅ Un solo turno:', turnosDia[0].id);
           turnosIds.push(turnosDia[0].id);
         }
       });
 
       console.log('🎯 Enviando turnosIds:', turnosIds);
-      console.log('👤 Usuario actual:', user);
-      console.log('🆔 Usuario ID que se enviará:', parseInt(user.id));
 
       // Llamar al backend para crear el alquiler/reserva
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/alquileres`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          usuarioId: parseInt(user.id),
           turnosIds: turnosIds
         }),
       });
@@ -454,52 +485,66 @@ function ReservaPage() {
       const reservaData = await response.json();
       console.log('Reserva creada exitosamente:', reservaData);
       
-      // Actualizar el estado de todos los turnos como reservados
-      const turnosActualizados = [...turnos];
-      let actualizacionesExitosas = 0;
-      
-      for (const turnoSel of turnosSeleccionados) {
-        const turnoCompleto = turnos.find(t => 
-          t.dia === turnoSel.dia && t.hora === turnoSel.hora
-        );
-        
-        if (turnoCompleto) {
-          try {
-            const response2 = await fetch(`${API_BASE_URL}/turnos/individual/${turnoCompleto.id}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ reservado: true }),
-            });
-
-            if (response2.ok) {
-              // Actualizar en el array local
-              const index = turnosActualizados.findIndex(t => t.id === turnoCompleto.id);
-              if (index !== -1) {
-                turnosActualizados[index] = { 
-                  ...turnosActualizados[index], 
-                  reservado: true, 
-                  estado: 'reservado' 
-                };
-              }
-              actualizacionesExitosas++;
+      // Recargar los turnos desde el backend para reflejar los cambios
+      try {
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
+        if (turnosResponse.ok) {
+          const turnosData = await turnosResponse.json();
+          
+          // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
+          const obtenerDiaSemana = (fecha) => {
+            const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+            let fechaStr = fecha;
+            if (fechaStr.includes('T')) {
+              fechaStr = fechaStr.split('T')[0];
             }
-          } catch (error) {
-            console.warn(`Error al actualizar turno ${turnoCompleto.id}:`, error);
-          }
+            const [year, month, day] = fechaStr.split('-').map(Number);
+            const fechaObj = new Date(year, month - 1, day);
+            return diasSemana[fechaObj.getDay()];
+          };
+
+          // Función auxiliar para formatear hora desde ISO string
+          const formatearHora = (horaISO) => {
+            const fecha = new Date(horaISO);
+            const horas = fecha.getUTCHours().toString().padStart(2, '0');
+            const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
+            return `${horas}:${minutos}`;
+          };
+          
+          // Función para determinar el estado del turno
+          const determinarEstadoTurno = (turno) => {
+            if (turno.yaPaso === true) return 'finalizado';
+            if (turno.deshabilitado) return 'deshabilitado';
+            if (turno.reservado) return 'reservado';
+            if (turno.alquilerId && !turno.reservado) return 'ocupado';
+            return 'disponible';
+          };
+          
+          const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
+            const estado = determinarEstadoTurno(turno);
+            return {
+              id: turno.id,
+              dia: obtenerDiaSemana(turno.fecha),
+              hora: formatearHora(turno.horaInicio),
+              precio: turno.precio,
+              estado,
+              fecha: turno.fecha,
+              fechaCompleta: turno.fecha,
+              horaCompleta: turno.horaInicio,
+              reservado: turno.reservado,
+              deshabilitado: turno.deshabilitado,
+              alquilerId: turno.alquilerId
+            };
+          });
+          
+          setTurnos(turnosFormateados);
         }
+      } catch (error) {
+        console.warn('Error al recargar turnos:', error);
       }
       
-      // Actualizar estado local con todos los cambios
-      setTurnos(turnosActualizados);
-      
-      if (actualizacionesExitosas === turnosSeleccionados.length) {
-        return true;
-      } else {
-        console.warn(`Solo se actualizaron ${actualizacionesExitosas} de ${turnosSeleccionados.length} turnos`);
-        return true; // La reserva se creó exitosamente aunque no todos los estados se actualizaron
-      }
+      // Reserva creada exitosamente
+      return true;
     } catch (error) {
       console.error('Error al confirmar reserva:', error);
       alert('Error al crear la reserva: ' + error.message);

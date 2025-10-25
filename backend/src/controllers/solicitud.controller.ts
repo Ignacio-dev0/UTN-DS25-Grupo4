@@ -1,9 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import  * as soliServ  from "../services/solicitud.service";
-import { uploadSolicitudMiddleware } from "../middlewares/upload";
-
-// Re-exportar el middleware para mantener compatibilidad
-export const uploadMiddleware = uploadSolicitudMiddleware;
 
 export const createRequest =  async (req: Request, res:Response, next:NextFunction) =>{
     try{
@@ -17,8 +13,8 @@ export const createRequest =  async (req: Request, res:Response, next:NextFuncti
 export const createRequestWithImage = async (req: Request, res: Response, next: NextFunction) => {
     try {
         console.log('BODY RECIBIDO EN /admin/solicitudes/with-image:', req.body);
-        const { usuarioId, cuit, nombreComplejo, calle, altura, localidadId } = req.body;
-        const imagePath = req.file ? `/images/solicitudes/${req.file.filename}` : null;
+        const { usuarioId, cuit, nombreComplejo, calle, altura, localidadId, imagen } = req.body;
+        const imageBase64 = imagen || null;
 
         // Validaciones explícitas
         if (!usuarioId || isNaN(parseInt(usuarioId))) {
@@ -45,7 +41,7 @@ export const createRequestWithImage = async (req: Request, res: Response, next: 
             cuit,
             complejo: {
                 nombre: nombreComplejo,
-                imagen: imagePath,
+                imagen: imageBase64,
                 domicilio: {
                     calle,
                     altura,
@@ -91,19 +87,48 @@ export async function getSolById(req:Request, res:Response) {
             message:('request retrieved succesfully')
         });
     }catch(error:any){
-        console.log(error);
+        console.error('Error en getSolById:', error);
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({ 
+            error: error.message || 'Error al obtener solicitud',
+            solicitud: null
+        });
     }
 }
 
 export async function getAllSol(req:Request, res:Response){
     try{
-        const solicitudes = await soliServ.getAllRequest();
+        // Si es DUENIO, incluir solicitudes aprobadas/rechazadas también
+        const includeApproved = req.usuario.rol === 'DUENIO';
+        let solicitudes = await soliServ.getAllRequest(includeApproved);
+        
+        // Si es DUENIO, solo mostrar sus propias solicitudes
+        if (req.usuario.rol === 'DUENIO') {
+            const usuarioId = parseInt(req.query.usuarioId as string) || req.usuario.id;
+            
+            // Verificar que el DUENIO solo pueda ver sus propias solicitudes
+            if (usuarioId !== req.usuario.id) {
+                return res.status(403).json({ 
+                    error: 'No tiene permiso para ver solicitudes de otros usuarios',
+                    solicitudes: [],
+                    total: 0
+                });
+            }
+            
+            solicitudes = solicitudes.filter(s => s.usuarioId === usuarioId);
+        }
+        
         res.json({
             solicitudes,
             total: solicitudes.length
         })
     }catch(error:any){
-        console.log(error);
+        console.error('Error en getAllSol:', error);
+        res.status(500).json({ 
+            error: error.message || 'Error al obtener solicitudes',
+            solicitudes: [],
+            total: 0
+        });
     }
 }
 

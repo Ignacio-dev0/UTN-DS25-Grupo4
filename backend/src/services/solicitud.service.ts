@@ -1,271 +1,133 @@
-import { connect } from "http2";
+// Servicio de Solicitudes - Adaptado al nuevo esquema sin modelo Solicitud
+// Ahora usa Complejo.estado directamente (PENDIENTE, APROBADO, RECHAZADO)
+
 import prisma from "../config/prisma";
+import { EstadoComplejo } from '@prisma/client';
 
-import * as soliTypes from "../types/solicitud.types"
-import { da } from "zod/v4/locales/index.cjs";
-import { Solicitud } from "@prisma/client";
-import { primitiveTypes } from "zod/v4/core/util.cjs";
-
-export const createSolicitud = async (data: soliTypes.CreateSolicitudRequest) => {
-    return prisma.solicitud.create({data:{
-        cuit: data.cuit,
-        estado: data.estado,
-        usuario : {connect:{id:data.usuarioId}}
-    }});
-}
-
-export const createSolicitudWithComplejo = async (data: any) => {
-    // Crear la solicitud y luego el complejo asociado
-    return prisma.$transaction(async (tx) => {
-        // Buscar localidad por ID (nuevo comportamiento)
-        let localidadId = data.complejo.domicilio.localidad;
-        if (typeof localidadId === 'string') {
-            localidadId = parseInt(localidadId);
-        }
-        const localidad = await tx.localidad.findUnique({
-            where: { id: localidadId }
-        });
-        if (!localidad) {
-            throw new Error('Localidad no encontrada');
-        }
-
-        // Crear la solicitud primero
-        const nuevaSolicitud = await tx.solicitud.create({
-            data: {
-                cuit: data.cuit,
-                estado: 'PENDIENTE',
-                usuarioId: data.usuarioId,
-                image: data.complejo.imagen  // Guardar imagen en la solicitud
-            }
-        });
-
-        // Crear el domicilio
-        const nuevoDomicilio = await tx.domicilio.create({
-            data: {
-                calle: data.complejo.domicilio.calle,
-                altura: parseInt(data.complejo.domicilio.altura),
-                localidadId: localidad.id
-            }
-        });
-
-        // Crear el complejo asociado a la solicitud (sin imagen inicialmente)
-        const nuevoComplejo = await tx.complejo.create({
-            data: {
-                nombre: data.complejo.nombre,
-                image: null,  // No imagen hasta que se apruebe la solicitud
-                cuit: data.cuit,
-                domicilioId: nuevoDomicilio.id,
-                usuarioId: data.usuarioId,
-                solicitudId: nuevaSolicitud.id
-            }
-        });
-
-        // Retornar la solicitud completa con todas las relaciones
-        return await tx.solicitud.findUnique({
-            where: { id: nuevaSolicitud.id },
-            include: {
-                usuario: true,
-                complejo: {
-                    include: {
-                        domicilio: {
-                            include: {
-                                localidad: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    });
-};
-
-export const updateSolicitud = async (id: number, data:soliTypes.UpdateSolicitudRequest) =>{
-    return prisma.$transaction(async (tx) => {
-        // Actualizar la solicitud
-        const soliUpdate:any={
-            estado: data.estado,
-        }
-        
-        // Solo agregar evaluadorId si se proporciona
-        if (data.evaluadorId) {
-            soliUpdate.evaluador = data.evaluadorId;
-        }
-        
-        const solicitudActualizada = await tx.solicitud.update({
-            where:{id},
-            data:soliUpdate,
-            include: {
-                complejo: true
-            }
-        });
-
-        // Si la solicitud fue aprobada, copiar la imagen de la solicitud al complejo
-        if (data.estado === 'APROBADA' && solicitudActualizada.image && solicitudActualizada.complejo) {
-            await tx.complejo.update({
-                where: { id: solicitudActualizada.complejo.id },
-                data: { image: solicitudActualizada.image }
-            });
-            
-            console.log(`✅ Imagen transferida de solicitud ${solicitudActualizada.id} al complejo ${solicitudActualizada.complejo.id}`);
-        }
-
-        return solicitudActualizada;
-    });
-};
-
-// export async function getAllRequest(): Promise<Solicitud[]> {
-//   // Log para confirmar que esta función se está ejecutando
-//   console.log('DEBUG: Entrando a getAllRequest en solicitud.service.ts');
-
-//   // Obtenemos todos los campos de las solicitudes, eliminando el 'select'.
-//   const solicitudes = await prisma.solicitud.findMany();
-
-//   // Log para ver EXACTAMENTE lo que Prisma devuelve ANTES de enviarlo al controlador.
-//   console.log('DEBUG: Datos devueltos por Prisma:', solicitudes);
-
-//   // Transformamos los datos para que coincidan con el tipo de retorno.
-//   // Prisma devuelve 'cuit' como BigInt, pero nuestro tipo espera un string.
-//   const solicitudesTransformadas = solicitudes.map(s => ({
-//     ...s,
-//     cuit: s.cuit.toString(),
-//   }));
-
-//   return solicitudesTransformadas;
-// }
-
-
-
-// export async function getAllRequest(): Promise<Solicitud[]> {
-//   // Log para confirmar que esta función se está ejecutando
-//   console.log('DEBUG: Entrando a getAllRequest en solicitud.service.ts');
-
-//   const solicitudes = await prisma.solicitud.findMany({
-//     select: {
-//       cuit: true,
-//       estado: true,
-//       // No incluimos ningún otro campo, por lo que Prisma NO debería devolverlos.
-//     }
-//   });
-
-//   // Log para ver EXACTAMENTE lo que Prisma devuelve ANTES de enviarlo al controlador.
-//   console.log('DEBUG: Datos devueltos por Prisma:', solicitudes);
-
-//   // SOLUCIÓN: Transformamos los datos para que coincidan con el tipo de retorno.
-//   // Prisma devuelve 'cuit' como BigInt, pero nuestro tipo 'SolicitudSeleccionada' espera un string.
-//   const solicitudesTransformadas = solicitudes.map(s => ({
-//     ...s,
-//     cuit: s.cuit.toString(),
-//   }));
-
-//   return solicitudesTransformadas;
-// }
-
-export async function getRequestById (id:number): Promise<Solicitud>{
-    const soli = await prisma.solicitud.findUnique({
-        where:{id}//no se si tenemos que traer toda la info de la soli o solo cuit-usuario-estado
-    });
-
-    if(!soli){
-        const error = new Error('solicitud no encontrada');
-        (error as any).statusCode = 404;
-        throw error;
-    };
-
-    return soli;
-} 
-
-export async function getAllRequest (): Promise<Solicitud[]>{
-    return prisma.solicitud.findMany({
+// Obtener todas las solicitudes (complejos filtrados por estado)
+export async function getAllRequest(includeApproved: boolean = false): Promise<any[]> {
+  const whereCondition = includeApproved 
+    ? { estado: { in: ['PENDIENTE', 'APROBADO', 'RECHAZADO'] as EstadoComplejo[] } }
+    : { estado: 'PENDIENTE' as EstadoComplejo };
+    
+  return prisma.complejo.findMany({
+    where: whereCondition,
+    include: {
+      usuario: true,
+      administrador: true,
+      domicilio: {
         include: {
-            usuario: true,
-            admin: true,
-            complejo: {
-                include: {
-                    domicilio: {
-                        include: {
-                            localidad: true
-                        }
-                    }
-                }
-            }
+          localidad: true
         }
-    });
+      }
+    }
+  });
 }
 
+// Obtener una solicitud por ID (complejo)
+export async function getRequestById(id: number): Promise<any> {
+  const complejo = await prisma.complejo.findUnique({
+    where: { id },
+    include: {
+      usuario: true,
+      administrador: true,
+      domicilio: {
+        include: {
+          localidad: true
+        }
+      }
+    }
+  });
+
+  if (!complejo) {
+    const error = new Error('complejo no encontrado');
+    (error as any).statusCode = 404;
+    throw error;
+  }
+
+  return complejo;
+}
+
+// Eliminar solicitud (eliminar complejo pendiente)
 export async function deleteSoli(id: number) {
-    return prisma.solicitud.delete({where:{id}})
+  return prisma.complejo.delete({ where: { id } });
 }
 
+// Actualizar estado de solicitud (cambiar estado del complejo)
+export async function updateSolicitud(id: number, data: { estado: EstadoComplejo, evaluadorId?: number }) {
+  return prisma.complejo.update({
+    where: { id },
+    data: {
+      estado: data.estado,
+      administradorId: data.evaluadorId || null
+    },
+    include: {
+      usuario: true,
+      domicilio: {
+        include: {
+          localidad: true
+        }
+      }
+    }
+  });
+}
 
-// import prisma from '../config/prisma';
+// Crear solicitud con complejo (registro de nuevo dueño)
+export async function createSolicitudWithComplejo(data: any) {
+  return prisma.$transaction(async (tx) => {
+    // Buscar localidad por ID
+    let localidadId = data.complejo.domicilio.localidad;
+    if (typeof localidadId === 'string') {
+      localidadId = parseInt(localidadId);
+    }
+    
+    const localidad = await tx.localidad.findUnique({
+      where: { id: localidadId }
+    });
+    
+    if (!localidad) {
+      throw new Error('Localidad no encontrada');
+    }
 
-import { EstadoSolicitud } from '@prisma/client';
-import { createComplejo } from './complejo.service';
-import { CreateSolicitudRequest, UpdateSolicitudRequest } from '../types/solicitud.types';
+    // Crear el domicilio
+    const nuevoDomicilio = await tx.domicilio.create({
+      data: {
+        calle: data.complejo.domicilio.calle,
+        altura: parseInt(data.complejo.domicilio.altura),
+        localidadId: localidad.id
+      }
+    });
 
-// COMENTADAS TEMPORALMENTE - Hay conflictos con el schema actual
-// export async function crearSolicitud(data: CreateSolicitudRequest) {
-// 	return prisma.solicitud.create({ data });
-// }
+    // Crear el complejo con estado PENDIENTE
+    const nuevoComplejo = await tx.complejo.create({
+      data: {
+        nombre: data.complejo.nombre,
+        image: data.complejo.imagen || null,
+        cuit: data.cuit,
+        domicilioId: nuevoDomicilio.id,
+        usuarioId: data.usuarioId,
+        estado: 'PENDIENTE' // Estado inicial - reemplaza a Solicitud
+      },
+      include: {
+        usuario: true,
+        domicilio: {
+          include: {
+            localidad: true
+          }
+        }
+      }
+    });
 
-// export async function obtenerSolicitudes() {
-//   return prisma.solicitud.findMany({
-// 		include: { emisor: true, documentos: true }
-// 	});
-// };
+    return nuevoComplejo;
+  });
+}
 
-// export async function obtenerSolicitudesPendientes() {
-//   return prisma.solicitud.findMany({
-// 		where: { estado: EstadoSolicitud.PENDIENTE },
-// 		include: { emisor: true, documentos: true }
-// 	});
-// };
+// Crear solicitud simple (deprecado - usar createSolicitudWithComplejo)
+export async function createSolicitud(data: any) {
+  throw new Error('createSolicitud deprecado - usar createSolicitudWithComplejo');
+}
 
-// export async function obtenerSolicitudPorId(id: number) {
-//   const solicitud = prisma.solicitud.findUnique({
-//     where: { id }
-//   });
-
-// 	if (!solicitud) {
-//     const error = new Error('Solicitud not Found');
-//     (error as any).statusCode = 404;
-//     throw error;
-//   }
-// 	return solicitud;
-// };
-
-// export async function evaluarSolicitud(
-// 	id: number,
-// 	data: UpdateSolicitudRequest
-// ) {
-// 	const solicitud = await prisma.solicitud.findUnique({
-// 		where: { id }
-// 	});
-
-// 	if (!solicitud) {
-//     const error = new Error('Solicitud not Found');
-//     (error as any).statusCode = 404;
-//     throw error;
-//   }
-
-// 	if (solicitud.estado !== EstadoSolicitud.PENDIENTE) {
-// 		const error = new Error('La solicitud ya fue evaluada');
-//     (error as any).statusCode = 404;
-//     throw error;
-// 	}
-
-// 	if (data.estado === EstadoSolicitud.APROBADA) {
-// 		crearComplejo({
-// 			solicitud: { connect: { id } },
-// 			duenios: { connect: { id: solicitud.emisorId } },
-// 		});
-// 	}
-
-// 	return prisma.solicitud.update({
-// 		where: { id },
-// 		data: {
-// 			estado: data.estado,
-// 			evaluador: { connect: { id: data.evaluadorId } },
-// 		},
-// 	});
-// }
+// Alias para compatibilidad con código existente
+export const getAllSolicitudes = getAllRequest;
+export const getSolicitudById = getRequestById;
+export const deleteSolicitud = deleteSoli;

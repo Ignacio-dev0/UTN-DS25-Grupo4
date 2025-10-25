@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StarIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { getImageUrl, getCanchaImage } from '../config/api.js';
 
 function MiniCanchaCard({ cancha, onAction, isEditing }) {
   // Usar el icono del backend directamente
   const deporteIcono = cancha.deporte?.icono || '⚽';
+  const [imageError, setImageError] = useState(false);
+  
+  // Función para obtener la URL de la imagen
+  const getImageUrl = (image) => {
+    if (!image || image.length === 0) return '/canchaYa.png';
+    const firstImage = image[0];
+    // Si es base64, usarla directamente
+    if (firstImage.startsWith('data:image')) return firstImage;
+    // Si es un nombre de archivo, intentar cargar desde el servidor
+    if (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg')) {
+      return `http://localhost:3000/images/canchas/${firstImage}`;
+    }
+    return '/canchaYa.png';
+  };
 
   const cardClasses = `block rounded-lg shadow-lg overflow-hidden transition-all duration-300 group relative ${
     cancha.estado === 'deshabilitada' 
@@ -27,15 +40,9 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
         <div className="relative">
           <img 
             className={`bg-accent w-full h-40 object-cover ${cancha.estado !== 'deshabilitada' ? 'transform group-hover:scale-105' : ''} transition-transform duration-300`} 
-            src={
-              (cancha.image && cancha.image.length > 0) 
-                ? getImageUrl(cancha.image[0]) 
-                : getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)
-            } 
+            src={imageError ? '/canchaYa.png' : getImageUrl(cancha.image)}
             alt={`Cancha ${cancha.nroCancha}`}
-            onError={(e) => {
-              e.target.src = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
-            }}
+            onError={() => setImageError(true)}
           />
           {cancha.estado === 'deshabilitada' && (
             <div className="absolute inset-0 bg-black bg-opacity-40"></div>

@@ -12,6 +12,10 @@ Thumbs.db
 *.swp
 # Configuración de entorno (no se comparte)
 .env
+# Archivos de backup de base de datos
+railway_backup.sql
+railway_data.sql
+*.sql
 # Archivos de desarrollo opcionales
 *.local.*
 *.tsbuildinfo

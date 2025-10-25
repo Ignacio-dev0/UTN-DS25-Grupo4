@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const createCanchaSchema = z.object({
+export const createCancha = z.object({
   
   // nroCancha se genera automáticamente, no debe venir del frontend
   
@@ -8,8 +8,7 @@ export const createCanchaSchema = z.object({
     .max(200, 'La descripcion no debe exceder los 200 caracteres')
     .optional(),
   
-  image: z.array( z.string() )
-    .optional(),
+  image: z.array(z.string()).optional(),
 
   complejoId: z.int().positive(),
 
@@ -17,7 +16,7 @@ export const createCanchaSchema = z.object({
 
 });
 
-export const updateCanchaSchema = z.object({
+export const updateCancha = z.object({
 
   nroCancha: z.int(),
   
@@ -33,3 +32,6 @@ export const updateCanchaSchema = z.object({
   deporteId: z.int().positive(),
 
 }).partial();
+
+export type CreateCanchaData = z.infer<typeof createCancha>;
+export type UpdateCanchaData = z.infer<typeof updateCancha>;

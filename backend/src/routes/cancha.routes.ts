@@ -1,30 +1,61 @@
-// backend/src/routes/cancha.routes.ts
 import { Router } from 'express';
+import validate from '../middlewares/validate';
+import * as canchaSchema from '../validations/cancha.validation';
+import { authenticate, authorize } from "../middlewares/auth.middleware";
 import * as canchaController from '../controllers/cancha.controller';
-import { validate } from '../middlewares/validate';
-import { createCanchaSchema, updateCanchaSchema } from '../validations/cancha.validation';
 
 const router = Router();
 
 // Ej: GET /api/canchas  o  GET /api/canchas?complejoId=1
-router.get('/', canchaController.obtenerCanchas);
+router.get(
+  '/',
+  canchaController.obtenerCanchas
+);
 
 // Ruta para crear una nueva cancha
-router.post('/', validate(createCanchaSchema), canchaController.crearCancha);
+router.post(
+  '/',
+  authenticate,
+  authorize('DUENIO'),
+  validate(canchaSchema.createCancha),
+  canchaController.crearCancha
+);
 
 // Ruta para obtener canchas por complejo
-router.get('/complejo/:complejoId', canchaController.obtenerCanchasPorComplejoId);
+router.get(
+  '/complejo/:complejoId',
+  canchaController.obtenerCanchasPorComplejoId
+);
 
 // Ruta para obtener una única cancha por su ID
-router.get('/:id', canchaController.obtenerCanchaPorId);
+router.get(
+  '/:id',
+  canchaController.obtenerCanchaPorId
+);
 
 // Ruta para actualizar una cancha por su ID
-router.put('/:id', validate(updateCanchaSchema), canchaController.actualizarCancha);
+router.put(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR', 'DUENIO'),
+  validate(canchaSchema.updateCancha),
+  canchaController.actualizarCancha
+);
 
 // Ruta para actualización parcial de una cancha (ej: solo precioDesde)
-router.patch('/:id', canchaController.actualizarCancha);
+router.patch(
+  '/:id',
+  authenticate,
+  authorize('ADMINISTRADOR', 'DUENIO'),
+  canchaController.actualizarCancha
+);
 
 // Ruta para eliminar una cancha por su ID
-router.delete('/:id', canchaController.eliminarCancha);
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('DUENIO', 'ADMINISTRADOR'),
+  canchaController.eliminarCancha
+);
 
 export default router;

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
+import { recalcularPrecioDesde } from '../services/cancha.service';
 
 // Sistema de turnos automáticos que se regeneran semanalmente
 export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
@@ -148,6 +149,12 @@ export const actualizarTurnoIndividual = async (req: Request, res: Response) => 
             data: datosActualizacion
         });
 
+        // Recalcular el precio "desde" de la cancha si se actualizó el precio
+        if (precio !== undefined) {
+            console.log('♻️ Recalculando precio desde para cancha:', turnoActualizado.canchaId);
+            await recalcularPrecioDesde(turnoActualizado.canchaId);
+        }
+
         res.json({ 
             message: 'Turno actualizado exitosamente',
             turno: turnoActualizado
@@ -210,6 +217,17 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         const canchaIdNum = Number(canchaId);
         const precioNum = Number(precio);
 
+        // Verificar que la cancha existe
+        const cancha = await prisma.cancha.findUnique({
+            where: { id: canchaIdNum }
+        });
+
+        if (!cancha) {
+            return res.status(404).json({ 
+                error: `La cancha con ID ${canchaIdNum} no existe` 
+            });
+        }
+
         // Convertir día y hora a fecha dentro de los próximos 7 días
         // IMPORTANTE: Sin acentos para coincidir con el enum DiaSemana de Prisma
         const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -222,6 +240,13 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         // Crear fecha para los próximos 7 días (como en el calendario) usando UTC
         const hoy = new Date();
         
+        console.log('📅 DEBUG CREAR TURNO:');
+        console.log('  - Día solicitado:', dia);
+        console.log('  - Hora solicitada:', hora);
+        console.log('  - Fecha actual:', hoy.toISOString());
+        console.log('  - Día actual UTC:', hoy.getUTCDay(), diasSemana[hoy.getUTCDay()]);
+        console.log('  - Índice día solicitado:', indiceDia);
+        
         // Buscar la próxima ocurrencia de ese día dentro de los próximos 7 días
         let diasAgregar = (indiceDia - hoy.getUTCDay() + 7) % 7;
         if (diasAgregar === 0 && hoy.getUTCHours() < parseInt(hora.split(':')[0])) {
@@ -232,10 +257,14 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             diasAgregar = 7;
         }
         
+        console.log('  - Días a agregar:', diasAgregar);
+        
         // Crear fechaTurno con fecha específica (sin tiempo) en UTC
         const fechaTurno = new Date(hoy);
         fechaTurno.setUTCDate(hoy.getUTCDate() + diasAgregar);
         fechaTurno.setUTCHours(0, 0, 0, 0); // Normalizar a medianoche UTC
+        
+        console.log('  - Fecha turno calculada:', fechaTurno.toISOString());
         
         // Validar que la hora sea en punto (solo :00 permitido)
         const [horas, minutos] = hora.split(':');
@@ -249,7 +278,7 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         const horaInicio = new Date(fechaTurno);
         horaInicio.setUTCHours(parseInt(horas), 0, 0, 0); // Siempre minutos = 0
 
-
+        console.log('  - Hora inicio calculada:', horaInicio.toISOString());
 
         // Verificar si ya existe un turno en ese horario exacto
         const turnoExistente = await prisma.turno.findFirst({
@@ -259,6 +288,8 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
                 horaInicio: horaInicio
             }
         });
+
+        console.log('  - Turno existente encontrado:', turnoExistente ? `ID ${turnoExistente.id}` : 'NINGUNO');
 
         if (turnoExistente) {
             return res.status(400).json({ 
@@ -279,6 +310,10 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             }
         });
 
+        // Recalcular el precio "desde" de la cancha
+        console.log('♻️ Recalculando precio desde para cancha:', canchaIdNum);
+        await recalcularPrecioDesde(canchaIdNum);
+
         res.json({ 
             message: 'Turno creado exitosamente',
             turno: nuevoTurno
@@ -286,7 +321,27 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('Error al crear turno individual:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        
+        // Manejo específico de errores de Prisma
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2003') {
+                return res.status(400).json({ 
+                    error: 'La cancha especificada no existe',
+                    detalle: error.message
+                });
+            }
+            if (error.code === 'P2002') {
+                return res.status(400).json({ 
+                    error: 'Ya existe un turno con esos datos',
+                    detalle: error.message
+                });
+            }
+        }
+        
+        res.status(500).json({ 
+            error: 'Error interno del servidor',
+            detalle: error instanceof Error ? error.message : 'Error desconocido'
+        });
     }
 };
 
@@ -330,6 +385,10 @@ export const eliminarTurnoIndividual = async (req: Request, res: Response) => {
         });
 
         console.log(`🗑️ Turno eliminado: ID ${turnoIdNum} de cancha ${turnoExistente.canchaId}`);
+
+        // Recalcular el precio "desde" de la cancha
+        console.log('♻️ Recalculando precio desde para cancha:', turnoExistente.canchaId);
+        await recalcularPrecioDesde(turnoExistente.canchaId);
 
         res.json({ 
             message: 'Turno eliminado exitosamente',

@@ -1,10 +1,16 @@
 // backend/src/controllers/cancha.controller.ts
 import { Request, Response, NextFunction } from 'express';
-import { CanchaResponse, CanchaListResponse } from '../types/cancha.types';
+import { CanchaResponse, CanchaListResponse, CanchaFull } from '../types/cancha.types';
 import * as canchaService from '../services/cancha.service';
+import * as complejoService from '../services/complejo.service';
 
 export async function crearCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
+    const complejo = await complejoService.getComplejoById(req.body.complejoId);
+    // Permitir si es ADMINISTRADOR o si es dueño del complejo
+    if (req.usuario.rol !== 'ADMINISTRADOR' && complejo.usuarioId !== req.usuario.id) {
+      throw new Error('No tienes permiso para crear una cancha en este complejo.');
+    }
     console.log('🔍 CREAR CANCHA - Datos recibidos:', JSON.stringify(req.body, null, 2));
     console.log('🔍 CREAR CANCHA - Headers:', JSON.stringify(req.headers, null, 2));
     
@@ -42,10 +48,10 @@ export async function obtenerCanchas(req: Request, res: Response<CanchaListRespo
     // Si hay filtros de búsqueda, usar la función con filtros
     const tieneFiltros = filtros.localidad || filtros.deporte || filtros.fecha || filtros.hora;
     
-		const canchas = complejoId ?
+		const canchas: CanchaFull[] = complejoId ?
 			await canchaService.obtenerCanchasPorComplejoId(complejoId, incluirInactivas) :
 			tieneFiltros ?
-				await canchaService.obtenerCanchasConFiltros(filtros, incluirInactivas) :
+				await canchaService.obtenerCanchasConFiltros(incluirInactivas, filtros) :
 				await canchaService.obtenerCanchas(incluirInactivas);
 
 		return res.status(200).json({
@@ -83,8 +89,13 @@ export async function obtenerCanchaPorId(req: Request, res: Response<CanchaRespo
 
 export async function actualizarCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
-    const id = Number(req.params.id);
-    const cancha = await canchaService.actualizarCancha(id, req.body);
+    const canchaId = Number(req.params.id);
+    const { usuario } = req
+    // Permitir si es ADMINISTRADOR o si es dueño de la cancha
+    if(usuario.rol !== 'ADMINISTRADOR' && !(await canchaService.esDuenioDeCancha(canchaId, usuario.id))) {
+      throw new Error('No tienes permiso para actualizar esta cancha.');
+    }
+    const cancha = await canchaService.actualizarCancha(canchaId, req.body);
     res.status(200).json({
 			cancha,
 			message: 'Cancha actualizada exitosamente',
@@ -111,12 +122,24 @@ export async function obtenerCanchasPorComplejoId(req: Request, res: Response<Ca
 
 export async function eliminarCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
-    const id = Number(req.params.id);
-    const cancha = await canchaService.eliminarCancha(id);
+    console.log('🗑️ Request para eliminar cancha - ID:', req.params.id);
+    const canchaId = Number(req.params.id);
+    const usuarioId = req.usuario.id;
+    console.log('👤 Usuario ID:', usuarioId, 'Rol:', req.usuario.rol);
+
+    if(req.usuario.rol !== 'ADMINISTRADOR' && !(await canchaService.esDuenioDeCancha(canchaId, usuarioId))) {
+      console.log('❌ Usuario no tiene permiso');
+      throw new Error('No tienes permiso para eliminar esta cancha.');
+    }
+
+    const cancha = await canchaService.eliminarCancha(canchaId);
+    console.log('✅ Cancha eliminada exitosamente');
     res.status(200).json({
 			cancha,
-			message: 'Cancha eliminada correctamente.' });
+			message: 'Cancha eliminada correctamente.'
+    });
   } catch (error) {
+    console.error('❌ ERROR eliminando cancha:', error);
 		next(error);
 	}
 };

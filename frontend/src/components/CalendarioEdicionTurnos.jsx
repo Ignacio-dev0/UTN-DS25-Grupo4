@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaTrash, FaPause, FaPlay } from 'react-icons/fa';
 import { API_BASE_URL } from '../config/api.js';
 
 const horas = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
@@ -10,6 +11,15 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
   
   // Debug: Ver cuando se re-renderiza con nuevos turnos
   console.log("🔄 CalendarioEdicionTurnos renderizado con", turnos.length, "turnos");
+  
+  // Helper para obtener headers con JWT
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
   
   // Función para recalcular el precio "desde" localmente
   const recalcularPrecioDesdeLocal = (turnosActualizados) => {
@@ -270,9 +280,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       const response = await fetch(`${API_BASE_URL}/turnos/${turno.id}/${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -312,9 +320,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
     try {
       const response = await fetch(`${API_BASE_URL}/turnos/individual`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           canchaId: canchaId,
           dia: dia,
@@ -332,7 +338,10 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
         }
         
         // Si el turno ya existe, recargar datos para sincronizar
-        if (response.status === 400 && errorData.error === 'Ya existe un turno en ese horario') {
+        if (response.status === 400 && (
+          errorData.error === 'Ya existe un turno en ese horario' || 
+          errorData.error === 'Ya existe un turno con esos datos'
+        )) {
           console.log('⚠️ Turno ya existe, recargando datos...');
           // Recargar turnos desde la BD para sincronizar
           try {
@@ -381,7 +390,28 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
               }));
               
               onTurnosChange(turnosFormateados);
-              alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+              
+              // Encontrar el turno que ya existe y actualizarlo con el nuevo precio
+              const turnoExistente = turnosFormateados.find(t => 
+                String(t.dia).toUpperCase() === dia && t.hora === hora
+              );
+              
+              if (turnoExistente) {
+                console.log('🔄 Turno encontrado, actualizando precio a:', precio);
+                await actualizarTurnoEnBD(turnoExistente.id, { precio });
+                
+                // Actualizar estado local con el nuevo precio
+                const turnosConPrecioActualizado = turnosFormateados.map(t =>
+                  t.id === turnoExistente.id ? { ...t, precio } : t
+                );
+                onTurnosChange(turnosConPrecioActualizado);
+                recalcularPrecioDesdeLocal(turnosConPrecioActualizado);
+                
+                alert(`✅ Precio del turno actualizado a $${precio.toLocaleString('es-AR')}`);
+              } else {
+                alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+              }
+              
               return; // No lanzar error, solo informar
             }
           } catch (reloadError) {
@@ -407,9 +437,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       setGuardandoCambios(true);
       const response = await fetch(`${API_BASE_URL}/turnos/individual/${turnoId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(cambios),
       });
 
@@ -470,9 +498,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       const responseHorario = await fetch(`${API_BASE_URL}/horarios-deshabilitados`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           canchaId: canchaId,
           dia: diaNormalizado,
@@ -496,6 +522,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       // 2. Eliminar el turno actual de la BD
       const responseTurno = await fetch(`${API_BASE_URL}/turnos/individual/${turno.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (!responseTurno.ok) {
@@ -609,21 +636,30 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                 // Determinar el estado del turno
                 let estadoTurno, clasesBoton, esEditable;
                 
-                // Un turno está pasado si:
-                // 1. La fecha es anterior a hoy, O
-                // 2. Es hoy pero la hora ya pasó
-                const hoyInicio = new Date();
-                hoyInicio.setHours(0, 0, 0, 0);
-                
-                const fechaDiaInicio = new Date(fechaDia);
-                fechaDiaInicio.setHours(0, 0, 0, 0);
-                
-                const esHoy = fechaDiaInicio.getTime() === hoyInicio.getTime();
-                const horaActual = new Date().getHours();
-                const horaTurno = parseInt(hora.split(':')[0]);
-                
-                // Un turno está pasado solo si la hora ya finalizó (no si está en curso)
-                const esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno < horaActual);
+                // Determinar si el turno ya pasó
+                // Priorizar el campo yaPaso del backend si está disponible en el turno
+                let esPasado;
+                if (turno && typeof turno.yaPaso === 'boolean') {
+                  // Usar el campo del backend si está disponible
+                  esPasado = turno.yaPaso;
+                } else {
+                  // Calcular localmente si no viene del backend
+                  // Un turno está pasado si:
+                  // 1. La fecha es anterior a hoy, O
+                  // 2. Es hoy pero la hora ya pasó
+                  const hoyInicio = new Date();
+                  hoyInicio.setHours(0, 0, 0, 0);
+                  
+                  const fechaDiaInicio = new Date(fechaDia);
+                  fechaDiaInicio.setHours(0, 0, 0, 0);
+                  
+                  const esHoy = fechaDiaInicio.getTime() === hoyInicio.getTime();
+                  const horaActual = new Date().getHours();
+                  const horaTurno = parseInt(hora.split(':')[0]);
+                  
+                  // Un turno está pasado solo si la hora ya finalizó (no si está en curso)
+                  esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno < horaActual);
+                }
                 
                 // Normalizar el día para comparar con horarios deshabilitados (sin tildes)
                 const diaNormalizado = dia
@@ -635,8 +671,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   h => h.dia === diaNormalizado && h.hora === hora
                 );
                 
-                if (esPasado) {
-                  // Turno finalizado (pasado)
+                if (turno && esPasado) {
+                  // Turno finalizado (pasado) - SOLO si el turno existe
                   estadoTurno = 'finalizado';
                   clasesBoton = "w-full h-full py-3 rounded-md transition-colors duration-200 relative text-white font-bold bg-gray-400";
                   esEditable = false;
@@ -692,7 +728,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                       {/* Mostrar contenido según el estado */}
                       {turno ? (
                         <>
-                          ${(turno.precio / 1000).toFixed(0)}k
+                          <span className="text-xs font-bold">${turno.precio.toLocaleString('es-AR')}</span>
                         </>
                       ) : 
                        estadoTurno === 'deshabilitado-permanente' ? '🚫' :
@@ -732,10 +768,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                             }}
                             className={`absolute bottom-1 right-1 h-5 w-5 rounded flex items-center justify-center ${
                               (turno.reservado || turno.alquilerId) 
-                                ? 'bg-gray-300 cursor-not-allowed opacity-50' 
-                                : turno.deshabilitado 
-                                  ? 'bg-yellow-500 hover:bg-yellow-600 cursor-pointer' 
-                                  : 'bg-gray-400 hover:bg-gray-500 cursor-pointer'
+                                ? 'cursor-not-allowed opacity-50' 
+                                : 'hover:bg-orange-500 cursor-pointer'
                             }`}
                             title={
                               (turno.reservado || turno.alquilerId)
@@ -745,7 +779,11 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                                   : 'Disponible - Clic para deshabilitar temporalmente'
                             }
                           >
-                            <span className="text-xs">{turno.deshabilitado ? '▶️' : '⏸️'}</span>
+                            {turno.deshabilitado ? (
+                              <FaPlay className="text-xs text-white" />
+                            ) : (
+                              <FaPause className="text-xs text-white" />
+                            )}
                           </div>
                           <div 
                             onClick={(e) => {
@@ -759,8 +797,8 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                             }}
                             className={`absolute top-1 left-1 h-4 w-4 rounded flex items-center justify-center ${
                               (turno.reservado || turno.alquilerId)
-                                ? 'bg-gray-300 cursor-not-allowed opacity-50'
-                                : 'hover:bg-red-700 cursor-pointer'
+                                ? 'cursor-not-allowed opacity-50'
+                                : 'hover:bg-canchaRed cursor-pointer'
                             }`}
                             title={
                               (turno.reservado || turno.alquilerId)
@@ -768,7 +806,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                                 : 'Eliminar turno permanentemente'
                             }
                           >
-                            <span className="text-white text-xs">🗑️</span>
+                            <FaTrash className="text-white text-xs" />
                           </div>
                         </>
                       )}
@@ -808,7 +846,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
               </div>
               
               <p className="text-xs text-gray-500">
-                Si solo quieres deshabilitar temporalmente, usa el botón ⏸️ en lugar de eliminar.
+                Si solo quieres deshabilitar temporalmente, usa el botón de pausa en lugar de eliminar.
               </p>
             </div>
 
@@ -817,9 +855,17 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
               <button
                 onClick={confirmarEliminarTemporal}
                 disabled={guardandoCambios}
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {guardandoCambios ? '⏳ Eliminando...' : '🗑️ Eliminar Permanentemente'}
+                {guardandoCambios ? (
+                  <>
+                    <span className="animate-spin">⏳</span> Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <FaTrash className="text-white" /> Eliminar Permanentemente
+                  </>
+                )}
               </button>
 
               {/* Cancelar */}

@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { API_BASE_URL } from '../config/api.js';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 import Buscador from '../components/Buscador.jsx';
@@ -36,10 +38,17 @@ function ResultadosPage() {
         
         const response = await getCanchasConFiltros(filtros);
         
+        console.log('🔍 [ResultadosPage] Response completa:', response);
+        console.log('🔍 [ResultadosPage] response.ok:', response.ok);
+        console.log('🔍 [ResultadosPage] response.canchas:', response.canchas);
+        console.log('🔍 [ResultadosPage] response.canchas.length:', response.canchas?.length);
+        
         if (response.ok) {
           setCanchas(response.canchas);
+          console.log('✅ [ResultadosPage] Canchas actualizadas en estado, total:', response.canchas.length);
         } else {
           setError(response.error);
+          console.error('❌ [ResultadosPage] Error en response:', response.error);
         }
       } catch (err) {
         setError('Error al cargar las canchas');
@@ -82,10 +91,7 @@ function ResultadosPage() {
       <div className="container mx-auto mt-6 pb-16">
         <div className="mt-6 space-y-4">
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-gray-600">Buscando canchas...</p>
-            </div>
+            <LoadingSpinner message="Buscando canchas..." />
           ) : error ? (
             <div className="text-center py-8">
               <p className="text-red-600">Error: {error}</p>

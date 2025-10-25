@@ -120,9 +120,9 @@ function SignUpPage() {
       return;
     }
 
-    // Validar teléfono (formato argentino)
-    if (!/^\+?5491[0-9]{8,9}$/.test(phone)) {
-      setError('El teléfono debe tener formato argentino (+5491XXXXXXXX).');
+    // Validar teléfono (formato argentino - acepta +54 seguido de 10 dígitos)
+    if (!/^\+?54[0-9]{10}$/.test(phone)) {
+      setError('El teléfono debe tener formato argentino (+54XXXXXXXXXX) - 10 dígitos después de +54.');
       return;
     }
     
@@ -158,27 +158,40 @@ function SignUpPage() {
         }
       } else {
         // Para dueños de complejo - usar endpoint con soporte de imagen
-        const formData = new FormData();
-        formData.append('email', email);
-        formData.append('password', password);
-        formData.append('nombre', firstName);
-        formData.append('apellido', lastName);
-        formData.append('dni', dni);
-        formData.append('telefono', phone);
-        formData.append('tipoUsuario', 'DUENIO');
-        formData.append('cuit', cuit);
-        formData.append('nombreComplejo', complexName);
-        formData.append('calle', calle);
-        formData.append('altura', altura);
-        formData.append('localidadId', localidad);
+        let imageBase64 = null;
         
+        // Convertir imagen a base64 si existe
         if (complexImage) {
-          formData.append('imagen', complexImage);
+          imageBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(complexImage);
+          });
         }
+        
+        const body = {
+          email,
+          password,
+          nombre: firstName,
+          apellido: lastName,
+          dni,
+          telefono: phone,
+          tipoUsuario: 'DUENIO',
+          cuit,
+          nombreComplejo: complexName,
+          calle,
+          altura,
+          localidadId: localidad,
+          imagen: imageBase64
+        };
         
         const response = await fetch(`${API_BASE_URL}/usuarios/register-with-image`, {
           method: 'POST',
-          body: formData
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
         });
         
         let data;
@@ -266,7 +279,7 @@ function SignUpPage() {
           </div>
           <input type="text" placeholder="DNI (sin puntos)" value={dni} onChange={(e) => setDni(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
           <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
-          <input type="tel" placeholder="Teléfono (+5491XXXXXXXX)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
+          <input type="tel" placeholder="Teléfono (+54XXXXXXXXXX)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
           <input type="password" placeholder="Contraseña" value={password} onChange={handlePasswordChange} className="w-full px-4 py-2 border rounded-md" required/>
           <div>
             <input type="password" placeholder="Confirmar Contraseña" value={confirmPassword} onChange={handleConfirmPasswordChange} className={`w-full px-4 py-2 border rounded-md ${passwordMatch ? '' : 'border-red-500'}`} required/>

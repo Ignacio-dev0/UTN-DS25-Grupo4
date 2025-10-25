@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
-import { API_BASE_URL, getImageUrl, getCanchaImage } from '../config/api.js';
+import { API_BASE_URL } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
   const [turnosHoy, setTurnosHoy] = useState([]);
@@ -184,31 +184,25 @@ function CanchaCard({ cancha }) {
   
   // Usar el icono del backend directamente
   const deporteIcono = cancha.deporte?.icono || '⚽';
-
-  // Function to calculate the cheapest price from available turns today
-  const calcularPrecioMinimo = () => {
-    if (turnosHoy.length > 0) {
-      // Use actual turn prices for today
-      const precios = turnosHoy
-        .map(t => t.precio)
-        .filter(precio => precio > 0);
-      
-      return precios.length > 0 ? Math.min(...precios) : null;
+  
+  // Estado para manejar error de imagen
+  const [imageError, setImageError] = useState(false);
+  
+  // Función para obtener la URL de la imagen
+  const getImageUrl = (image) => {
+    if (!image || image.length === 0) return '/canchaYa.png';
+    const firstImage = image[0];
+    // Si es base64, usarla directamente
+    if (firstImage.startsWith('data:image')) return firstImage;
+    // Si es un nombre de archivo, intentar cargar desde el servidor
+    if (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg')) {
+      return `http://localhost:3000/images/canchas/${firstImage}`;
     }
-    
-    // Fallback to cronograma if no turn data available
-    if (!cancha.cronograma || cancha.cronograma.length === 0) {
-      return null;
-    }
-    
-    const precios = cancha.cronograma
-      .map(c => c.precio)
-      .filter(precio => precio > 0);
-    
-    return precios.length > 0 ? Math.min(...precios) : null;
+    return '/canchaYa.png';
   };
 
-  const precioDesde = calcularPrecioMinimo();
+  // Usar el precioDesde que viene del backend (ya está calculado y actualizado)
+  const precioDesde = cancha.precioDesde > 0 ? cancha.precioDesde : null;
   
   // Eliminamos logs repetitivos - solo para debug detallado
   // console.log('CanchaCard - turnosHoy:', turnosHoy);
@@ -225,15 +219,9 @@ function CanchaCard({ cancha }) {
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={getImageUrl(cancha.image?.[0]) || getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha)}
+          src={imageError ? '/canchaYa.png' : getImageUrl(cancha.image)}
           loading="lazy"
-          onError={(e) => {
-            // Fallback a imagen por defecto del deporte
-            const fallbackSrc = getCanchaImage(cancha.id, cancha.deporte?.nombre || 'Fútbol 5', cancha.nroCancha);
-            if (e.target.src !== fallbackSrc) {
-              e.target.src = fallbackSrc;
-            }
-          }}
+          onError={() => setImageError(true)}
           alt={`Cancha de ${cancha.deporte?.nombre}`}
         />
         {precioDesde && (

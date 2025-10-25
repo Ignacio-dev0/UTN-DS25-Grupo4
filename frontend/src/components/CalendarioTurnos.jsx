@@ -232,10 +232,9 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
                     // Cualquier turno que esté reservado u ocupado se muestra como "Ocupado"
                     estado = 'reservado';
                   }
-                } else if (esPasado) {
-                  // Si no hay turno pero la hora ya pasó, mostrar como finalizado
-                  estado = 'finalizado';
                 }
+                // Si no hay turno creado (independiente de si la hora pasó o no), 
+                // se muestra como 'no-disponible' (gris claro)
                 
                 const estaSeleccionado = turnosSeleccionados.some(t => t.dia === dia && t.hora === hora);
                 

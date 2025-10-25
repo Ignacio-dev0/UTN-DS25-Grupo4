@@ -7,10 +7,15 @@ import { API_BASE_URL } from '../config/api.js';
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Obtener token del localStorage
+  const token = localStorage.getItem('token');
+  
   const defaultOptions = {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }), // Agregar token si existe
+      ...(options.headers || {}), // Merge con headers personalizados
     },
     ...options
   };

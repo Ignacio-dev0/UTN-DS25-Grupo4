@@ -14,25 +14,44 @@ function EstadoSolicitudPage() {
   useEffect(() => {
     const fetchSolicitud = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/admin/solicitudes?usuarioId=${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (response.ok) {
           const data = await response.json();
-          const solicitudUsuario = data.solicitudes?.find(s => s.usuarioId === user.id);
-          setSolicitud(solicitudUsuario);
+          // El backend devuelve complejos, no solicitudes
+          // Adaptamos la estructura para que funcione con el código existente
+          const complejoUsuario = data.solicitudes?.find(c => c.usuarioId === user.id);
+          
+          if (complejoUsuario) {
+            // Adaptar estructura: el complejo ES la solicitud
+            const solicitudAdaptada = {
+              ...complejoUsuario,
+              complejo: complejoUsuario, // Agregar referencia a sí mismo como "complejo"
+              solicitud: { estado: complejoUsuario.estado } // Para compatibilidad
+            };
+            setSolicitud(solicitudAdaptada);
 
-          // Si la solicitud está aprobada y ya fue vista antes, redirigir a Mi Complejo
-          if (solicitudUsuario?.estado === 'APROBADA' && solicitudUsuario?.complejo) {
-            const solicitudVistaKey = `solicitud_vista_${user.id}`;
-            const yaVista = localStorage.getItem(solicitudVistaKey);
-            
-            if (yaVista === 'true') {
-              // Redirigir directamente a Mi Complejo
-              navigate(`/micomplejo/${solicitudUsuario.complejo.id}`);
-              return;
-            } else {
-              // Marcar como vista automáticamente cuando se muestra por primera vez
-              localStorage.setItem(solicitudVistaKey, 'true');
+            // Si la solicitud está aprobada y ya fue vista antes, redirigir a Mi Complejo
+            if (complejoUsuario.estado === 'APROBADO') {
+              const solicitudVistaKey = `solicitud_vista_${user.id}`;
+              const yaVista = localStorage.getItem(solicitudVistaKey);
+              
+              if (yaVista === 'true') {
+                // Redirigir directamente a Mi Complejo
+                navigate(`/micomplejo/${complejoUsuario.id}`);
+                return;
+              } else {
+                // Marcar como vista automáticamente cuando se muestra por primera vez
+                localStorage.setItem(solicitudVistaKey, 'true');
+              }
             }
+          } else {
+            setSolicitud(null);
           }
         }
       } catch (error) {
@@ -78,14 +97,14 @@ function EstadoSolicitudPage() {
           message: 'Tu solicitud está siendo revisada por nuestro equipo. Te notificaremos por email cuando tengamos una respuesta.',
           color: 'yellow'
         };
-      case 'APROBADA':
+      case 'APROBADO':
         return {
           icon: <FaCheckCircle className="mx-auto h-20 w-20 text-green-500 mb-6" />,
           title: 'Solicitud Aprobada',
           message: '¡Felicitaciones! Tu complejo ha sido aprobado. Ya puedes gestionar tus canchas y turnos.',
           color: 'green'
         };
-      case 'RECHAZADA':
+      case 'RECHAZADO':
         return {
           icon: <FaTimesCircle className="mx-auto h-20 w-20 text-red-500 mb-6" />,
           title: 'Solicitud Rechazada',
@@ -137,7 +156,7 @@ function EstadoSolicitudPage() {
           </div>
         )}
 
-        {solicitud.estado === 'APROBADA' && (
+        {solicitud.estado === 'APROBADO' && (
           <button
             onClick={() => {
               // Navegar a Mi Complejo (ya está marcado como visto en el useEffect)
