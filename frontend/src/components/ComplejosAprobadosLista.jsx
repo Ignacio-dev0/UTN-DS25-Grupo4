@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import ModalConfirmacion from './ModalConfirmacion';
 import { TrashIcon } from '@heroicons/react/24/solid';
@@ -18,6 +18,7 @@ const getStatusClass = (estado) => {
 function ComplejosAprobadosLista({ complejos, onRemove, onToggleVisibility }) {
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [complejoToRemove, setComplejoToRemove] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState('Todos');
 
   const handleOpenRemoveModal = (complejo) => {
     setComplejoToRemove(complejo);
@@ -35,6 +36,32 @@ function ComplejosAprobadosLista({ complejos, onRemove, onToggleVisibility }) {
   // Debug para ver qué recibimos
   console.log('Complejos en componente:', complejos);
 
+  // Filtrar complejos según el estado seleccionado
+  const complejosFiltrados = useMemo(() => {
+    if (filtroEstado === 'Todos') {
+      return complejos;
+    }
+    return complejos.filter(c => c.estado === filtroEstado);
+  }, [complejos, filtroEstado]);
+
+  // Contar complejos por estado
+  const conteoEstados = useMemo(() => {
+    const conteo = {
+      'Todos': complejos.length,
+      'APROBADO': 0,
+      'RECHAZADO': 0,
+      'OCULTO': 0
+    };
+    
+    complejos.forEach(c => {
+      if (c.estado === 'APROBADO') conteo.APROBADO++;
+      if (c.estado === 'RECHAZADO') conteo.RECHAZADO++;
+      if (c.estado === 'OCULTO') conteo.OCULTO++;
+    });
+    
+    return conteo;
+  }, [complejos]);
+
   if (!complejos || complejos.length === 0) {
     return (
       <div className="p-8">
@@ -47,8 +74,35 @@ function ComplejosAprobadosLista({ complejos, onRemove, onToggleVisibility }) {
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-secondary mb-6">Complejos</h2>
+      
+      {/* Botones de Filtro */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {['Todos', 'APROBADO', 'RECHAZADO', 'OCULTO'].map((estado) => {
+          const esActivo = filtroEstado === estado;
+          const cantidad = conteoEstados[estado];
+          
+          // Colores que coinciden con los badges
+          const colores = {
+            'Todos': 'bg-gray-200 text-gray-800',
+            'APROBADO': 'bg-secondary text-white',
+            'RECHAZADO': 'bg-canchaRed text-white',
+            'OCULTO': 'bg-gray-400 text-white',
+          };
+          
+          return (
+            <button
+              key={estado}
+              onClick={() => setFiltroEstado(estado)}
+              className={`px-4 py-2 rounded-full font-bold text-sm transition-all duration-200 ${colores[estado]} ${esActivo ? 'ring-2 ring-offset-2 ring-primary shadow-md' : 'opacity-70 hover:opacity-100'}`}
+            >
+              {estado} ({cantidad})
+            </button>
+          );
+        })}
+      </div>
+
       <ul className="space-y-4">
-        {complejos.map(complejo => (
+        {complejosFiltrados.map(complejo => (
           <li key={complejo.id} className="p-4 bg-white rounded-lg flex justify-between items-center">
             <div className="flex-grow">
               <div className="flex items-center gap-3 mb-2">
