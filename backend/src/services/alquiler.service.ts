@@ -84,26 +84,30 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 		       horaInicioTurno.getUTCMinutes() === horaInicioCronograma.getUTCMinutes();
 	});
 
-	if (!horarioCronograma) {
-		console.log('❌ NO SE ENCONTRÓ HORARIO EN CRONOGRAMA');
+	let duracionFinal = 60; // Duración por defecto: 60 minutos
+
+	if (horarioCronograma) {
+		// Si hay cronograma, calcular duración del turno en minutos usando horaFin - horaInicio
+		const horaInicio = horarioCronograma.horaInicio;
+		const horaFin = horarioCronograma.horaFin;
+		const duracionMinutos = (horaFin.getUTCHours() * 60 + horaFin.getUTCMinutes()) - 
+		                       (horaInicio.getUTCHours() * 60 + horaInicio.getUTCMinutes());
+		
+		console.log(`⏱️ DURACIÓN DEL TURNO (cronograma): ${duracionMinutos} minutos (${horaInicio.getUTCHours()}:${horaInicio.getUTCMinutes().toString().padStart(2, '0')} - ${horaFin.getUTCHours()}:${horaFin.getUTCMinutes().toString().padStart(2, '0')})`);
+		
+		// Si la duración es válida, usarla
+		if (duracionMinutos > 0) {
+			duracionFinal = duracionMinutos;
+		}
+	} else {
+		console.log('⚠️ NO SE ENCONTRÓ HORARIO EN CRONOGRAMA - Usando duración por defecto de 60 minutos');
 		console.log('🔍 HORARIOS DISPONIBLES EN CRONOGRAMA:', turnoOriginal.cancha.cronograma.map(c => ({
 			horaInicio: c.horaInicio,
 			horaFin: c.horaFin
 		})));
 		console.log('🔍 HORA DEL TURNO:', turnoOriginal.horaInicio);
-		throw new Error('No se pudo determinar la duración del turno');
 	}
-
-	// Calcular duración del turno en minutos usando horaFin - horaInicio
-	const horaInicio = horarioCronograma.horaInicio;
-	const horaFin = horarioCronograma.horaFin;
-	const duracionMinutos = (horaFin.getUTCHours() * 60 + horaFin.getUTCMinutes()) - 
-	                       (horaInicio.getUTCHours() * 60 + horaInicio.getUTCMinutes());
 	
-	console.log(`⏱️ DURACIÓN DEL TURNO: ${duracionMinutos} minutos (${horaInicio.getUTCHours()}:${horaInicio.getUTCMinutes().toString().padStart(2, '0')} - ${horaFin.getUTCHours()}:${horaFin.getUTCMinutes().toString().padStart(2, '0')})`);
-
-	// Si la duración es 0 o negativa, usar 60 minutos por defecto
-	const duracionFinal = duracionMinutos > 0 ? duracionMinutos : 60;
 	console.log(`⏱️ DURACIÓN FINAL: ${duracionFinal} minutos`);
 
 	// Generar turnos consecutivos basados en el turno original
