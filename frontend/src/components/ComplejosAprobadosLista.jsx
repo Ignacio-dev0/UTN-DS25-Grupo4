@@ -38,15 +38,15 @@ function ComplejosAprobadosLista({ complejos, onRemove, onToggleVisibility }) {
   if (!complejos || complejos.length === 0) {
     return (
       <div className="p-8">
-        <h2 className="text-2xl font-bold text-secondary mb-6">Complejos Aprobados</h2>
-        <p className="text-gray-600">No hay complejos aprobados para mostrar.</p>
+        <h2 className="text-2xl font-bold text-secondary mb-6">Complejos</h2>
+        <p className="text-gray-600">No hay complejos para mostrar.</p>
       </div>
     );
   }
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-secondary mb-6">Complejos Aprobados</h2>
+      <h2 className="text-2xl font-bold text-secondary mb-6">Complejos</h2>
       <ul className="space-y-4">
         {complejos.map(complejo => (
           <li key={complejo.id} className="p-4 bg-white rounded-lg flex justify-between items-center">

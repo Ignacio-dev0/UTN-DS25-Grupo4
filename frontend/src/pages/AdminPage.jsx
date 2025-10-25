@@ -58,15 +58,24 @@ function AdminPage() {
     }
   };
 
-  // Cargar complejos aprobados
-  const fetchComplejosAprobados = async () => {
+  // Cargar complejos (aprobados y rechazados)
+  const fetchComplejos = async () => {
     try {
       setLoadingComplejos(true);
-      const response = await fetch(`${API_BASE_URL}/complejos/aprobados`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/complejos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
-        console.log('Complejos aprobados recibidos:', data); // Debug
-        setComplejosAprobados(data.complejos || data || []);
+        // Filtrar solo APROBADOS y RECHAZADOS (excluir PENDIENTES que están en solicitudes)
+        const complejosFiltrados = (data.complejos || data || [])
+          .filter(c => c.estado === 'APROBADO' || c.estado === 'RECHAZADO' || c.estado === 'OCULTO');
+        console.log('Complejos cargados:', complejosFiltrados); // Debug
+        setComplejosAprobados(complejosFiltrados);
       }
     } catch (error) {
       console.error('Error cargando complejos:', error);
@@ -91,8 +100,8 @@ function AdminPage() {
         alert('Solicitud aprobada correctamente');
         // Recargar datos
         fetchSolicitudes();
-        if (activeTab === 'aprobados') {
-          fetchComplejosAprobados();
+        if (activeTab === 'complejos') {
+          fetchComplejos();
         }
       } else {
         alert('Error al aprobar solicitud');
@@ -147,7 +156,7 @@ function AdminPage() {
 
       if (response.ok) {
         alert('Complejo eliminado correctamente');
-        fetchComplejosAprobados();
+        fetchComplejos();
       } else {
         alert('Error al eliminar complejo');
         setLoadingComplejos(false);
@@ -209,7 +218,7 @@ function AdminPage() {
         }
 
         alert(`Complejo ${accion === 'ocultar' ? 'ocultado' : 'mostrado'} correctamente junto con sus canchas`);
-        fetchComplejosAprobados();
+        fetchComplejos();
       } else {
         alert(`Error al ${accion} complejo`);
         setLoadingComplejos(false);
@@ -225,8 +234,8 @@ function AdminPage() {
   useEffect(() => {
     if (activeTab === 'solicitudes') {
       fetchSolicitudes();
-    } else if (activeTab === 'aprobados') {
-      fetchComplejosAprobados();
+    } else if (activeTab === 'complejos') {
+      fetchComplejos();
     }
   }, [activeTab]);
 
@@ -250,8 +259,8 @@ function AdminPage() {
                 </span>
               )}
           </button>
-          <button onClick={() => setActiveTab('aprobados')} className={getTabClass('aprobados')}>
-              Complejos Aprobados
+          <button onClick={() => setActiveTab('complejos')} className={getTabClass('complejos')}>
+              Complejos
             </button>
             <button onClick={() => setActiveTab('deportes')} className={getTabClass('deportes')}>
               Deportes
@@ -291,7 +300,7 @@ function AdminPage() {
           </div>
         )}
         
-        {activeTab === 'aprobados' && (
+        {activeTab === 'complejos' && (
           loadingComplejos ? (
             <LoadingSpinner message="Cargando complejos..." />
           ) : (
