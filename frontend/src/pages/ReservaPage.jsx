@@ -350,11 +350,16 @@ function ReservaPage() {
       // Agrupar turnos por día y ordenar por hora
       const turnosPorDia = {};
       turnosSeleccionados.forEach(turnoSel => {
+        console.log('🔍 Buscando turno:', { dia: turnoSel.dia, hora: turnoSel.hora });
+        
         const turnoCompleto = turnos.find(t => 
           t.dia === turnoSel.dia && t.hora === turnoSel.hora
         );
         
+        console.log('🔍 Turno encontrado:', turnoCompleto);
+        
         if (!turnoCompleto || !turnoCompleto.id) {
+          console.error('❌ No se encontró el turno:', { turnoSel, todosLosTurnos: turnos });
           throw new Error(`No se pudo encontrar el turno para ${turnoSel.dia} a las ${turnoSel.hora}`);
         }
         
@@ -367,6 +372,8 @@ function ReservaPage() {
         });
       });
       
+      console.log('📊 Turnos agrupados por día:', turnosPorDia);
+      
       // Procesar cada día
       Object.values(turnosPorDia).forEach(turnosDia => {
         // Ordenar por hora
@@ -375,6 +382,8 @@ function ReservaPage() {
           const horaB = parseInt(b.hora.split(':')[0]);
           return horaA - horaB;
         });
+        
+        console.log('📊 Turnos del día ordenados:', turnosDia.map(t => ({ id: t.id, hora: t.hora })));
         
         // Si hay más de un turno en el mismo día, duplicar IDs para turnos consecutivos
         if (turnosDia.length > 1) {
@@ -389,26 +398,29 @@ function ReservaPage() {
             }
           }
           
+          console.log('🔍 Turnos consecutivos?', sonConsecutivos);
+          
           if (sonConsecutivos) {
             // Duplicar el primer ID para indicar turnos consecutivos
+            console.log('✅ Duplicando primer turno:', turnosDia[0].id, 'x', turnosDia.length);
             turnosDia.forEach(() => {
               turnosIds.push(turnosDia[0].id);
             });
           } else {
             // Turnos no consecutivos, agregar IDs normalmente
+            console.log('✅ Turnos NO consecutivos, agregando IDs individuales');
             turnosDia.forEach(turno => {
               turnosIds.push(turno.id);
             });
           }
         } else {
           // Un solo turno
+          console.log('✅ Un solo turno:', turnosDia[0].id);
           turnosIds.push(turnosDia[0].id);
         }
       });
 
       console.log('🎯 Enviando turnosIds:', turnosIds);
-      console.log('👤 Usuario actual:', user);
-      console.log('🆔 Usuario ID que se enviará:', parseInt(user.id));
 
       // Llamar al backend para crear el alquiler/reserva
       const token = localStorage.getItem('token');
