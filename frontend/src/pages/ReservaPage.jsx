@@ -454,52 +454,66 @@ function ReservaPage() {
       const reservaData = await response.json();
       console.log('Reserva creada exitosamente:', reservaData);
       
-      // Actualizar el estado de todos los turnos como reservados
-      const turnosActualizados = [...turnos];
-      let actualizacionesExitosas = 0;
-      
-      for (const turnoSel of turnosSeleccionados) {
-        const turnoCompleto = turnos.find(t => 
-          t.dia === turnoSel.dia && t.hora === turnoSel.hora
-        );
-        
-        if (turnoCompleto) {
-          try {
-            const response2 = await fetch(`${API_BASE_URL}/turnos/individual/${turnoCompleto.id}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ reservado: true }),
-            });
-
-            if (response2.ok) {
-              // Actualizar en el array local
-              const index = turnosActualizados.findIndex(t => t.id === turnoCompleto.id);
-              if (index !== -1) {
-                turnosActualizados[index] = { 
-                  ...turnosActualizados[index], 
-                  reservado: true, 
-                  estado: 'reservado' 
-                };
-              }
-              actualizacionesExitosas++;
+      // Recargar los turnos desde el backend para reflejar los cambios
+      try {
+        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
+        if (turnosResponse.ok) {
+          const turnosData = await turnosResponse.json();
+          
+          // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
+          const obtenerDiaSemana = (fecha) => {
+            const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+            let fechaStr = fecha;
+            if (fechaStr.includes('T')) {
+              fechaStr = fechaStr.split('T')[0];
             }
-          } catch (error) {
-            console.warn(`Error al actualizar turno ${turnoCompleto.id}:`, error);
-          }
+            const [year, month, day] = fechaStr.split('-').map(Number);
+            const fechaObj = new Date(year, month - 1, day);
+            return diasSemana[fechaObj.getDay()];
+          };
+
+          // Función auxiliar para formatear hora desde ISO string
+          const formatearHora = (horaISO) => {
+            const fecha = new Date(horaISO);
+            const horas = fecha.getUTCHours().toString().padStart(2, '0');
+            const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
+            return `${horas}:${minutos}`;
+          };
+          
+          // Función para determinar el estado del turno
+          const determinarEstadoTurno = (turno) => {
+            if (turno.yaPaso === true) return 'finalizado';
+            if (turno.deshabilitado) return 'deshabilitado';
+            if (turno.reservado) return 'reservado';
+            if (turno.alquilerId && !turno.reservado) return 'ocupado';
+            return 'disponible';
+          };
+          
+          const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
+            const estado = determinarEstadoTurno(turno);
+            return {
+              id: turno.id,
+              dia: obtenerDiaSemana(turno.fecha),
+              hora: formatearHora(turno.horaInicio),
+              precio: turno.precio,
+              estado,
+              fecha: turno.fecha,
+              fechaCompleta: turno.fecha,
+              horaCompleta: turno.horaInicio,
+              reservado: turno.reservado,
+              deshabilitado: turno.deshabilitado,
+              alquilerId: turno.alquilerId
+            };
+          });
+          
+          setTurnos(turnosFormateados);
         }
+      } catch (error) {
+        console.warn('Error al recargar turnos:', error);
       }
       
-      // Actualizar estado local con todos los cambios
-      setTurnos(turnosActualizados);
-      
-      if (actualizacionesExitosas === turnosSeleccionados.length) {
-        return true;
-      } else {
-        console.warn(`Solo se actualizaron ${actualizacionesExitosas} de ${turnosSeleccionados.length} turnos`);
-        return true; // La reserva se creó exitosamente aunque no todos los estados se actualizaron
-      }
+      // Reserva creada exitosamente
+      return true;
     } catch (error) {
       console.error('Error al confirmar reserva:', error);
       alert('Error al crear la reserva: ' + error.message);
