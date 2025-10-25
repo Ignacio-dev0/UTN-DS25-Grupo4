@@ -728,7 +728,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                       {/* Mostrar contenido según el estado */}
                       {turno ? (
                         <>
-                          ${(turno.precio / 1000).toFixed(0)}k
+                          <span className="text-xs font-bold">${turno.precio.toLocaleString('es-AR')}</span>
                         </>
                       ) : 
                        estadoTurno === 'deshabilitado-permanente' ? '🚫' :

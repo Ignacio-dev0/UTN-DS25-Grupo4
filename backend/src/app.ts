@@ -21,6 +21,7 @@ import servicioRoutes from './routes/servicio.routes';
 import migrationRoutes from './routes/migration.routes';
 import debugRoutes from './routes/debug.routes';
 import { resetearTurnosDiarios } from './controllers/turnoAutomatico.controller';
+import { iniciarScheduler } from './services/scheduler.service';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,6 +112,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    
+    // 🎯 Iniciar sistema de generación automática de turnos
+    iniciarScheduler();
     
     // Job automático cada 24 horas para resetear turnos
     setInterval(async () => {
