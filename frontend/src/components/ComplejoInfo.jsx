@@ -6,7 +6,7 @@ import { MdRestaurant, MdFamilyRestroom } from "react-icons/md";
 import { GiTrophy, GiPartyPopper } from "react-icons/gi";
 import { PiTShirtFill, PiCarFill } from "react-icons/pi";
 import ServiciosSelector from './ServiciosSelector';
-import { API_BASE_URL } from '../config/api.js';
+import { API_BASE_URL, getImageUrl } from '../config/api.js';
 
 const ServicioItem = ({ servicioData, todosLosServicios }) => {
   // Handle both formats: direct service object or service ID
@@ -182,11 +182,7 @@ function ComplejoInfo({ complejo, alquileres = [], isEditing, onToggleEdit, onCo
 
       <div className="relative bg-accent h-64 rounded-lg flex items-center justify-center mb-6">
         <img 
-          src={
-            complejo.image && complejo.image.startsWith('data:image')
-              ? complejo.image  // Solo usar si es base64 válido
-              : "/canchaYa.png" // Usar placeholder para todo lo demás
-          } 
+          src={complejo.image ? getImageUrl(complejo.image) : "/canchaYa.png"} 
           alt={`Imagen de ${complejo.nombre}`} 
           className={`w-full h-full object-cover rounded-lg ${isEditing ? 'cursor-pointer' : ''}`}
           onClick={handleImageClick}
