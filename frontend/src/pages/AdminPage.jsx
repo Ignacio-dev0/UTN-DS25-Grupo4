@@ -84,7 +84,7 @@ function AdminPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ estado: 'APROBADA' }),
+        body: JSON.stringify({ estado: 'APROBADO' }),
       });
 
       if (response.ok) {

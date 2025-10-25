@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
       if (response.ok) {
         const data = await response.json();
         const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
-        return solicitud?.estado === 'APROBADA';
+        return solicitud?.estado === 'APROBADO';
       }
     } catch (error) {
       console.error('Error verificando estado de solicitud:', error);

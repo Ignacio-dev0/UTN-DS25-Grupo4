@@ -21,7 +21,7 @@ function EstadoSolicitudPage() {
           setSolicitud(solicitudUsuario);
 
           // Si la solicitud está aprobada y ya fue vista antes, redirigir a Mi Complejo
-          if (solicitudUsuario?.estado === 'APROBADA' && solicitudUsuario?.complejo) {
+          if (solicitudUsuario?.estado === 'APROBADO' && solicitudUsuario?.complejo) {
             const solicitudVistaKey = `solicitud_vista_${user.id}`;
             const yaVista = localStorage.getItem(solicitudVistaKey);
             
@@ -78,7 +78,7 @@ function EstadoSolicitudPage() {
           message: 'Tu solicitud está siendo revisada por nuestro equipo. Te notificaremos por email cuando tengamos una respuesta.',
           color: 'yellow'
         };
-      case 'APROBADA':
+      case 'APROBADO':
         return {
           icon: <FaCheckCircle className="mx-auto h-20 w-20 text-green-500 mb-6" />,
           title: 'Solicitud Aprobada',
@@ -137,7 +137,7 @@ function EstadoSolicitudPage() {
           </div>
         )}
 
-        {solicitud.estado === 'APROBADA' && (
+        {solicitud.estado === 'APROBADO' && (
           <button
             onClick={() => {
               // Navegar a Mi Complejo (ya está marcado como visto en el useEffect)

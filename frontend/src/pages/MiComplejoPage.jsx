@@ -38,7 +38,7 @@ function MiComplejoPage() {
             const data = await response.json();
             const solicitud = data.solicitudes?.find(s => s.usuarioId === user.id);
             
-            if (!solicitud || solicitud.estado !== 'APROBADA') {
+            if (!solicitud || solicitud.estado !== 'APROBADO') {
               navigate('/estado-solicitud');
               return;
             }
@@ -153,7 +153,7 @@ function MiComplejoPage() {
         
         // Solo verificar estado si no es admin
         if (user?.rol !== 'admin') {
-          if (complejo.activo === false || complejo.solicitud?.estado !== 'APROBADA') {
+          if (complejo.activo === false || complejo.solicitud?.estado !== 'APROBADO') {
             setError('El complejo no está disponible o está suspendido');
             return;
           }

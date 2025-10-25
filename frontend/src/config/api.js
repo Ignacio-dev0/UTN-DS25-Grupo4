@@ -56,7 +56,9 @@ export const getImageUrl = (imagePath) => {
     // ✅ Las imágenes ya están normalizadas en la BD (futbol5_1.jpg sin leading zero)
     // Las imágenes estáticas se sirven desde el backend
     const imageBaseUrl = API_BASE_URL.replace('/api', '');
-    return `${imageBaseUrl}/images/canchas/${imagePath}`;
+    // Limpiar cualquier prefijo "api" pegado al nombre del archivo
+    const cleanImagePath = imagePath.replace(/^api/, '');
+    return `${imageBaseUrl}/images/canchas/${cleanImagePath}`;
   }
   
   // Si no, asumimos que es una ruta relativa dentro de /images/
