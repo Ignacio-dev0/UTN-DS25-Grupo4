@@ -326,6 +326,13 @@ function ReservaPage() {
   const handleConfirmarReserva = async (turnosSeleccionados) => {
     if (!turnosSeleccionados || turnosSeleccionados.length === 0 || !cancha || !complejo) return false;
     
+    // Verificar que todos los turnos sean del mismo día
+    const diasUnicos = new Set(turnosSeleccionados.map(t => t.dia));
+    if (diasUnicos.size > 1) {
+      alert('❌ Solo puedes reservar turnos del mismo día.\n\nPor favor, selecciona turnos de un único día para continuar.');
+      return false;
+    }
+    
     // Verificar autenticación
     if (!isAuthenticated || !user) {
       alert('Debes iniciar sesión para hacer una reserva');
@@ -350,13 +357,13 @@ function ReservaPage() {
       // Agrupar turnos por día y ordenar por hora
       const turnosPorDia = {};
       turnosSeleccionados.forEach(turnoSel => {
-        console.log('🔍 Buscando turno:', { dia: turnoSel.dia, hora: turnoSel.hora });
+        console.log('🔍 Buscando turno:', { dia: turnoSel.dia, hora: turnoSel.hora, turnoSel });
         
         const turnoCompleto = turnos.find(t => 
           t.dia === turnoSel.dia && t.hora === turnoSel.hora
         );
         
-        console.log('🔍 Turno encontrado:', turnoCompleto);
+        console.log('🔍 Turno encontrado:', { id: turnoCompleto?.id, dia: turnoCompleto?.dia, hora: turnoCompleto?.hora });
         
         if (!turnoCompleto || !turnoCompleto.id) {
           console.error('❌ No se encontró el turno:', { turnoSel, todosLosTurnos: turnos });
@@ -372,7 +379,11 @@ function ReservaPage() {
         });
       });
       
-      console.log('📊 Turnos agrupados por día:', turnosPorDia);
+      console.log('📊 Turnos agrupados por día:', Object.keys(turnosPorDia).map(dia => ({
+        dia,
+        cantidad: turnosPorDia[dia].length,
+        turnos: turnosPorDia[dia].map(t => ({ id: t.id, hora: t.hora }))
+      })));
       
       // Procesar cada día
       Object.values(turnosPorDia).forEach(turnosDia => {
