@@ -344,7 +344,10 @@ function MiComplejoPage() {
 
   const handleDisableCancha = async (canchaId) => {
     const cancha = canchas.find(c => c.id === canchaId);
+    console.log('🔧 Deshabilitando/habilitando cancha:', { canchaId, estadoActual: cancha });
+    
     const nuevaActiva = !cancha.activa;
+    console.log('➡️  Nuevo estado activa:', nuevaActiva);
     
     try {
       const response = await fetch(`${API_BASE_URL}/canchas/${canchaId}`, {
@@ -356,13 +359,16 @@ function MiComplejoPage() {
       });
       
       if (response.ok) {
-        setCanchas(prevCanchas =>
-          prevCanchas.map(cancha =>
+        console.log('✅ Backend actualizado correctamente');
+        setCanchas(prevCanchas => {
+          const nuevasCanchas = prevCanchas.map(cancha =>
             cancha.id === canchaId
               ? { ...cancha, activa: nuevaActiva, estado: nuevaActiva ? 'habilitada' : 'deshabilitada' }
               : cancha
-          )
-        );
+          );
+          console.log('🔄 Estado actualizado:', nuevasCanchas.find(c => c.id === canchaId));
+          return nuevasCanchas;
+        });
         alert(`Cancha ${nuevaActiva ? 'habilitada' : 'deshabilitada'} correctamente`);
       } else {
         throw new Error('Error al actualizar el estado de la cancha');

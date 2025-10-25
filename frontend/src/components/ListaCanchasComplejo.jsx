@@ -202,56 +202,62 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {canchasPaginadas.map(cancha => (
-          <div key={cancha.id} className="relative group">
-            <MiniCanchaCard 
-              cancha={cancha}
-            />
-            {isEditing && (
-              <div className="absolute top-2 right-2 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button 
-                  onClick={() => handleActionClick(cancha, 'deshabilitar')} 
-                  className="bg-yellow-500 text-white p-2 rounded-full shadow-lg hover:bg-yellow-600" 
-                  title={cancha.estado === 'deshabilitada' ? 'Habilitar' : 'Deshabilitar'}
-                >
-                  {cancha.estado === 'deshabilitada' ? <FaEye /> : <FaEyeSlash />}
-                </button>
-                <button 
-                  onClick={() => handleActionClick(cancha, 'eliminar')} 
-                  className="bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600" 
-                  title="Eliminar Cancha"
-                >
-                  <FaTrash />
-                </button>
-                <Link to={`/micomplejo/cancha/${cancha.id}/editar`}>
+        {canchasPaginadas.map(cancha => {
+          console.log(`🎾 Renderizando cancha ${cancha.id}:`, { estado: cancha.estado, activa: cancha.activa });
+          return (
+            <div key={cancha.id} className="relative group">
+              <MiniCanchaCard 
+                cancha={cancha}
+              />
+              {isEditing && (
+                <div className="absolute top-2 right-2 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <button 
-                    className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600" 
-                    title="Editar Cancha"
-                    onClick={async (e) => {
-                      // Validar que la cancha existe antes de navegar
-                      try {
-                        const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`);
-                        if (!response.ok) {
-                          e.preventDefault();
-                          alert('La cancha no se encuentra disponible. Recargando la lista...');
-                          onRecargarCanchas();
-                          return;
-                        }
-                      } catch (error) {
-                        e.preventDefault();
-                        console.error('Error validando cancha:', error);
-                        alert('Error al acceder a la cancha. Recargando la lista...');
-                        onRecargarCanchas();
-                      }
-                    }}
+                    onClick={() => {
+                      console.log(`👁️  Click en botón para cancha ${cancha.id}, estado actual:`, cancha.estado);
+                      handleActionClick(cancha, 'deshabilitar');
+                    }} 
+                    className="bg-yellow-500 text-white p-2 rounded-full shadow-lg hover:bg-yellow-600" 
+                    title={cancha.estado === 'deshabilitada' ? 'Habilitar' : 'Deshabilitar'}
                   >
-                    <FaPencilAlt />
+                    {cancha.estado === 'deshabilitada' ? <FaEye /> : <FaEyeSlash />}
                   </button>
-                </Link>
-              </div>
-            )}
-          </div>
-        ))}
+                  <button 
+                    onClick={() => handleActionClick(cancha, 'eliminar')} 
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600" 
+                    title="Eliminar Cancha"
+                  >
+                    <FaTrash />
+                  </button>
+                  <Link to={`/micomplejo/cancha/${cancha.id}/editar`}>
+                    <button 
+                      className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600" 
+                      title="Editar Cancha"
+                      onClick={async (e) => {
+                        // Validar que la cancha existe antes de navegar
+                        try {
+                          const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`);
+                          if (!response.ok) {
+                            e.preventDefault();
+                            alert('La cancha no se encuentra disponible. Recargando la lista...');
+                            onRecargarCanchas();
+                            return;
+                          }
+                        } catch (error) {
+                          e.preventDefault();
+                          console.error('Error validando cancha:', error);
+                          alert('Error al acceder a la cancha. Recargando la lista...');
+                          onRecargarCanchas();
+                        }
+                      }}
+                    >
+                      <FaPencilAlt />
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          );
+        })}
         <button
           onClick={() => setShowAddForm(true)}
           className="border-2 border-dashed border-accent rounded-lg flex flex-col items-center justify-center text-accent hover:bg-accent hover:border-primary hover:text-primary transition-all duration-300 min-h-[220px] aspect-w-1 aspect-h-1"

@@ -21,5 +21,6 @@ export const updateComplejoSchema = z.object({
   descripcion: z.string().optional(), // Removemos la validación mínima para updates
   image: z.union([z.string(), z.null()]).optional(),
   horarios: z.string().optional(),
-  servicios: z.array(z.number().int().positive()).optional() // Array de IDs de servicios
+  servicios: z.array(z.number().int().positive()).optional(), // Array de IDs de servicios
+  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO', 'OCULTO']).optional() // Permitir actualizar el estado
 });

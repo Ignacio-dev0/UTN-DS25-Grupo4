@@ -61,6 +61,7 @@ function AdminPage() {
   // Cargar complejos (aprobados y rechazados)
   const fetchComplejos = async () => {
     try {
+      console.log('📥 Iniciando carga de complejos...');
       setLoadingComplejos(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/complejos`, {
@@ -71,14 +72,15 @@ function AdminPage() {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('📦 Datos recibidos del backend:', data);
         // Filtrar solo APROBADOS y RECHAZADOS (excluir PENDIENTES que están en solicitudes)
         const complejosFiltrados = (data.complejos || data || [])
           .filter(c => c.estado === 'APROBADO' || c.estado === 'RECHAZADO' || c.estado === 'OCULTO');
-        console.log('Complejos cargados:', complejosFiltrados); // Debug
+        console.log('✅ Complejos filtrados y cargados:', complejosFiltrados);
         setComplejosAprobados(complejosFiltrados);
       }
     } catch (error) {
-      console.error('Error cargando complejos:', error);
+      console.error('❌ Error cargando complejos:', error);
     } finally {
       setLoadingComplejos(false);
     }
@@ -169,8 +171,10 @@ function AdminPage() {
   };
 
   const handleToggleVisibility = async (complejo) => {
+    console.log('👁️  Toggle visibility para complejo:', { id: complejo.id, estadoActual: complejo.estado });
     const nuevoEstado = complejo.estado === 'OCULTO' ? 'APROBADO' : 'OCULTO';
     const accion = nuevoEstado === 'OCULTO' ? 'ocultar' : 'mostrar';
+    console.log('➡️  Nuevo estado:', nuevoEstado);
     
     if (!window.confirm(`¿Estás seguro de que quieres ${accion} el complejo "${complejo.nombre}"?\n\nEsto ${accion === 'ocultar' ? 'ocultará' : 'mostrará'} también todas sus canchas.`)) return;
     
@@ -179,6 +183,7 @@ function AdminPage() {
       const token = localStorage.getItem('token');
       
       // Actualizar estado del complejo
+      console.log('🔄 Actualizando complejo en backend...');
       const response = await fetch(`${API_BASE_URL}/complejos/${complejo.id}`, {
         method: 'PUT',
         headers: {
@@ -189,8 +194,13 @@ function AdminPage() {
       });
 
       if (response.ok) {
-        // Obtener las canchas del complejo para actualizar su estado
-        const canchasResponse = await fetch(`${API_BASE_URL}/canchas?complejoId=${complejo.id}`, {
+        console.log('✅ Complejo actualizado en backend');
+        
+        // Calcular nuevo estado de las canchas ANTES de usarlo
+        const nuevaActiva = nuevoEstado === 'APROBADO'; // true si se muestra, false si se oculta
+        
+        // Obtener las canchas del complejo para actualizar su estado (incluyendo inactivas)
+        const canchasResponse = await fetch(`${API_BASE_URL}/canchas?complejoId=${complejo.id}&incluirInactivas=true`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -200,25 +210,38 @@ function AdminPage() {
         if (canchasResponse.ok) {
           const canchasData = await canchasResponse.json();
           const canchas = canchasData.canchas || canchasData || [];
+          console.log(`🎾 Canchas encontradas:`, canchas.map(c => ({ id: c.id, activa: c.activa })));
+          console.log(`🔄 Actualizando ${canchas.length} canchas a activa=${nuevaActiva}...`);
           
           // Actualizar cada cancha del complejo
-          const nuevaActiva = nuevoEstado === 'APROBADO'; // true si se muestra, false si se oculta
-          const updatePromises = canchas.map(cancha => 
-            fetch(`${API_BASE_URL}/canchas/${cancha.id}`, {
+          const updatePromises = canchas.map(async (cancha) => {
+            console.log(`  📝 Actualizando cancha ${cancha.id} de activa=${cancha.activa} a activa=${nuevaActiva}`);
+            const response = await fetch(`${API_BASE_URL}/canchas/${cancha.id}`, {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({ activa: nuevaActiva })
-            })
-          );
+            });
+            
+            if (response.ok) {
+              console.log(`  ✅ Cancha ${cancha.id} actualizada`);
+            } else {
+              console.log(`  ❌ Error actualizando cancha ${cancha.id}`);
+            }
+            
+            return response;
+          });
 
           await Promise.all(updatePromises);
+          console.log('✅ Todas las canchas procesadas');
         }
 
+        console.log('🔄 Recargando lista de complejos...');
         alert(`Complejo ${accion === 'ocultar' ? 'ocultado' : 'mostrado'} correctamente junto con sus canchas`);
-        fetchComplejos();
+        await fetchComplejos();
+        console.log('✅ Lista de complejos recargada');
       } else {
         alert(`Error al ${accion} complejo`);
         setLoadingComplejos(false);

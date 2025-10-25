@@ -485,6 +485,9 @@ export async function obtenerCanchasPorComplejoId(
 };
 
 export async function actualizarCancha (id: number, data: UpdateCanchaData) {
+	console.log('🔧 ACTUALIZAR CANCHA - ID:', id);
+	console.log('📦 Datos recibidos:', data);
+	
 	const { deporteId, ...cancha } = data;
   
   const updateData: any = { ...cancha };
@@ -494,10 +497,16 @@ export async function actualizarCancha (id: number, data: UpdateCanchaData) {
     updateData.deporte = { connect: { id: deporteId } };
   }
   
-  return prisma.cancha.update({
+  console.log('💾 Datos que se van a actualizar:', updateData);
+  
+  const canchaActualizada = await prisma.cancha.update({
     where: { id },
     data: updateData
   });
+  
+  console.log('✅ Cancha actualizada:', { id: canchaActualizada.id, activa: canchaActualizada.activa });
+  
+  return canchaActualizada;
 };
 
 export async function eliminarCancha(id: number) {
