@@ -327,12 +327,17 @@ function ReservaPage() {
       return '/canchaYa.png';
     };
     
-    if (cancha.image && cancha.image.length > 0) {
-      imageUrl = processImageUrl(cancha.image[0]);
+    // Soportar tanto cancha.imagenes (transformado) como cancha.image (directo del backend)
+    const imageArray = cancha.imagenes || cancha.image || [];
+    console.log(`[DEBUG] ReservaPage - Cancha ${canchaId} imagenes:`, imageArray);
+    
+    if (imageArray && imageArray.length > 0) {
+      imageUrl = processImageUrl(imageArray[0]);
+      console.log(`[DEBUG] ReservaPage - Cancha ${canchaId} primera imagen:`, imageUrl?.substring(0, 50));
       
       // Resto de imágenes como thumbnails
-      if (cancha.image.length > 1) {
-        otrasImagenes = cancha.image.slice(1).map(img => processImageUrl(img));
+      if (imageArray.length > 1) {
+        otrasImagenes = imageArray.slice(1).map(img => processImageUrl(img));
       }
     } else {
       imageUrl = '/canchaYa.png';

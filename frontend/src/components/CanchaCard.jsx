@@ -4,6 +4,14 @@ import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
+  console.log(`[DEBUG] CanchaCard renderizado para cancha ${cancha?.id}:`, {
+    id: cancha?.id,
+    hasImage: !!cancha?.image,
+    hasImagenes: !!cancha?.imagenes,
+    imageLength: cancha?.image?.length,
+    imagenesLength: cancha?.imagenes?.length
+  });
+  
   const [turnosHoy, setTurnosHoy] = useState([]);
   const [loadingTurnos, setLoadingTurnos] = useState(false);
 
@@ -189,14 +197,20 @@ function CanchaCard({ cancha }) {
   const [imageError, setImageError] = useState(false);
   
   // Función para obtener la URL de la imagen
-  const getImageUrl = (image) => {
-    if (!image || image.length === 0) return '/canchaYa.png';
-    const firstImage = image[0];
+  const getImageUrl = () => {
+    // Verificar primero cancha.imagenes (transformado) y luego cancha.image (directo del backend)
+    const imageArray = cancha.imagenes || cancha.image || [];
+    console.log(`[DEBUG] CanchaCard ${cancha.id} - imagenes:`, imageArray);
+    
+    if (!imageArray || imageArray.length === 0) return '/canchaYa.png';
+    
+    const firstImage = imageArray[0];
+    console.log(`[DEBUG] CanchaCard ${cancha.id} - primera imagen:`, firstImage?.substring(0, 50));
+    
     // Si es base64, usarla directamente
-    if (firstImage.startsWith('data:image')) return firstImage;
-    // Si NO es base64 pero tampoco tiene extensión de archivo, 
-    // probablemente sea base64 sin el prefijo (caso legacy)
-    // En ese caso, devolver la imagen placeholder
+    if (firstImage && firstImage.startsWith('data:image')) return firstImage;
+    
+    // Si no es base64, usar placeholder
     return '/canchaYa.png';
   };
 
@@ -218,7 +232,7 @@ function CanchaCard({ cancha }) {
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={imageError ? '/canchaYa.png' : getImageUrl(cancha.image)}
+          src={imageError ? '/canchaYa.png' : getImageUrl()}
           loading="lazy"
           onError={() => setImageError(true)}
           alt={`Cancha de ${cancha.deporte?.nombre}`}
