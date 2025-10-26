@@ -200,17 +200,30 @@ function CanchaCard({ cancha }) {
   const getImageUrl = () => {
     // Verificar primero cancha.imagenes (transformado) y luego cancha.image (directo del backend)
     const imageArray = cancha.imagenes || cancha.image || [];
-    console.log(`[DEBUG] CanchaCard ${cancha.id} - imagenes:`, imageArray);
+    console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id} getImageUrl:`, {
+      tieneImagenes: !!cancha.imagenes,
+      tieneImage: !!cancha.image,
+      lengthImagenes: cancha.imagenes?.length || 0,
+      lengthImage: cancha.image?.length || 0,
+      usandoArray: imageArray.length,
+      primerImagen: imageArray[0]?.substring(0, 50) || 'sin imagen'
+    });
     
-    if (!imageArray || imageArray.length === 0) return '/canchaYa.png';
+    if (!imageArray || imageArray.length === 0) {
+      console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: NO HAY IMÁGENES - usando placeholder`);
+      return '/canchaYa.png';
+    }
     
     const firstImage = imageArray[0];
-    console.log(`[DEBUG] CanchaCard ${cancha.id} - primera imagen:`, firstImage?.substring(0, 50));
     
     // Si es base64, usarla directamente
-    if (firstImage && firstImage.startsWith('data:image')) return firstImage;
+    if (firstImage && firstImage.startsWith('data:image')) {
+      console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: USANDO BASE64`);
+      return firstImage;
+    }
     
     // Si no es base64, usar placeholder
+    console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: NO ES BASE64 - usando placeholder`);
     return '/canchaYa.png';
   };
 
