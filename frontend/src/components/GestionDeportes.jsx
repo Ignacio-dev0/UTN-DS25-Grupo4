@@ -54,6 +54,18 @@ function GestionDeportes() {
 
   const handleSaveDeporte = async (deporteGuardado) => {
     try {
+      // Validación: verificar si ya existe un deporte con ese nombre (solo al crear)
+      if (!deporteGuardado.id) {
+        const nombreExistente = deportes.find(d => 
+          d.nombre.toLowerCase() === deporteGuardado.nombre.toLowerCase()
+        );
+        
+        if (nombreExistente) {
+          alert(`Ya existe un deporte con el nombre "${deporteGuardado.nombre}". Por favor, usa otro nombre o edita el deporte existente.`);
+          return;
+        }
+      }
+      
       let response;
       
       if (deporteGuardado.id) {
@@ -93,14 +105,14 @@ function GestionDeportes() {
         }
         
         handleCloseModalDeporte();
-        alert('Deporte guardado exitosamente');
+        alert(deporteGuardado.id ? 'Deporte actualizado exitosamente' : 'Deporte creado exitosamente');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al guardar el deporte');
       }
     } catch (error) {
       console.error('Error guardando deporte:', error);
-      alert('Error al guardar el deporte: ' + error.message);
+      alert(error.message || 'Error al guardar el deporte');
     }
   };
 

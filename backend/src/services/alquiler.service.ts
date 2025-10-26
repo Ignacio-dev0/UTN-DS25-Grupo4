@@ -430,6 +430,7 @@ export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {
 export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest) {
 	const alquiler = await prisma.alquiler.findUnique({
 		where: { id },
+		include: { turnos: true }
 	});
 
 	if (!alquiler) {
@@ -445,6 +446,24 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 	}
 
 	/* En un futuro se deberán realizar las validaciones correspondientes acá mismo */
+	
+	// Si se está cancelando el alquiler, liberar los turnos asociados
+	if (data.estado === EstadoAlquiler.CANCELADO) {
+		console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
+		
+		// Actualizar todos los turnos del alquiler para que no estén reservados
+		await prisma.turno.updateMany({
+			where: {
+				alquilerId: id
+			},
+			data: {
+				reservado: false,
+				alquilerId: null
+			}
+		});
+		
+		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles`);
+	}
 	
 	return await prisma.alquiler.update({
 		where: { id },

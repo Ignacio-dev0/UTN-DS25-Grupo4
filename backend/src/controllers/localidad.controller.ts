@@ -5,7 +5,9 @@ import * as localidadService from "../services/localidad.service";
 export const crearLoc = async (req: Request, res: Response, next: NextFunction) => {
     try {
         console.log('🔍 CREAR LOCALIDAD - Datos recibidos:', JSON.stringify(req.body, null, 2));
-        const nuevaLoc = await localidadService.crearLocalidad(req.body);
+        // Solo tomar el campo nombre, ignorar cualquier id que pueda venir
+        const { nombre } = req.body;
+        const nuevaLoc = await localidadService.crearLocalidad({ nombre });
         console.log('✅ CREAR LOCALIDAD - Localidad creada exitosamente:', nuevaLoc.id);
         res.status(201).json(nuevaLoc);
     } catch (error) {
@@ -70,8 +72,10 @@ export async function eliminarLocalidad(req : Request, res: Response, next: Next
             return res.status(404).json({ error: 'Localidad no encontrada'});
         }
         if (error.code === 'P2003') {
-            throw new Error('No se puede eliminar la localidad porque está siendo utilizada por uno o más domicilios.');
+            return res.status(400).json({ 
+                error: 'No se puede eliminar la localidad porque está siendo utilizada por uno o más domicilios.'
+            });
         }
-        res.status(400).json({error: error.message});
+        next(error);
     }
 };
