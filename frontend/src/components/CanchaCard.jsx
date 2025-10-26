@@ -4,6 +4,14 @@ import { MapPinIcon, StarIcon } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from '../config/api.js';
 
 function CanchaCard({ cancha }) {
+  console.log(`[DEBUG] CanchaCard renderizado para cancha ${cancha?.id}:`, {
+    id: cancha?.id,
+    hasImage: !!cancha?.image,
+    hasImagenes: !!cancha?.imagenes,
+    imageLength: cancha?.image?.length,
+    imagenesLength: cancha?.imagenes?.length
+  });
+  
   const [turnosHoy, setTurnosHoy] = useState([]);
   const [loadingTurnos, setLoadingTurnos] = useState(false);
 
@@ -189,15 +197,40 @@ function CanchaCard({ cancha }) {
   const [imageError, setImageError] = useState(false);
   
   // Función para obtener la URL de la imagen
-  const getImageUrl = (image) => {
-    if (!image || image.length === 0) return '/canchaYa.png';
-    const firstImage = image[0];
-    // Si es base64, usarla directamente
-    if (firstImage.startsWith('data:image')) return firstImage;
-    // Si es un nombre de archivo, intentar cargar desde el servidor
-    if (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg')) {
-      return `http://localhost:3000/images/canchas/${firstImage}`;
+  const getImageUrl = () => {
+    // Verificar primero cancha.imagenes (transformado) y luego cancha.image (directo del backend)
+    const imageArray = cancha.imagenes || cancha.image || [];
+    console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id} getImageUrl:`, {
+      tieneImagenes: !!cancha.imagenes,
+      tieneImage: !!cancha.image,
+      lengthImagenes: cancha.imagenes?.length || 0,
+      lengthImage: cancha.image?.length || 0,
+      usandoArray: imageArray.length,
+      primerImagen: imageArray[0]?.substring(0, 50) || 'sin imagen'
+    });
+    
+    if (!imageArray || imageArray.length === 0) {
+      console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: NO HAY IMÁGENES - usando placeholder`);
+      return '/canchaYa.png';
     }
+    
+    const firstImage = imageArray[0];
+    
+    // Si es base64, usarla directamente
+    if (firstImage && firstImage.startsWith('data:image')) {
+      console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: USANDO BASE64`);
+      return firstImage;
+    }
+    
+    // Si es un archivo estático (nombre de archivo como "futbol11_2.jpg")
+    if (firstImage && (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg'))) {
+      const imageUrl = `${API_BASE_URL.replace('/api', '')}/images/canchas/${firstImage}`;
+      console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: USANDO ARCHIVO ESTÁTICO - ${imageUrl}`);
+      return imageUrl;
+    }
+    
+    // Si no es ni base64 ni archivo, usar placeholder
+    console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: FORMATO DESCONOCIDO - usando placeholder`);
     return '/canchaYa.png';
   };
 
@@ -219,7 +252,7 @@ function CanchaCard({ cancha }) {
       <div className="relative">
         <img 
           className="bg-accent w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300" 
-          src={imageError ? '/canchaYa.png' : getImageUrl(cancha.image)}
+          src={imageError ? '/canchaYa.png' : getImageUrl()}
           loading="lazy"
           onError={() => setImageError(true)}
           alt={`Cancha de ${cancha.deporte?.nombre}`}

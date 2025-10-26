@@ -321,21 +321,30 @@ function ReservaPage() {
     // Función helper para procesar imágenes
     const processImageUrl = (image) => {
       if (!image) return '/canchaYa.png';
+      
       // Si es base64, usarla directamente
       if (image.startsWith('data:image')) return image;
-      // Si es un nombre de archivo, intentar cargar desde el servidor
+      
+      // Si es un archivo estático (nombre de archivo como "futbol11_2.jpg")
       if (image.includes('.jpg') || image.includes('.png') || image.includes('.jpeg')) {
-        return `http://localhost:3000/images/canchas/${image}`;
+        return `${API_BASE_URL.replace('/api', '')}/images/canchas/${image}`;
       }
+      
+      // Si NO es base64 ni archivo, devolver placeholder
       return '/canchaYa.png';
     };
     
-    if (cancha.image && cancha.image.length > 0) {
-      imageUrl = processImageUrl(cancha.image[0]);
+    // Soportar tanto cancha.imagenes (transformado) como cancha.image (directo del backend)
+    const imageArray = cancha.imagenes || cancha.image || [];
+    console.log(`[DEBUG] ReservaPage - Cancha ${canchaId} imagenes:`, imageArray);
+    
+    if (imageArray && imageArray.length > 0) {
+      imageUrl = processImageUrl(imageArray[0]);
+      console.log(`[DEBUG] ReservaPage - Cancha ${canchaId} primera imagen:`, imageUrl?.substring(0, 50));
       
       // Resto de imágenes como thumbnails
-      if (cancha.image.length > 1) {
-        otrasImagenes = cancha.image.slice(1).map(img => processImageUrl(img));
+      if (imageArray.length > 1) {
+        otrasImagenes = imageArray.slice(1).map(img => processImageUrl(img));
       }
     } else {
       imageUrl = '/canchaYa.png';

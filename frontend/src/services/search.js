@@ -4,6 +4,13 @@ import { API_BASE_URL } from '../config/api.js';
  * Función para transformar los datos de canchas con mapeo de imágenes
  */
 const transformCanchaData = (cancha) => {
+  // Log para debug de imágenes
+  console.log(`🖼️ [SEARCH.JS] Transformando cancha ${cancha.id}:`, {
+    tieneImage: !!cancha.image,
+    lengthImage: cancha.image?.length || 0,
+    primerImagenSubstring: cancha.image?.[0]?.substring(0, 50) || 'sin imagen'
+  });
+  
   return {
     id: cancha.id,
     nroCancha: cancha.nroCancha,
