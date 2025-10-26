@@ -194,10 +194,9 @@ function CanchaCard({ cancha }) {
     const firstImage = image[0];
     // Si es base64, usarla directamente
     if (firstImage.startsWith('data:image')) return firstImage;
-    // Si es un nombre de archivo, intentar cargar desde el servidor
-    if (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg')) {
-      return `http://localhost:3000/images/canchas/${firstImage}`;
-    }
+    // Si NO es base64 pero tampoco tiene extensión de archivo, 
+    // probablemente sea base64 sin el prefijo (caso legacy)
+    // En ese caso, devolver la imagen placeholder
     return '/canchaYa.png';
   };
 

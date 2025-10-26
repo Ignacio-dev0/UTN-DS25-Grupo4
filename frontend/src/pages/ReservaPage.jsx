@@ -323,10 +323,7 @@ function ReservaPage() {
       if (!image) return '/canchaYa.png';
       // Si es base64, usarla directamente
       if (image.startsWith('data:image')) return image;
-      // Si es un nombre de archivo, intentar cargar desde el servidor
-      if (image.includes('.jpg') || image.includes('.png') || image.includes('.jpeg')) {
-        return `http://localhost:3000/images/canchas/${image}`;
-      }
+      // Si NO es base64, devolver placeholder
       return '/canchaYa.png';
     };
     

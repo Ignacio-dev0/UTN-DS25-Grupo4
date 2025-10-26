@@ -226,7 +226,8 @@ export const transformCanchaData = (canchaBackend) => {
     localidad: canchaBackend.complejo?.domicilio?.localidad?.nombre || 'Sin localidad',
     descripcion: canchaBackend.descripcion || '',
     puntaje: canchaBackend.puntaje || 0,
-    imagenes: canchaBackend.image ? canchaBackend.image.map(img => `${API_BASE_URL.replace("/api", "")}${img}`) : [],
+    // Las imágenes de canchas están en base64, no son rutas de archivos
+    imagenes: canchaBackend.image || [],
     turnos: canchaBackend.turnos || [], // Incluir turnos disponibles
     // Agregar campos adicionales que el frontend pueda necesitar
     precioDesde: 8000, // Precio base por defecto, después se puede obtener de turnos
