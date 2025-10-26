@@ -321,9 +321,16 @@ function ReservaPage() {
     // Función helper para procesar imágenes
     const processImageUrl = (image) => {
       if (!image) return '/canchaYa.png';
+      
       // Si es base64, usarla directamente
       if (image.startsWith('data:image')) return image;
-      // Si NO es base64, devolver placeholder
+      
+      // Si es un archivo estático (nombre de archivo como "futbol11_2.jpg")
+      if (image.includes('.jpg') || image.includes('.png') || image.includes('.jpeg')) {
+        return `${API_BASE_URL.replace('/api', '')}/images/canchas/${image}`;
+      }
+      
+      // Si NO es base64 ni archivo, devolver placeholder
       return '/canchaYa.png';
     };
     

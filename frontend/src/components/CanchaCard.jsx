@@ -222,8 +222,15 @@ function CanchaCard({ cancha }) {
       return firstImage;
     }
     
-    // Si no es base64, usar placeholder
-    console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: NO ES BASE64 - usando placeholder`);
+    // Si es un archivo estático (nombre de archivo como "futbol11_2.jpg")
+    if (firstImage && (firstImage.includes('.jpg') || firstImage.includes('.png') || firstImage.includes('.jpeg'))) {
+      const imageUrl = `${API_BASE_URL.replace('/api', '')}/images/canchas/${firstImage}`;
+      console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: USANDO ARCHIVO ESTÁTICO - ${imageUrl}`);
+      return imageUrl;
+    }
+    
+    // Si no es ni base64 ni archivo, usar placeholder
+    console.log(`🖼️ [CANCHACARD] Cancha ${cancha.id}: FORMATO DESCONOCIDO - usando placeholder`);
     return '/canchaYa.png';
   };
 
