@@ -93,7 +93,15 @@ export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>
 
 export const getAllComplejos = async () => {
   return await prisma.complejo.findMany({
-    include: { domicilio: true },
+    include: { 
+      domicilio: {
+        include: {
+          localidad: true
+        }
+      },
+      usuario: true,
+      administrador: true
+    },
   });
 };
 
