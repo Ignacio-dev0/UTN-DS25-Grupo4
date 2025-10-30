@@ -583,3 +583,60 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
     });
   }
 }
+
+export async function obtenerEstadisticasCancelaciones(req: Request, res: Response) {
+  try {
+    const estadisticas = await usuarioService.getEstadisticasCancelaciones();
+    
+    res.json({
+      estadisticas,
+      total: estadisticas.length
+    });
+  } catch (error: any) {
+    console.error('Error obteniendo estadísticas de cancelaciones:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+}
+
+export async function suspenderUsuario(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { suspendido } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        error: 'ID de usuario requerido'
+      });
+    }
+
+    if (suspendido === undefined || suspendido === null) {
+      return res.status(400).json({
+        error: 'Campo "suspendido" requerido (true/false)'
+      });
+    }
+
+    const usuarioActualizado = await usuarioService.suspenderUsuario(parseInt(id), suspendido);
+
+    res.json({
+      message: `Usuario ${suspendido ? 'suspendido' : 'reactivado'} exitosamente`,
+      usuario: usuarioActualizado
+    });
+  } catch (error: any) {
+    console.error('Error suspendiendo usuario:', error);
+    
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+}
+

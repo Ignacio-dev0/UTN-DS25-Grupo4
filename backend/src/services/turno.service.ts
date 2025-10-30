@@ -357,3 +357,23 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
         throw error;
     }
 }
+
+/**
+ * Obtener todos los turnos con pago pendiente (alquilerId presente pero reservado=false)
+ * Estos turnos deben ser liberados si han pasado 2 horas desde la hora del turno
+ */
+export async function getTurnosConPagoPendiente() {
+    return await prisma.turno.findMany({
+        where: {
+            alquilerId: { not: null },
+            reservado: false // Pago pendiente
+        },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
+        }
+    });
+}

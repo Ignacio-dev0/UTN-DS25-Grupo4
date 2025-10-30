@@ -94,6 +94,14 @@ router.post(
   turnoController.habilitarTurno
 );
 
+// Ruta para liberar turnos con pago pendiente (cron job)
+router.post(
+  '/liberar-pago-pendiente',
+  authenticate,
+  authorize('ADMINISTRADOR'), // Solo admin puede ejecutar esto
+  turnoController.liberarTurnosPagoPendiente
+);
+
 router.put(
   '/:id',
   authenticate,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaPencilAlt, FaTrash, FaEye, FaEyeSlash, FaUsers } from 'react-icons/fa';
+import { FaPlus, FaPencilAlt, FaTrash, FaEye, FaEyeSlash, FaUsers, FaBan, FaCheckCircle } from 'react-icons/fa';
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import ModalUsuario from './ModalUsuario';
 import ModalConfirmacion from './ModalConfirmacion';
@@ -11,9 +11,11 @@ function GestionUsuarios() {
   const [loading, setLoading] = useState(true);
   const [isModalUsuarioOpen, setIsModalUsuarioOpen] = useState(false);
   const [isModalEliminarOpen, setIsModalEliminarOpen] = useState(false);
+  const [isModalSuspenderOpen, setIsModalSuspenderOpen] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [filtroRol, setFiltroRol] = useState('todos');
   const [imagenesError, setImagenesError] = useState(new Set()); // Trackear imágenes que fallaron
+  const [estadisticasCancelaciones, setEstadisticasCancelaciones] = useState({});
   
   // Estados para filtros y búsqueda
   const [busquedaNombre, setBusquedaNombre] = useState('');
@@ -125,8 +127,36 @@ function GestionUsuarios() {
     }
   };
 
+  // Cargar estadísticas de cancelaciones
+  const cargarEstadisticasCancelaciones = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/usuarios/estadisticas/cancelaciones`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Estadísticas de cancelaciones:', data);
+        // Convertir array a objeto para fácil acceso
+        const stats = {};
+        data.estadisticas.forEach(stat => {
+          stats[stat.usuarioId] = stat.cancelaciones;
+        });
+        setEstadisticasCancelaciones(stats);
+      } else {
+        console.error('Error al cargar estadísticas');
+      }
+    } catch (error) {
+      console.error('Error cargando estadísticas:', error);
+    }
+  };
+
   useEffect(() => {
     cargarUsuarios();
+    cargarEstadisticasCancelaciones();
   }, []);
 
   const handleOpenModalUsuario = (usuario = null) => {
@@ -228,6 +258,41 @@ function GestionUsuarios() {
       alert('Error al eliminar usuario');
     } finally {
       setIsModalEliminarOpen(false);
+      setUsuarioSeleccionado(null);
+    }
+  };
+
+  const handleSuspenderUsuario = (usuario) => {
+    setUsuarioSeleccionado(usuario);
+    setIsModalSuspenderOpen(true);
+  };
+
+  const handleConfirmarSuspender = async () => {
+    if (!usuarioSeleccionado) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${usuarioSeleccionado.id}/suspender`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ suspendido: true })
+      });
+
+      if (response.ok) {
+        alert('Usuario suspendido exitosamente');
+        setIsModalSuspenderOpen(false);
+        setUsuarioSeleccionado(null);
+        // Recargar usuarios y estadísticas
+        await cargarUsuarios();
+        await cargarEstadisticasCancelaciones();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || errorData.message || 'Error al suspender usuario');
+      }
+    } catch (error) {
+      console.error('Error suspendiendo usuario:', error);
+      alert('Error al suspender usuario');
+    } finally {
+      setIsModalSuspenderOpen(false);
       setUsuarioSeleccionado(null);
     }
   };
@@ -469,62 +534,84 @@ function GestionUsuarios() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {usuariosFiltrados.map((usuario) => (
-                  <tr key={usuario.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <UsuarioAvatar usuario={usuario} />
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {usuario.nombre || 'Sin nombre'} {usuario.apellido || 'Sin apellido'}
-                          </p>
-                          <p className="text-sm text-gray-500">ID: {usuario.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">{usuario.email}</td>
-                    <td className="py-3 px-4">{getRolBadge(usuario.rol)}</td>
-                    <td className="py-3 px-4 text-gray-700">
-                      {usuario.rol === 'DUENIO' && usuario.complejo ? (
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {usuario.complejo.nombre}
-                            {usuario.complejo.estado !== 'APROBADO' && (
-                              <span className="ml-2 text-xs text-gray-500 italic">
-                                ({usuario.complejo.estado})
-                              </span>
+                {usuariosFiltrados.map((usuario) => {
+                  const cancelaciones = estadisticasCancelaciones[usuario.id] || 0;
+                  const debeResaltar = cancelaciones >= 2;
+                  
+                  return (
+                    <tr 
+                      key={usuario.id} 
+                      className={`border-b border-gray-100 hover:bg-gray-50 ${debeResaltar ? 'bg-orange-100' : ''}`}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <UsuarioAvatar usuario={usuario} />
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {usuario.nombre || 'Sin nombre'} {usuario.apellido || 'Sin apellido'}
+                            </p>
+                            <p className="text-sm text-gray-500">ID: {usuario.id}</p>
+                            {debeResaltar && (
+                              <p className="text-xs text-orange-700 font-medium mt-1">
+                                ⚠️ {cancelaciones} cancelaciones este mes
+                              </p>
                             )}
-                          </p>
-                          <p className="text-sm text-gray-500">{usuario.complejo.direccion}</p>
+                          </div>
                         </div>
-                      ) : (
-                        <span className="text-gray-400 italic">
-                          {usuario.rol === 'DUENIO' ? 'Sin complejo asignado' : 'N/A'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">{usuario.dni}</td>
-                    <td className="py-3 px-4 text-gray-700">{usuario.telefono || 'No especificado'}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenModalUsuario(usuario)}
-                          className="text-primary hover:text-white hover:bg-primary p-2 rounded-full transition-colors shadow-md"
-                          title="Editar usuario"
-                        >
-                          <FaPencilAlt />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUsuario(usuario)}
-                          className="text-canchaRed hover:text-white hover:bg-canchaRed p-2 rounded-full transition-colors shadow-md"
-                          title="Eliminar usuario"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">{usuario.email}</td>
+                      <td className="py-3 px-4">{getRolBadge(usuario.rol)}</td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {usuario.rol === 'DUENIO' && usuario.complejo ? (
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {usuario.complejo.nombre}
+                              {usuario.complejo.estado !== 'APROBADO' && (
+                                <span className="ml-2 text-xs text-gray-500 italic">
+                                  ({usuario.complejo.estado})
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-500">{usuario.complejo.direccion}</p>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">
+                            {usuario.rol === 'DUENIO' ? 'Sin complejo asignado' : 'N/A'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">{usuario.dni}</td>
+                      <td className="py-3 px-4 text-gray-700">{usuario.telefono || 'No especificado'}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenModalUsuario(usuario)}
+                            className="text-primary hover:text-white hover:bg-primary p-2 rounded-full transition-colors shadow-md"
+                            title="Editar usuario"
+                          >
+                            <FaPencilAlt />
+                          </button>
+                          {debeResaltar && (
+                            <button
+                              onClick={() => handleSuspenderUsuario(usuario)}
+                              className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
+                              title="Suspender usuario"
+                            >
+                              <FaBan />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteUsuario(usuario)}
+                            className="text-canchaRed hover:text-white hover:bg-canchaRed p-2 rounded-full transition-colors shadow-md"
+                            title="Eliminar usuario"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -549,6 +636,19 @@ function GestionUsuarios() {
           onConfirm={handleConfirmarEliminar}
           onClose={() => setIsModalEliminarOpen(false)}
           confirmText="Eliminar"
+          cancelText="Cancelar"
+        />
+      )}
+
+      {/* Modal de confirmación para suspender */}
+      {isModalSuspenderOpen && (
+        <ModalConfirmacion
+          isOpen={isModalSuspenderOpen}
+          title="Suspender Usuario"
+          message={`¿Estás seguro de que deseas suspender al usuario "${usuarioSeleccionado?.nombre} ${usuarioSeleccionado?.apellido}"? El usuario no podrá acceder al sistema hasta que sea reactivado.`}
+          onConfirm={handleConfirmarSuspender}
+          onClose={() => setIsModalSuspenderOpen(false)}
+          confirmText="Suspender"
           cancelText="Cancelar"
         />
       )}

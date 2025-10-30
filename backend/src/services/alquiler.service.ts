@@ -2,6 +2,8 @@ import prisma from '../config/prisma';
 import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
 import { CrearAlquilerData } from '../validations/alquiler.validation';
+import { validarTiempoMinimoReserva, validarLimiteCancelaciones, validarTiempoMinimoCancelacion } from '../utils/reservaValidations';
+import { getNowInArgentina } from '../utils/timezone';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	return await prisma.alquiler.findMany({
@@ -37,6 +39,28 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 	if (turnosIds.length > 3) {
 		throw new Error('No se puede seleccionar más de tres turnos');
 	}
+	
+	// ✅ VALIDACIÓN 1: Verificar límite de cancelaciones del usuario (máximo 2 en los últimos 30 días)
+	const hace30Dias = new Date(getNowInArgentina());
+	hace30Dias.setDate(hace30Dias.getDate() - 30);
+	
+	const cancelacionesRecientes = await prisma.alquiler.count({
+		where: {
+			clienteId: usuarioId,
+			estado: EstadoAlquiler.CANCELADO,
+			createdAt: {
+				gte: hace30Dias
+			}
+		}
+	});
+	
+	const validacionCancelaciones = validarLimiteCancelaciones(cancelacionesRecientes, 2);
+	if (!validacionCancelaciones.valido) {
+		console.log(`❌ Usuario ${usuarioId} bloqueado por exceso de cancelaciones: ${cancelacionesRecientes}`);
+		throw new Error(validacionCancelaciones.mensaje);
+	}
+	
+	console.log(`✅ Usuario ${usuarioId} tiene ${cancelacionesRecientes} cancelaciones en los últimos 30 días`);
 	
 	// Si se envía el mismo turno múltiples veces, interpretamos que quiere bloques consecutivos
 	const turnoBase = turnosIds[0];
@@ -74,6 +98,15 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 		console.log('❌ TURNO BASE YA RESERVADO');
 		throw new Error('El turno seleccionado ya está reservado');
 	}
+	
+	// ✅ VALIDACIÓN 2: Verificar tiempo mínimo de anticipación (1 hora)
+	const validacionTiempo = validarTiempoMinimoReserva(turnoOriginal.fecha, turnoOriginal.horaInicio);
+	if (!validacionTiempo.valido) {
+		console.log(`❌ Reserva muy cercana: ${validacionTiempo.horasRestantes?.toFixed(2)} horas`);
+		throw new Error(validacionTiempo.mensaje);
+	}
+	
+	console.log(`✅ Reserva con ${validacionTiempo.horasRestantes?.toFixed(2)} horas de anticipación`);
 
 	// Buscar la duración del turno en el cronograma
 	const horarioCronograma = turnoOriginal.cancha.cronograma.find(c => {
@@ -149,10 +182,16 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 	console.log('💰 PRECIO TOTAL:', precioTotal, 'para', turnosConsecutivos.length, 'bloques');
 
 	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
+	
+	// ⚠️ IMPORTANTE: El alquiler inicia en estado PROGRAMADO pero los turnos con reservado=false
+	// Esto significa "Reserva pendiente de pago"
+	// Cuando el usuario "paga", se actualiza reservado=true
 	const nuevoAlquiler = await prisma.alquiler.create({
 		data: {
 			cliente: { connect: { id: usuarioId } },
 			turnos: { connect: turnosConsecutivos.map(t => ({ id: t.id })) },
+			// El estado es PROGRAMADO, pero el pago está pendiente
+			estado: EstadoAlquiler.PROGRAMADO
 		},
 		include: {
 			turnos: true,
@@ -166,10 +205,23 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 		}
 	});
 	
-	console.log('✅ ALQUILER CREADO EXITOSAMENTE:', {
+	// 🔴 CRUCIAL: Marcar los turnos con alquilerId PERO reservado=false (pago pendiente)
+	// El usuario tiene hasta 2 horas después del turno para "pagar"
+	await prisma.turno.updateMany({
+		where: {
+			id: { in: turnosConsecutivos.map(t => t.id) }
+		},
+		data: {
+			alquilerId: nuevoAlquiler.id,
+			reservado: false // ⚠️ Pago pendiente
+		}
+	});
+	
+	console.log('✅ ALQUILER CREADO CON PAGO PENDIENTE:', {
 		id: nuevoAlquiler.id,
 		turnos: nuevoAlquiler.turnos.length,
-		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido
+		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+		estado: '⏳ PENDIENTE DE PAGO (reservado=false)'
 	});
 
 	return nuevoAlquiler;
@@ -404,7 +456,9 @@ export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {
 		throw error;
 	}
 
-	const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0)
+	const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0);
+	
+	console.log(`💳 Confirmando pago del alquiler ${id} (${alquiler.turnos.length} turnos)`);
 
 	return await prisma.$transaction([
 		prisma.pago.create({
@@ -420,6 +474,16 @@ export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {
 			where: { id },
 			data: {
 				estado: EstadoAlquiler.PAGADO,
+			}
+		}),
+		
+		// ✅ CRUCIAL: Actualizar todos los turnos a reservado=true (pago confirmado)
+		prisma.turno.updateMany({
+			where: {
+				id: { in: alquiler.turnos.map(t => t.id) }
+			},
+			data: {
+				reservado: true
 			}
 		})
 
@@ -445,10 +509,26 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		throw error;
 	}
 
-	/* En un futuro se deberán realizar las validaciones correspondientes acá mismo */
-	
-	// Si se está cancelando el alquiler, liberar los turnos asociados
+	// ✅ VALIDACIÓN: Si se está cancelando, verificar tiempo mínimo (2 horas antes)
 	if (data.estado === EstadoAlquiler.CANCELADO) {
+		console.log(`🕐 Validando tiempo para cancelación del alquiler ${id}...`);
+		
+		// Obtener el primer turno (el más cercano)
+		const primerTurno = alquiler.turnos[0];
+		
+		if (primerTurno) {
+			const validacionTiempo = validarTiempoMinimoCancelacion(primerTurno.fecha, primerTurno.horaInicio);
+			
+			if (!validacionTiempo.valido) {
+				console.log(`❌ Cancelación muy cercana: ${validacionTiempo.horasRestantes?.toFixed(2)} horas`);
+				const error = new Error(validacionTiempo.mensaje || 'No puedes cancelar con menos de 2 horas de anticipación');
+				(error as any).statusCode = 400;
+				throw error;
+			}
+			
+			console.log(`✅ Cancelación permitida: ${validacionTiempo.horasRestantes?.toFixed(2)} horas de anticipación`);
+		}
+		
 		console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
 		
 		// Actualizar todos los turnos del alquiler para que no estén reservados
