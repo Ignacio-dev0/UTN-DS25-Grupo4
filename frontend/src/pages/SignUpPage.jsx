@@ -1,42 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaUser, FaBuilding, FaFutbol, FaMapMarkerAlt } from "react-icons/fa";
+import { FaUser, FaFutbol, FaMapMarkerAlt } from "react-icons/fa";
 import { register } from '../services/auth.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { API_BASE_URL } from '../config/api.js';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { registerSchema } from '../validations/signUpSchema.js';
 
 function SignUpPage() {
-  // Estados para controlar el flujo de la página
   const [step, setStep] = useState('selection'); 
   const [userType, setUserType] = useState(null); 
-
-  // Estados para los datos del formulario
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dni, setDni] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  
-  // --- Estados para la dirección estructurada ---
-  const [complexName, setComplexName] = useState('');
-  const [calle, setCalle] = useState('');
-  const [altura, setAltura] = useState('');
-  const [localidad, setLocalidad] = useState('');
   const [localidades, setLocalidades] = useState([]);
   const [loadingLocalidades, setLoadingLocalidades] = useState(false);
-  const [cuit, setCuit] = useState('');
   const [complexImage, setComplexImage] = useState(null);
   const [complexImagePreview, setComplexImagePreview] = useState(null);
+  const [serverError, setServerError] = useState('');
   
-  const [error, setError] = useState('');
-  const [passwordMatch, setPasswordMatch] = useState(true);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Cargar localidades desde la base de datos
+  const { 
+    register: registerField,
+    handleSubmit, 
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: yupResolver(registerSchema),
+    context: { userType },
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      dni: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      complexName: '',
+      cuit: '',
+      calle: '',
+      altura: '',
+      localidad: ''
+    }
+  });
+
   useEffect(() => {
     const cargarLocalidades = async () => {
       setLoadingLocalidades(true);
@@ -44,26 +50,20 @@ function SignUpPage() {
         const response = await fetch(`${API_BASE_URL}/localidades`);
         if (response.ok) {
           const data = await response.json();
-          setLocalidades(data.localidades || data); // Acceder al array de localidades
+          setLocalidades(data.localidades || data);
         } else {
           console.error('Error al cargar localidades');
-          // Agregar localidades de respaldo en caso de error
           setLocalidades([
-            { id: 1, nombre: 'La Plata' },
-            { id: 2, nombre: 'City Bell' },
-            { id: 3, nombre: 'Gonnet' },
-            { id: 4, nombre: 'Berisso' },
+            { id: 1, nombre: 'La Plata' }, { id: 2, nombre: 'City Bell' },
+            { id: 3, nombre: 'Gonnet' }, { id: 4, nombre: 'Berisso' },
             { id: 5, nombre: 'Ensenada' }
           ]);
         }
       } catch (error) {
         console.error('Error al cargar localidades:', error);
-        // Agregar localidades de respaldo en caso de error
         setLocalidades([
-          { id: 1, nombre: 'La Plata' },
-          { id: 2, nombre: 'City Bell' },
-          { id: 3, nombre: 'Gonnet' },
-          { id: 4, nombre: 'Berisso' },
+          { id: 1, nombre: 'La Plata' }, { id: 2, nombre: 'City Bell' },
+          { id: 3, nombre: 'Gonnet' }, { id: 4, nombre: 'Berisso' },
           { id: 5, nombre: 'Ensenada' }
         ]);
       } finally {
@@ -82,15 +82,17 @@ function SignUpPage() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Verificar tamaño (máximo 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setError('La imagen es muy grande. Por favor selecciona una imagen menor a 2MB.');
+      if (file.size > 2 * 1024 * 1024) { // 2MB
+        setServerError('La imagen es muy grande. Por favor selecciona una imagen menor a 2MB.');
+        setComplexImage(null);
+        setComplexImagePreview(null);
+        e.target.value = null;
         return;
       }
       
+      setServerError(''); 
       setComplexImage(file);
       
-      // Crear preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setComplexImagePreview(reader.result);
@@ -99,68 +101,32 @@ function SignUpPage() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    
-    // Validaciones básicas
-    if (!email || !password || !firstName || !lastName || !dni || !phone) {
-      setError('Por favor, completa todos los campos requeridos.');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
-
-    // Validar DNI (8 dígitos)
-    if (!/^\d{7,8}$/.test(dni)) {
-      setError('El DNI debe tener 7 u 8 dígitos.');
-      return;
-    }
-
-    // Validar teléfono (formato argentino - acepta +54 seguido de 10 dígitos)
-    if (!/^\+?54[0-9]{10}$/.test(phone)) {
-      setError('El teléfono debe tener formato argentino (+54XXXXXXXXXX) - 10 dígitos después de +54.');
-      return;
-    }
-    
-    if (userType === 'owner' && (!complexName || !calle || !altura || !localidad || !cuit)) {
-      setError('Por favor, completa todos los datos del complejo: nombre, dirección (calle, altura, localidad) y CUIT.');
-      return;
-    }
-    
-    setLoading(true);
-    
+  const onSubmit = async (data) => {
+    setServerError('');
     try {
-      // Registro para cliente normal
       if (userType === 'cliente') {
         const userData = {
-          email,
-          password,
-          nombre: firstName,
-          apellido: lastName,
-          dni,
-          telefono: phone,
+          email: data.email,
+          password: data.password,
+          nombre: data.firstName,
+          apellido: data.lastName,
+          dni: data.dni,
+          telefono: data.phone,
           tipoUsuario: 'CLIENTE'
         };
         
-        const response = await register(userData);
+        const response = await register(userData); 
         
         if (response.ok) {
-          // Login automático después del registro
           login(response.user);
-          alert('¡Registro exitoso! Bienvenido a CanchaYa');
+          console.log('¡Registro exitoso! Bienvenido a CanchaYa');
           navigate('/');
         } else {
-          setError(response.error);
+          setServerError(response.error);
         }
       } else {
-        // Para dueños de complejo - usar endpoint con soporte de imagen
         let imageBase64 = null;
         
-        // Convertir imagen a base64 si existe
         if (complexImage) {
           imageBase64 = await new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -171,36 +137,33 @@ function SignUpPage() {
         }
         
         const body = {
-          email,
-          password,
-          nombre: firstName,
-          apellido: lastName,
-          dni,
-          telefono: phone,
+          email: data.email,
+          password: data.password,
+          nombre: data.firstName,
+          apellido: data.lastName,
+          dni: data.dni,
+          telefono: data.phone,
           tipoUsuario: 'DUENIO',
-          cuit,
-          nombreComplejo: complexName,
-          calle,
-          altura,
-          localidadId: localidad,
-          imagen: imageBase64
+          cuit: data.cuit,
+          nombreComplejo: data.complexName,
+          calle: data.calle,
+          altura: data.altura,
+          localidadId: data.localidad,
+          imagen: imageBase64 
         };
         
         const response = await fetch(`${API_BASE_URL}/usuarios/register-with-image`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
         
-        let data;
+        let responseData;
         try {
-          data = await response.json();
+          responseData = await response.json();
         } catch (jsonError) {
           console.error('Error parsing JSON:', jsonError);
-          // Si no puede parsear JSON, crear un objeto de error
-          data = { 
+          responseData = { 
             ok: false, 
             error: response.status === 500 
               ? 'Error interno del servidor. Intenta nuevamente.' 
@@ -208,22 +171,17 @@ function SignUpPage() {
           };
         }
         
-        if (response.ok && data.ok) {
+        if (response.ok && responseData.ok) {
           setStep('confirmation');
         } else {
-          setError(data.error || 'Error al crear la solicitud de complejo');
+          setServerError(responseData.error || 'Error al crear la solicitud de complejo');
         }
       }
     } catch (error) {
       console.error('Error en registro:', error);
-      setError('Error de conexión. Intenta nuevamente.');
-    } finally {
-      setLoading(false);
+      setServerError('Error de conexión. Intenta nuevamente.');
     }
   };
-
-  const handlePasswordChange = (e) => { setPassword(e.target.value); setPasswordMatch(e.target.value === confirmPassword); };
-  const handleConfirmPasswordChange = (e) => { setConfirmPassword(e.target.value); setPasswordMatch(password === e.target.value); };
 
   if (step === 'confirmation') {
     return (
@@ -267,74 +225,84 @@ function SignUpPage() {
       )}
 
       {step === 'form' && (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <h2 className="text-2xl font-bold text-center">
             Registro de {userType === 'cliente' ? 'Jugador' : 'Dueño de Complejo'}
           </h2>
-          {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+          
+          <div className="text-center min-h-[1 rem]">
+            {serverError && <p className="text-red-500 text-sm">{serverError}</p>}
+          </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <input type="text" placeholder="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
-            <input type="text" placeholder="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
+            <div className="relative">
+              <input type="text" placeholder="Nombre" {...registerField("firstName")} className={`w-full px-4 py-2 border rounded-md ${errors.firstName ? 'border-red-500' : ''}`} />
+              {errors.firstName && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.firstName.message}</p>}
+            </div>
+            <div className="relative">
+              <input type="text" placeholder="Apellido" {...registerField("lastName")} className={`w-full px-4 py-2 border rounded-md ${errors.lastName ? 'border-red-500' : ''}`} />
+              {errors.lastName && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.lastName.message}</p>}
+            </div>
           </div>
-          <input type="text" placeholder="DNI (sin puntos)" value={dni} onChange={(e) => setDni(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
-          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
-          <input type="tel" placeholder="Teléfono (+54XXXXXXXXXX)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-2 border rounded-md" required/>
-          <input type="password" placeholder="Contraseña" value={password} onChange={handlePasswordChange} className="w-full px-4 py-2 border rounded-md" required/>
-          <div>
-            <input type="password" placeholder="Confirmar Contraseña" value={confirmPassword} onChange={handleConfirmPasswordChange} className={`w-full px-4 py-2 border rounded-md ${passwordMatch ? '' : 'border-red-500'}`} required/>
-            {!passwordMatch && <p className="text-red-500 text-xs mt-1">Las contraseñas no coinciden.</p>}
+          
+          <div className="relative">
+            <input type="text" placeholder="DNI (sin puntos)" {...registerField("dni")} className={`w-full px-4 py-2 border rounded-md ${errors.dni ? 'border-red-500' : ''}`} />
+            {errors.dni && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.dni.message}</p>}
+          </div>
+          
+          <div className="relative">
+            <input type="email" placeholder="Email" {...registerField("email")} className={`w-full px-4 py-2 border rounded-md ${errors.email ? 'border-red-500' : ''}`} />
+            {errors.email && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.email.message}</p>}
+          </div>
+
+          <div className="relative">
+            <input type="tel" placeholder="Teléfono (+54XXXXXXXXXX)" {...registerField("phone")} className={`w-full px-4 py-2 border rounded-md ${errors.phone ? 'border-red-500' : ''}`} />
+            {errors.phone && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.phone.message}</p>}
+          </div>
+
+          <div className="relative">
+            <input type="password" placeholder="Contraseña" {...registerField("password")} className={`w-full px-4 py-2 border rounded-md ${errors.password ? 'border-red-500' : ''}`} />
+            {errors.password && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.password.message}</p>}
+          </div>
+          
+          <div className="relative">
+            <input type="password" placeholder="Confirmar Contraseña" {...registerField("confirmPassword")} className={`w-full px-4 py-2 border rounded-md ${errors.confirmPassword ? 'border-red-500' : ''}`} />
+            {errors.confirmPassword && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.confirmPassword.message}</p>}
           </div>
 
           {userType === 'owner' && (
-            <div className="animate-fade-in border-t pt-4 mt-4 space-y-4">
+            <div className="animate-fade-in border-t pt-4 mt-4 space-y-6">
               <h3 className="text-lg font-semibold text-gray-800">Datos del Complejo</h3>
-              <input 
-                type="text" 
-                value={complexName} 
-                onChange={(e) => setComplexName(e.target.value)} 
-                placeholder="Nombre del complejo" 
-                className="w-full px-4 py-2 border rounded-md" 
-                required
-              />
-              <input 
-                type="text" 
-                value={cuit} 
-                onChange={(e) => setCuit(e.target.value)} 
-                placeholder="CUIT (XX-XXXXXXXX-X)" 
-                className="w-full px-4 py-2 border rounded-md" 
-                required
-              />
+              
+              <div className="relative">
+                <input type="text" {...registerField("complexName")} placeholder="Nombre del complejo" className={`w-full px-4 py-2 border rounded-md ${errors.complexName ? 'border-red-500' : ''}`} />
+                {errors.complexName && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.complexName.message}</p>}
+              </div>
+
+              <div className="relative">
+                <input type="text" {...registerField("cuit")} placeholder="CUIT (XX-XXXXXXXX-X)" className={`w-full px-4 py-2 border rounded-md ${errors.cuit ? 'border-red-500' : ''}`} />
+                {errors.cuit && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.cuit.message}</p>}
+              </div>
+
               <div className="grid grid-cols-3 gap-2">
-                <input 
-                  type="text" 
-                  value={calle} 
-                  onChange={(e) => setCalle(e.target.value)} 
-                  placeholder="Calle" 
-                  className="col-span-2 w-full px-4 py-2 border rounded-md" 
-                  required
-                />
-                <input 
-                  type="text" 
-                  value={altura} 
-                  onChange={(e) => setAltura(e.target.value)} 
-                  placeholder="Altura" 
-                  className="w-full px-4 py-2 border rounded-md" 
-                  required
-                />
+                <div className="col-span-2 relative">
+                  <input type="text" {...registerField("calle")} placeholder="Calle" className={`w-full px-4 py-2 border rounded-md ${errors.calle ? 'border-red-500' : ''}`} />
+                  {errors.calle && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.calle.message}</p>}
+                </div>
+                <div className="relative">
+                  <input type="text" {...registerField("altura")} placeholder="Altura" className={`w-full px-4 py-2 border rounded-md ${errors.altura ? 'border-red-500' : ''}`} />
+                  {errors.altura && <p className="absolute text-red-500 text-xs mt-1 field-error">{errors.altura.message}</p>}
+                </div>
               </div>
               
-              {/* Campo de localidad - Select con opciones de la BD */}
-              <div className="space-y-2">
+              <div className="space-y-1 relative">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <FaMapMarkerAlt className="text-accent" />
                   Localidad *
                 </label>
                 <select 
-                  value={localidad} 
-                  onChange={(e) => setLocalidad(e.target.value)} 
-                  className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-accent focus:border-accent bg-white" 
-                  required
+                  {...registerField("localidad")}
+                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-accent focus:border-accent bg-white ${errors.localidad ? 'border-red-500' : ''}`}
                   disabled={loadingLocalidades}
                 >
                   <option value="">
@@ -346,19 +314,21 @@ function SignUpPage() {
                     </option>
                   ))}
                 </select>
-                {localidades.length === 0 && !loadingLocalidades && (
-                  <p className="text-sm text-red-500">
-                    No se pudieron cargar las localidades. Contacta al administrador.
-                  </p>
-                )}
-                {loadingLocalidades && (
-                  <p className="text-sm text-gray-500">
-                    Cargando localidades disponibles...
-                  </p>
-                )}
+                <div className="min-h-[1 rem]">
+                  {errors.localidad && <p className="text-red-500 text-xs mt-1 field-error">{errors.localidad.message}</p>}
+                  {localidades.length === 0 && !loadingLocalidades && (
+                    <p className="text-sm text-red-500">
+                      No se pudieron cargar las localidades. Contacta al administrador.
+                    </p>
+                  )}
+                  {loadingLocalidades && (
+                    <p className="text-sm text-gray-500">
+                      Cargando localidades disponibles...
+                    </p>
+                  )}
+                </div>
               </div>
               
-              {/* Campo de imagen */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Imagen del Complejo (opcional)
@@ -382,8 +352,8 @@ function SignUpPage() {
             </div>
           )}
           
-          <button type="submit" disabled={loading} className="w-full bg-secondary text-white py-2 px-4 rounded-md hover:bg-primary transition disabled:opacity-50">
-            {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+          <button type="submit" disabled={isSubmitting} className="w-full bg-secondary text-white py-2 px-4 rounded-md hover:bg-primary transition disabled:opacity-50">
+            {isSubmitting ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
         </form>
       )}
