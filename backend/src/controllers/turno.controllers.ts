@@ -1,5 +1,6 @@
 import { Request,Response } from "express";
 import * as turnoService from "../services/turno.service";
+import { getNowInArgentina } from "../utils/timezone";
 
 export async function generarTurnos(req: Request, res: Response) {
     try {
@@ -144,8 +145,8 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
         console.log(`✅ Turnos encontrados para semana ${semanaOffset}: ${turnos.length}`);
         
         // Agregar el campo 'dia' (día de la semana) y detectar si el turno ya pasó
-        const ahora = new Date();
-        console.log(`🕐 Hora actual del servidor: ${ahora.toISOString()} (local: ${ahora.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
+        const ahora = getNowInArgentina();
+        console.log(`🕐 Hora actual en Argentina: ${ahora.toISOString()} (local: ${ahora.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
         
         const turnosConDia = turnos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
