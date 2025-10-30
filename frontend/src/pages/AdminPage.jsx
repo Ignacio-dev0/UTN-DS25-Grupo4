@@ -283,7 +283,7 @@ import { API_BASE_URL } from '../config/api.js';function AdminPage() {
               )}
           </button>
           <button onClick={() => setActiveTab('complejos')} className={getTabClass('complejos')}>
-              Gestión Complejos
+              Complejos
             </button>
             <button onClick={() => setActiveTab('deportes')} className={getTabClass('deportes')}>
               Deportes
@@ -295,7 +295,7 @@ import { API_BASE_URL } from '../config/api.js';function AdminPage() {
               Usuarios
             </button>
             <button onClick={() => setActiveTab('administradores')} className={getTabClass('administradores')}>
-              Gestión Administradores
+              Administradores
             </button>
             <button onClick={() => setActiveTab('resenas')} className={getTabClass('resenas')}>
               Reseñas
