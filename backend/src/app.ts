@@ -20,11 +20,10 @@ import alquilerRoutes from './routes/alquiler.routes';
 import servicioRoutes from './routes/servicio.routes';
 import migrationRoutes from './routes/migration.routes';
 import debugRoutes from './routes/debug.routes';
-import { resetearTurnosDiarios } from './controllers/turnoAutomatico.controller';
-import { iniciarScheduler } from './services/scheduler.service';
+
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
 
 // Configuración CORS
 const allowedOrigins = [
@@ -112,20 +111,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-    
-    // 🎯 Iniciar sistema de generación automática de turnos
-    iniciarScheduler();
-    
-    // Job automático cada 24 horas para resetear turnos
-    setInterval(async () => {
-        try {
-            console.log('🔄 Ejecutando job de reseteo automático de turnos...');
-            const turnosReseteados = await resetearTurnosDiarios();
-            console.log(`✅ Job completado: ${turnosReseteados} turnos reseteados`);
-        } catch (error) {
-            console.error('❌ Error en job de reseteo de turnos:', error);
-        }
-    }, 24 * 60 * 60 * 1000);
-});
+
+export default app;
+
