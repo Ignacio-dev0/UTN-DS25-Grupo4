@@ -531,18 +531,20 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		
 		console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
 		
-		// Actualizar todos los turnos del alquiler para que no estén reservados
+		// ✅ CAMBIO: Solo marcar los turnos como no reservados
+		// NO eliminamos alquilerId para mantener el historial de la cancelación
 		await prisma.turno.updateMany({
 			where: {
 				alquilerId: id
 			},
 			data: {
-				reservado: false,
-				alquilerId: null
+				reservado: false
+				// ❌ NO hacemos: alquilerId: null
+				// Esto permite que el frontend vea qué turno fue cancelado
 			}
 		});
 		
-		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles`);
+		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles (mantienen referencia al alquiler cancelado)`);
 	}
 	
 	return await prisma.alquiler.update({

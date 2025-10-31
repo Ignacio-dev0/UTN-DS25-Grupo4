@@ -100,4 +100,12 @@ router.put(
   usuarioController.suspenderUsuario
 );
 
+// Ruta para reactivar usuario (eliminar cancelaciones y permitir reservas)
+router.put(
+  "/:id/reactivar",
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  usuarioController.reactivarUsuario
+);
+
 export default router;

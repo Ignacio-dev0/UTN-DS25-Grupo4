@@ -19,8 +19,23 @@ export async function crearAlquiler(req: Request, res: Response<AlquilerResponse
 				alquiler: null
 			} as any);
 		}
+		
+		// Manejo específico para el límite de cancelaciones
+		if (error.message && error.message.includes('límite de')) {
+			console.error('💥 ERROR:', error.message);
+			return res.status(403).json({ 
+				error: error.message,
+				message: error.message,
+				alquiler: null
+			} as any);
+		}
+		
 		console.error('💥 CREAR ALQUILER - Error:', error);
-		next(error);
+		return res.status(500).json({ 
+			error: error.message || 'Error al crear el alquiler',
+			message: error.message || 'Error interno del servidor',
+			alquiler: null
+		} as any);
 	}
 }
 

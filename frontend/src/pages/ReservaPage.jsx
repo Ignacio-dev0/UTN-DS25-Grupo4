@@ -369,25 +369,21 @@ function ReservaPage() {
     // Verificar que todos los turnos sean del mismo día
     const diasUnicos = new Set(turnosSeleccionados.map(t => t.dia));
     if (diasUnicos.size > 1) {
-      alert('❌ Solo puedes reservar turnos del mismo día.\n\nPor favor, selecciona turnos de un único día para continuar.');
-      return false;
+      throw new Error('❌ Solo puedes reservar turnos del mismo día.\n\nPor favor, selecciona turnos de un único día para continuar.');
     }
     
     // Verificar autenticación
     if (!isAuthenticated || !user) {
-      alert('Debes iniciar sesión para hacer una reserva');
-      return false;
+      throw new Error('Debes iniciar sesión para hacer una reserva');
     }
 
     // Verificar rol del usuario
     if (user.rol === 'admin') {
-      alert('Los administradores no pueden realizar reservas. Esta funcionalidad está disponible solo para jugadores.');
-      return false;
+      throw new Error('Los administradores no pueden realizar reservas. Esta funcionalidad está disponible solo para jugadores.');
     }
 
     if (user.rol === 'owner') {
-      alert('Los dueños de complejo no pueden realizar reservas. Esta funcionalidad está disponible solo para jugadores.');
-      return false;
+      throw new Error('Los dueños de complejo no pueden realizar reservas. Esta funcionalidad está disponible solo para jugadores.');
     }
     
     try {
@@ -488,7 +484,9 @@ function ReservaPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al crear la reserva');
+        // Usar el mensaje de error del backend si está disponible
+        const errorMessage = errorData.error || errorData.message || 'Error al crear la reserva';
+        throw new Error(errorMessage);
       }
 
       const reservaData = await response.json();
@@ -556,8 +554,8 @@ function ReservaPage() {
       return true;
     } catch (error) {
       console.error('Error al confirmar reserva:', error);
-      alert('Error al crear la reserva: ' + error.message);
-      return false;
+      // Lanzar el error para que CalendarioTurnos lo capture y muestre
+      throw error;
     }
   };
 

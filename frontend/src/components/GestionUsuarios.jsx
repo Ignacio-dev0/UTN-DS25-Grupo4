@@ -297,6 +297,32 @@ function GestionUsuarios() {
     }
   };
 
+  const handleReactivarUsuario = async (usuario) => {
+    if (!confirm(`¿Deseas reactivar la cuenta de ${usuario.nombre} ${usuario.apellido}?\n\nEsto permitirá que el usuario pueda realizar nuevas reservas.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${usuario.id}/reactivar`, {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        alert('✅ Usuario reactivado exitosamente. Ahora puede realizar nuevas reservas.');
+        // Recargar usuarios y estadísticas
+        await cargarUsuarios();
+        await cargarEstadisticasCancelaciones();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || errorData.message || 'Error al reactivar usuario');
+      }
+    } catch (error) {
+      console.error('Error reactivando usuario:', error);
+      alert('Error al reactivar usuario');
+    }
+  };
+
   const usuariosFiltrados = usuarios.filter(usuario => {
     // Filtro por rol
     if (filtroRol !== 'todos' && usuario.rol !== filtroRol) return false;
@@ -592,13 +618,22 @@ function GestionUsuarios() {
                             <FaPencilAlt />
                           </button>
                           {debeResaltar && (
-                            <button
-                              onClick={() => handleSuspenderUsuario(usuario)}
-                              className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
-                              title="Suspender usuario"
-                            >
-                              <FaBan />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleSuspenderUsuario(usuario)}
+                                className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
+                                title="Suspender usuario"
+                              >
+                                <FaBan />
+                              </button>
+                              <button
+                                onClick={() => handleReactivarUsuario(usuario)}
+                                className="text-green-600 hover:text-white hover:bg-green-600 p-2 rounded-full transition-colors shadow-md"
+                                title="Reactivar cuenta (resetear cancelaciones)"
+                              >
+                                <FaCheckCircle />
+                              </button>
+                            </>
                           )}
                           <button
                             onClick={() => handleDeleteUsuario(usuario)}

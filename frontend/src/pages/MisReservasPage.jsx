@@ -104,13 +104,34 @@ function MisReservasPage() {
             if (response.ok) {
                 const data = await response.json();
                 
-                // Filtrar solo alquileres que tengan turnos
-                const alquileresConTurnos = (data.alquileres || []).filter(alquiler => 
-                    alquiler.turnos && alquiler.turnos.length > 0
-                );
-                console.log('✅ Alquileres con turnos:', alquileresConTurnos.length);
+                console.log('📦 Alquileres recibidos:', data.alquileres?.length || 0);
                 
-                const reservasFormateadas = alquileresConTurnos.map(alquiler => {
+                const reservasFormateadas = (data.alquileres || []).map(alquiler => {
+                    // Si no tiene turnos (caso raro, pero por las dudas)
+                    if (!alquiler.turnos || alquiler.turnos.length === 0) {
+                        console.warn('⚠️ Alquiler sin turnos:', alquiler.id, 'Estado:', alquiler.estado);
+                        // Si es cancelado y sin turnos (alquileres viejos), mostrar mensaje genérico
+                        if (alquiler.estado === 'CANCELADO') {
+                            const fechaCreacion = new Date(alquiler.createdAt);
+                            return {
+                                id: alquiler.id,
+                                canchaId: null,
+                                complejo: 'Complejo no disponible',
+                                cancha: 'Reserva cancelada',
+                                fecha: `${fechaCreacion.getDate().toString().padStart(2, '0')}/${(fechaCreacion.getMonth() + 1).toString().padStart(2, '0')}/${fechaCreacion.getFullYear()}`,
+                                hora: 'Cancelada',
+                                horaFin: '',
+                                total: 0,
+                                estado: 'Cancelada',
+                                reseñada: false,
+                                userId: usuarioId,
+                                createdAt: alquiler.createdAt
+                            };
+                        }
+                        // Si no es cancelado y no tiene turnos, omitirlo
+                        return null;
+                    }
+                    
                     // Ordenar los turnos por horaInicio para asegurar el orden correcto
                     const turnosOrdenados = [...alquiler.turnos].sort((a, b) => {
                         return new Date(a.horaInicio).getTime() - new Date(b.horaInicio).getTime();
@@ -200,7 +221,8 @@ function MisReservasPage() {
                         total: alquiler.turnos.reduce((sum, turno) => sum + turno.precio, 0),
                         estado: estado,
                         reseñada: usuarioYaReseñoCancha, // Verificar si usuario ya reseñó esta cancha
-                        userId: usuarioId
+                        userId: usuarioId,
+                        createdAt: alquiler.createdAt // Fecha de creación del alquiler
                     };
                 });
                 
@@ -527,6 +549,30 @@ function MisReservasPage() {
         'Cancelada': reservas.filter(r => r.estado === 'Cancelada').length,
     };
 
+    // Verificar si el usuario tiene 2 o más cancelaciones en los últimos 30 días
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hace30Dias.getDate() - 30);
+    
+    // Contar cancelaciones usando la fecha de creación de la reserva (createdAt) o la fecha del turno
+    const cancelacionesRecientes = reservas.filter(r => {
+        if (r.estado !== 'Cancelada') return false;
+        
+        // Usar createdAt si está disponible, sino usar la fecha de la reserva
+        const fechaParaComparar = r.createdAt ? new Date(r.createdAt) : new Date(r.fecha);
+        return fechaParaComparar >= hace30Dias;
+    }).length;
+
+    const usuarioBloqueado = cancelacionesRecientes >= 2;
+
+    // Log para debug
+    console.log('🔍 DEBUG Cancelaciones:', {
+        totalReservas: reservas.length,
+        canceladas: reservas.filter(r => r.estado === 'Cancelada').length,
+        cancelacionesRecientes,
+        usuarioBloqueado,
+        hace30Dias: hace30Dias.toISOString()
+    });
+
     return (
         <div className="max-w-7xl mx-auto p-6 md:p-8 rounded-lg relative z-10">
             {loading ? (
@@ -537,19 +583,68 @@ function MisReservasPage() {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col md:flex-row -mx-4">
-                    <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
-                    <ListaReservas 
-                        reservas={reservasFiltradas} 
-                        onCancelReserva={handleCancelReserva}
-                        onDejarReseña={handleOpenReseñaModal}
-                        onPagarReserva={handleOpenPagoModal}
-                        onVerDetalle={handleVerDetalle}
-                        filtroEstado={filtroEstado}
-                        setFiltroEstado={setFiltroEstado}
-                        conteoEstados={conteoEstados}
-                    />
-                </div>
+                <>
+                    {/* Alerta de usuario bloqueado por cancelaciones */}
+                    {usuarioBloqueado && (
+                        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-md">
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3 flex-1">
+                                    <h3 className="text-red-800 font-semibold text-lg">⚠️ Cuenta Suspendida Temporalmente</h3>
+                                    <p className="text-red-700 mt-2">
+                                        Has alcanzado el límite de <strong>{cancelacionesRecientes} cancelaciones</strong> en los últimos 30 días.
+                                    </p>
+                                    <p className="text-red-600 mt-1 text-sm">
+                                        No podrás realizar nuevas reservas hasta que pasen 30 días desde tu primera cancelación o hasta que un administrador reactive tu cuenta.
+                                    </p>
+                                    <div className="mt-3 bg-red-100 p-3 rounded">
+                                        <p className="text-red-800 text-sm font-medium">
+                                            💡 Consejo: Evita cancelaciones frecuentes para mantener tu cuenta activa.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Mensaje informativo sobre políticas de cancelación */}
+                    <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h4 className="text-blue-800 font-semibold text-sm">📋 Políticas de Reserva y Cancelación</h4>
+                                <div className="mt-2 text-blue-700 text-sm space-y-1">
+                                    <p>• <strong>Reserva:</strong> Debes reservar con al menos <strong>1 hora de anticipación</strong></p>
+                                    <p>• <strong>Cancelación:</strong> Debes cancelar con al menos <strong>2 horas de anticipación</strong></p>
+                                    <p>• <strong>Límite:</strong> Máximo <strong>2 cancelaciones cada 30 días</strong>. Exceder este límite suspenderá temporalmente tu cuenta</p>
+                                    <p className="mt-2 text-blue-600 text-xs italic">💡 Planifica tus reservas con responsabilidad para mantener tu cuenta activa</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row -mx-4">
+                        <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
+                        <ListaReservas 
+                            reservas={reservasFiltradas} 
+                            onCancelReserva={handleCancelReserva}
+                            onDejarReseña={handleOpenReseñaModal}
+                            onPagarReserva={handleOpenPagoModal}
+                            onVerDetalle={handleVerDetalle}
+                            filtroEstado={filtroEstado}
+                            setFiltroEstado={setFiltroEstado}
+                            conteoEstados={conteoEstados}
+                        />
+                    </div>
+                </>
             )}
 
             {modalReseñaVisible && (

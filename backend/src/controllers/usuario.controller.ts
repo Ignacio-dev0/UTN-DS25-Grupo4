@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import * as usuarioService from "../services/usuario.service";
 import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
+import prisma from '../config/prisma';
 
 export async function crearUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
@@ -640,3 +641,46 @@ export async function suspenderUsuario(req: Request, res: Response) {
   }
 }
 
+export async function reactivarUsuario(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        error: 'ID de usuario requerido'
+      });
+    }
+
+    // Reactivar usuario eliminando sus cancelaciones recientes
+    const usuarioId = parseInt(id);
+    
+    // Calcular fecha hace 30 días
+    const fechaLimite = new Date();
+    fechaLimite.setDate(fechaLimite.getDate() - 30);
+
+    // Eliminar alquileres cancelados de los últimos 30 días
+    const resultado = await prisma.alquiler.deleteMany({
+      where: {
+        clienteId: usuarioId,
+        estado: 'CANCELADO',
+        createdAt: {
+          gte: fechaLimite
+        }
+      }
+    });
+
+    console.log(`✅ Reactivación: Eliminados ${resultado.count} alquileres cancelados para usuario ${usuarioId}`);
+
+    res.json({
+      message: 'Usuario reactivado exitosamente. Se han eliminado sus cancelaciones recientes.',
+      cancelacionesEliminadas: resultado.count
+    });
+  } catch (error: any) {
+    console.error('Error reactivando usuario:', error);
+    
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+}

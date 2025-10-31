@@ -17,6 +17,7 @@ const diasConAcentos = {
 function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
   const [turnosSeleccionados, setTurnosSeleccionados] = useState([]);
   const [reservaConfirmada, setReservaConfirmada] = useState(false);
+  const [errorReserva, setErrorReserva] = useState(null);
   const { isAuthenticated, user } = useAuth(); 
   const navigate = useNavigate();
 
@@ -139,11 +140,13 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
         // Seleccionar turno - permitir múltiples para turnos consecutivos
         setTurnosSeleccionados(prev => [...prev, turnoData]);
         setReservaConfirmada(false);
+        // Limpiar mensaje de error al seleccionar nuevos turnos
+        setErrorReserva(null);
       }
     }
   };
 
-  const handleConfirmarClick = () => {
+  const handleConfirmarClick = async () => {
     // Primero, verificamos si el usuario está logueado
     if (!isAuthenticated) {
       alert("Debes iniciar sesión para poder reservar.");
@@ -151,14 +154,24 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
       return;
     }
     
-    // Si está logueado, continuamos con la reserva
-    const exito = onConfirmarReserva(turnosSeleccionados);
-    if (exito) {
-      setReservaConfirmada(true);
-      setTimeout(() => {
-        setReservaConfirmada(false);
-        setTurnosSeleccionados([]);
-      }, 5000);
+    // Limpiar mensajes anteriores
+    setErrorReserva(null);
+    setReservaConfirmada(false);
+    
+    try {
+      // Si está logueado, continuamos con la reserva
+      const exito = await onConfirmarReserva(turnosSeleccionados);
+      if (exito) {
+        setReservaConfirmada(true);
+        setTimeout(() => {
+          setReservaConfirmada(false);
+          setTurnosSeleccionados([]);
+        }, 5000);
+      }
+    } catch (error) {
+      // Capturar el error y mostrarlo en rojo
+      setErrorReserva(error.message);
+      // El error se mantiene visible hasta que el usuario seleccione otros turnos
     }
   };
 
@@ -301,7 +314,21 @@ function CalendarioTurnos({ turnosDisponibles, onConfirmarReserva }) {
         </div>
       </div>
       <div className="text-center mt-8 min-h-[100px] flex flex-col justify-center items-center">
-        {reservaConfirmada ? (
+        {errorReserva ? (
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-900 p-4 rounded-md shadow-lg w-full max-w-lg" role="alert">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-500 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="font-bold text-lg">Error al crear la reserva</p>
+                <p className="mt-1 whitespace-pre-line">{errorReserva}</p>
+              </div>
+            </div>
+          </div>
+        ) : reservaConfirmada ? (
           <div className="bg-accent border-l-4 border-secondary text-primary p-4 rounded-md shadow-lg w-full max-w-lg" role="alert">
             <div className="flex items-center">
               <CheckCircleIcon className="w-8 h-8 mr-3"/>
