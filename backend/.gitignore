@@ -27,3 +27,4 @@ railway_data.sql
 /src/generated/prisma
 
 CRUD_DOCUMENTACION.md
+./coverage/
