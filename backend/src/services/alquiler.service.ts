@@ -5,6 +5,9 @@ import { CrearAlquilerData } from '../validations/alquiler.validation';
 import { validarLimiteCancelaciones, validarTiempoMinimoCancelacion } from '../utils/reservaValidations';
 import { getNowInArgentina } from '../utils/timezone';
 import { invalidateMultipleTurnosCache } from './turno.service';
+// a ver si funca el mp
+
+import {MercadoPagoConfig, Preference} from 'mercadopago';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	return await prisma.alquiler.findMany({
@@ -541,58 +544,94 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 	return alquileresConInfoReseña;
 }
 
-export async function pagarAlquiler(id: number, data: PagarAlquilerRequest) {
-	const alquiler = await prisma.alquiler.findUnique({
-		where: { id },
-		include: { turnos: true },
-	});
+// ... (otros imports)// <-- 1. AÑADIR IMPORT
 
-	if (!alquiler) {
-		const error = new Error('Alquiler no encontrado');
-		(error as any).statusCode = 404;
-		throw error;
-	}
+// ... (resto de tus funciones: obtenerAlquileresPorComplejo, crearAlquiler, etc.)
 
-	if (alquiler.estado !== EstadoAlquiler.PROGRAMADO) {
-		const error = new Error(`Alquiler debe estar en estado PROGRAMADO`);
-		(error as any).statusCode = 400;
-		throw error;
-	}
+// vvv REEMPLAZAR ESTA FUNCIÓN vvv
+export async function pagarAlquiler(id: number) { // <-- 2. QUITAR 'data'
+  const alquiler = await prisma.alquiler.findUnique({
+    where: { id },
+    include: { turnos: true, cliente: true }, // Incluir cliente
+  });
 
-	const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0);
-	
-	console.log(`💳 Confirmando pago del alquiler ${id} (${alquiler.turnos.length} turnos)`);
+  if (!alquiler) {
+    const error = new Error('Alquiler no encontrado');
+    (error as any).statusCode = 404;
+    throw error;
+  }
 
-	return await prisma.$transaction([
-		prisma.pago.create({
-			data: {
-				codigoTransaccion: data.codigoTransaccion,
-				metodoPago: data.metodoPago,
-				monto,
-				alquiler: { connect: { id } },
-			}
-		}),
+  if (alquiler.estado !== EstadoAlquiler.PROGRAMADO) {
+    const error = new Error(`Alquiler debe estar en estado PROGRAMADO`);
+    (error as any).statusCode = 400;
+    throw error;
+  }
 
-		prisma.alquiler.update({
-			where: { id },
-			data: {
-				estado: EstadoAlquiler.PAGADO,
-			}
-		}),
-		
-		// CRUCIAL: Actualizar todos los turnos a reservado=true (pago confirmado)
-		prisma.turno.updateMany({
-			where: {
-				id: { in: alquiler.turnos.map(t => t.id) }
-			},
-			data: {
-				reservado: true
-			}
-		})
+  const monto = alquiler.turnos.reduce((acum, t) => acum + t.precio, 0);
 
-	]);
+  // --- 3. INICIA NUEVA LÓGICA DE MERCADO PAGO ---
 
+  // 3.1. Configurar MP
+  const client = new MercadoPagoConfig({
+    accessToken: process.env.MP_ACCESS_TOKEN!,
+  });
+  const preference = new Preference(client);
+
+  // 3.2. Crear el registro de Pago en nuestra BD (en estado pendiente)
+  const nuevoPago = await prisma.pago.create({
+    data: {
+      monto: monto,
+      metodoPago: 'MERCADOPAGO',
+      alquiler: { connect: { id } },
+    },
+  });
+
+  // 3.3. Crear la Preferencia en Mercado Pago
+  const mpResponse = await preference.create({
+    body: {
+      items: [
+        {
+          id: alquiler.id.toString(),
+          title: `Reserva CanchaYA - Alquiler #${alquiler.id}`,
+          description: `Reserva de ${alquiler.turnos.length} turno(s)`,
+          quantity: 1,
+          unit_price: monto,
+          currency_id: 'ARS', // Cambia a tu moneda si es necesario
+        },
+      ],
+      // Datos del comprador (mejora la experiencia de pago)
+      payer: {
+        name: alquiler.cliente.nombre,
+        surname: alquiler.cliente.apellido,
+        email: alquiler.cliente.email,
+      },
+      // Clave: ID de nuestro alquiler para identificarlo en el webhook
+      external_reference: alquiler.id.toString(),
+
+      // URL de tu backend en Railway
+      notification_url: `${process.env.RAILWAY_PUBLIC_URL}/api/webhooks/mercadopago`,
+
+      // URLs del frontend (cámbialas por las de tu frontend)
+      back_urls: {
+        success: `${process.env.FRONTEND_URL}/pago-exitoso`, // URL de tu frontend
+        failure: `${process.env.FRONTEND_URL}/pago-fallido`, // URL de tu frontend
+        pending: `${process.env.FRONTEND_URL}/pago-fallido`, // URL de tu frontend
+      },
+    },
+  });
+
+  // 3.4. Actualizar nuestro Pago con el ID de la preferencia de MP
+  await prisma.pago.update({
+    where: { id: nuevoPago.id },
+    data: { mpPreferenceId: mpResponse.id },
+  });
+
+  // 3.5. Devolver el link de pago
+  return { init_point: mpResponse.init_point };
 }
+// ^^^ REEMPLAZAR HASTA AQUÍ ^^^
+
+// ... (resto de tus funciones: actualizarAlquiler, etc.)
 
 export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest) {
 	const alquiler = await prisma.alquiler.findUnique({

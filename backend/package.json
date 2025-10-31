@@ -43,8 +43,10 @@
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mercadopago": "^2.9.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "node-fetch": "^3.3.2",
@@ -64,6 +66,6 @@
     "ts-node-dev": "^2.0.0"
   },
   "prisma": {
-    "seed_disabled": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts"
   }
 }

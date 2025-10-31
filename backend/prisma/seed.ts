@@ -388,14 +388,15 @@ async function main() {
       }
     }
 
-    // 12. Crear turnos disponibles para los próximos 14 días
-    console.log('🎯 Creando turnos disponibles...');
+    // 12. Crear turnos disponibles para los próximos 7 días (reducido a ~5000)
+    console.log('🎯 Creando turnos disponibles (aprox. 7 días)...');
     
     const cronogramas = await prisma.horarioCronograma.findMany();
     const hoy = new Date();
     const turnosData = [];
     
-    for (let dia = 0; dia < 14; dia++) {
+    // MODIFICADO: de 14 a 7 días para reducir a la mitad los turnos
+    for (let dia = 0; dia < 7; dia++) { 
       const fecha = new Date(hoy);
       fecha.setDate(hoy.getDate() + dia);
       
@@ -453,12 +454,12 @@ async function main() {
       data: { reservado: true }
     });
 
-    // Crear alquileres en lotes de 50
+    // Crear alquileres en lotes de 50 (secuencialmente para evitar sobrecarga de pool)
     for (let i = 0; i < turnosSeleccionados.length; i += 50) {
       const batch = turnosSeleccionados.slice(i, i + 50);
       
-      const alquilerPromises = batch.map(turno => 
-        prisma.alquiler.create({
+      for (const turno of batch) { // Bucle secuencial
+        await prisma.alquiler.create({ // Espera a que cada creación termine
           data: {
             estado: EstadoAlquiler.FINALIZADO,
             clienteId: turno.clienteId,
@@ -466,10 +467,9 @@ async function main() {
               connect: [{ id: turno.turnoId }]
             }
           }
-        })
-      );
+        });
+      }
       
-      await Promise.all(alquilerPromises);
       console.log(`   Procesados ${Math.min(i + 50, turnosSeleccionados.length)} de ${turnosSeleccionados.length} alquileres...`);
     }
 
@@ -543,14 +543,15 @@ async function main() {
       take: totalResenias
     });
 
-    // Crear alquileres y reseñas
+    // Crear alquileres y reseñas (secuencialmente para evitar sobrecarga de pool)
     for (let i = 0; i < turnosParaResenias.length; i += 50) {
       const batch = turnosParaResenias.slice(i, i + 50);
       
-      // Crear alquileres para este lote
-      const alquilerPromises = batch.map(turno => {
+      const alquileresCreados = [];
+      // Crear alquileres para este lote (secuencialmente)
+      for (const turno of batch) {
         const clienteAleatorio = clientes[Math.floor(Math.random() * clientes.length)];
-        return prisma.alquiler.create({
+        const alquiler = await prisma.alquiler.create({
           data: {
             estado: EstadoAlquiler.FINALIZADO,
             clienteId: clienteAleatorio.id,
@@ -559,25 +560,23 @@ async function main() {
             }
           }
         });
-      });
+        alquileresCreados.push(alquiler);
+      }
       
-      const alquileresCreados = await Promise.all(alquilerPromises);
-      
-      // Crear reseñas para este lote
-      const reseniasPromises = alquileresCreados.map(alquiler => {
+      // Crear reseñas para este lote (secuencialmente)
+      for (const alquiler of alquileresCreados) {
         const puntajeResenia = Math.floor(Math.random() * 2) + 4; // Entre 4 y 5 estrellas
         const comentarioAleatorio = comentariosPositivos[Math.floor(Math.random() * comentariosPositivos.length)];
         
-        return prisma.resenia.create({
+        await prisma.resenia.create({
           data: {
             descripcion: comentarioAleatorio,
             puntaje: puntajeResenia,
             alquilerId: alquiler.id,
           }
         });
-      });
+      }
       
-      await Promise.all(reseniasPromises);
       console.log(`   Procesadas ${Math.min(i + 50, turnosParaResenias.length)} de ${turnosParaResenias.length} reseñas...`);
     }
 
@@ -596,7 +595,7 @@ async function main() {
     console.log(`   - ${canchas.length} canchas (8 por complejo, una por deporte)`);
     console.log(`   - 640 reseñas (10 por cancha)`);
     console.log(`   - Cronogramas con horarios puntuales (7:00-23:00)`);
-    console.log(`   - Turnos disponibles con 25% ocupados`);
+    console.log(`   - Turnos disponibles (7 días) con 25% ocupados`);
     console.log(`   - 64 imágenes únicas asignadas`);
 
   } catch (error) {

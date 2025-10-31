@@ -1,22 +1,44 @@
-version: '3.8'
+# version: '3.8'
 
+# services:
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     restart: always
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       DATABASE_URL: ${DATABASE_URL}
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#     restart: always
+#     ports:
+#       - "80:80"
+#     environment:
+#       VITE_BACKEND_URL: http://localhost:3000  ##esto habria que cambiarlo por la url que genera render
+
+# docker-compose.yml
+version: '3.8'
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  db:
+    image: postgres:15
+    container_name: canchaya-db-local
     restart: always
     ports:
-      - "3000:3000"
+      - "5432:5432" # Expone el puerto de la DB a tu localhost
     environment:
       DATABASE_URL: ${DATABASE_URL}
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: always
-    ports:
-      - "80:80"
-    environment:
-      VITE_BACKEND_URL: http://localhost:3000  ##esto habria que cambiarlo por la url que genera render
+#   frontend:
+#     build:
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#     restart: always
+#     ports:
+#       - "80:80"
+#     environment:
+#       VITE_BACKEND_URL: http://localhost:3000  ##esto habria que cambiarlo por la url que genera render

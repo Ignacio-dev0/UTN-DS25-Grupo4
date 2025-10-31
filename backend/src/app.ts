@@ -21,6 +21,7 @@ import servicioRoutes from './routes/servicio.routes';
 import migrationRoutes from './routes/migration.routes';
 import debugRoutes from './routes/debug.routes';
 
+import webhookRoutes from './routes/webhook.routes'
 
 const app = express();
 
@@ -86,6 +87,7 @@ app.use('/api/localidades',       localidadRoutes);
 app.use('/api/alquileres',        alquilerRoutes);
 app.use('/api/admin',             migrationRoutes);
 app.use('/api',                   debugRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Middleware de manejo de errores global
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

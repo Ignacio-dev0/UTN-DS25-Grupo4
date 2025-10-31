@@ -31,7 +31,7 @@ router.post(
   '/',
   authenticate,
   authorize('CLIENTE'),
-  validate(alquilerSchema.crearAlquiler),
+  //validate(alquilerSchema.crearAlquiler),
   alquilerController.crearAlquiler
 );
 

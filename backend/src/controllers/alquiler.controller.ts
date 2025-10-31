@@ -111,18 +111,18 @@ export async function obtenerAlquileresPorComplejo(req: Request, res: Response<A
 	}
 }
 
-export async function pagarAlquiler(req: Request, res: Response<AlquilerPagadoResponse>, next: NextFunction) {
-	try {
-		const { id } = req.params;
-		const [pago, alquiler] = await alquilerService.pagarAlquiler(Number(id), req.body);
-		res.status(200).json({
-			pago,
-			alquiler,
-			message: 'El alquiler fue pagado',
-		});
-	} catch(error) {
-		next(error);
-	}
+export async function pagarAlquiler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    // 1. Ya no recibe 'req.body'
+    const { init_point } = await alquilerService.pagarAlquiler(Number(id));
+    
+    // 2. Devolvemos el link de pago al frontend
+    res.status(200).json({ init_point });
+
+  } catch(error) {
+    next(error);
+  }
 }
 
 export async function actualizarAlquiler(req: Request,  res: Response<AlquilerResponse>, next: NextFunction) {

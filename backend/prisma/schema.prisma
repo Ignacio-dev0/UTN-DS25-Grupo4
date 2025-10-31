@@ -147,12 +147,16 @@ model Alquiler {
 
 model Pago {
   id                Int        @id @default(autoincrement())
-  codigoTransaccion String?
+  //codigo transaccion lo flete, por que ahora es idPagoMp y mpPreferenceId
   metodoPago        MetodoPago
   monto             Float
   fechaHora         DateTime   @default(now())
   alquilerId        Int        @unique
   alquiler          Alquiler   @relation(fields: [alquilerId], references: [id])
+  // atributos para manejar mp
+  mpPreferenceId String? @unique
+  idPagoMp String? @unique
+  estadoPago String?
 }
 
 model Servicio {
@@ -192,6 +196,7 @@ enum MetodoPago {
   DEBITO
   CREDITO
   TRANSFERENCIA
+  MERCADOPAGO
 }
 
 enum EstadoAlquiler {
