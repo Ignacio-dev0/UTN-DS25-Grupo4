@@ -3,6 +3,7 @@
 
 import prisma from "../config/prisma";
 import { EstadoComplejo } from '@prisma/client';
+import * as emailService from './email.service';
 
 // Obtener todas las solicitudes (complejos filtrados por estado)
 export async function getAllRequest(includeApproved: boolean = false): Promise<any[]> {
@@ -55,7 +56,7 @@ export async function deleteSoli(id: number) {
 
 // Actualizar estado de solicitud (cambiar estado del complejo)
 export async function updateSolicitud(id: number, data: { estado: EstadoComplejo, evaluadorId?: number }) {
-  return prisma.complejo.update({
+  const complejoActualizado = await prisma.complejo.update({
     where: { id },
     data: {
       estado: data.estado,
@@ -70,6 +71,18 @@ export async function updateSolicitud(id: number, data: { estado: EstadoComplejo
       }
     }
   });
+  if (data.estado === 'APROBADO' && complejoActualizado.usuario) {
+    
+    emailService.enviarEmailComplejoAprobado(
+      complejoActualizado.usuario.email,  // Email del dueño
+      complejoActualizado.nombre,         // Nombre del complejo
+      complejoActualizado.usuario.nombre  // Nombre del dueño
+    )
+    .catch(errorEmail => {
+      console.error(`[Error Asíncrono] Falló el envío de email de aprobación para complejo ${id}`, errorEmail);
+    });
+  }
+  return complejoActualizado;
 }
 
 // Crear solicitud con complejo (registro de nuevo dueño)
