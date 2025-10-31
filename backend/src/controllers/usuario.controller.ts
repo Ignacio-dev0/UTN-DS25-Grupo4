@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import * as usuarioService from "../services/usuario.service";
 import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
+import { enviarEmailBienvenida } from "../services/email.service";
 
 export async function crearUsuario(req: Request, res: Response<UsuarioResponse>) {
   try {
@@ -335,6 +336,7 @@ export async function register(req: Request, res: Response) {
         },
         message: 'Usuario registrado exitosamente'
       });
+      enviarEmailBienvenida(newUsuario.email, newUsuario.nombre);
     }
 
   } catch (error: any) {
