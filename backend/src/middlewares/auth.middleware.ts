@@ -36,7 +36,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     }
     next()
   } catch (error) {
-    if (error instanceof TokenExpiredError) error = new Error('Sesión expirada')
+    if (error.name === 'TokenExpiredError') error = new Error('Sesión expirada')
     next(error)
   }
 }
