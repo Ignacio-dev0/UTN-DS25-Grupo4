@@ -16,7 +16,6 @@ const footerSections = [
                 <li>Benitez, Ignacio</li>
                 <li>Cayo, Ariel</li>
                 <li>Dieguez, Matias</li>
-                <li>Mendez, Alexis</li>
                 <li>Perez, Thiago</li>
             </ul>
         )
