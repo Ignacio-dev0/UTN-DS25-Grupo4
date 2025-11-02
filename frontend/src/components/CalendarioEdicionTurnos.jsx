@@ -510,37 +510,19 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       if (!responseHorario.ok) {
         const errorData = await responseHorario.json();
         console.error('Error al deshabilitar horario:', errorData);
-        // Continuar con la eliminación aunque falle el deshabilitar
-      } else {
-        const horarioData = await responseHorario.json();
-        console.log('✅ Horario deshabilitado permanentemente:', horarioData);
-        
-        // Actualizar la lista local de horarios deshabilitados
-        setHorariosDeshabilitados(prev => [...prev, horarioData.horarioDeshabilitado]);
+        throw new Error(errorData.error || 'Error al deshabilitar horario');
       }
       
-      // 2. Eliminar el turno actual de la BD
-      const responseTurno = await fetch(`${API_BASE_URL}/turnos/individual/${turno.id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-
-      if (!responseTurno.ok) {
-        const errorData = await responseTurno.json().catch(() => ({}));
-        console.error('❌ Error del servidor:', errorData);
-        
-        if (responseTurno.status === 404) {
-          throw new Error('Turno no encontrado en la base de datos');
-        } else if (responseTurno.status === 400) {
-          throw new Error(errorData.error || 'No se puede eliminar este turno');
-        } else if (responseTurno.status === 401 || responseTurno.status === 403) {
-          throw new Error('No tienes permisos para eliminar este turno');
-        } else {
-          throw new Error('Error al eliminar turno');
-        }
-      }
-
-      // 3. Actualizar localmente removiendo el turno
+      const horarioData = await responseHorario.json();
+      console.log('✅ Horario deshabilitado permanentemente:', horarioData);
+      
+      // Actualizar la lista local de horarios deshabilitados
+      setHorariosDeshabilitados(prev => [...prev, horarioData.horarioDeshabilitado]);
+      
+      // NOTA: No necesitamos hacer DELETE del turno porque el backend ya lo eliminó
+      // automáticamente al crear el horario deshabilitado
+      
+      // Actualizar localmente removiendo el turno
       const turnosActualizados = turnos.filter(t => t.id !== turno.id);
       onTurnosChange(turnosActualizados);
       
