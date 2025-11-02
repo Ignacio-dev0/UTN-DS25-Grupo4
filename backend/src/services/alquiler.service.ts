@@ -2,6 +2,7 @@ import prisma from '../config/prisma';
 import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
 import { CrearAlquilerData } from '../validations/alquiler.validation';
+import { invalidateMultipleTurnosCache } from './turno.service';
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
 	return await prisma.alquiler.findMany({
@@ -451,6 +452,9 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 	if (data.estado === EstadoAlquiler.CANCELADO) {
 		console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
 		
+		// Obtener las canchas afectadas para invalidar su caché
+		const canchasAfectadas = [...new Set(alquiler.turnos.map(turno => turno.canchaId))];
+		
 		// Actualizar todos los turnos del alquiler para que no estén reservados
 		await prisma.turno.updateMany({
 			where: {
@@ -461,6 +465,9 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 				alquilerId: null
 			}
 		});
+		
+		// Invalidar el caché de las canchas afectadas
+		invalidateMultipleTurnosCache(canchasAfectadas);
 		
 		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles`);
 	}
