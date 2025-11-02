@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FaUser, FaFutbol, FaMapMarkerAlt } from "react-icons/fa";
 import { register } from '../services/auth.js';
-import { useAuth } from '../context/AuthContext.jsx';
 import { API_BASE_URL } from '../config/api.js';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -16,9 +15,6 @@ function SignUpPage() {
   const [complexImage, setComplexImage] = useState(null);
   const [complexImagePreview, setComplexImagePreview] = useState(null);
   const [serverError, setServerError] = useState('');
-  
-  const navigate = useNavigate();
-  const { login } = useAuth();
 
   const { 
     register: registerField,
@@ -118,9 +114,9 @@ function SignUpPage() {
         const response = await register(userData); 
         
         if (response.ok) {
-          login(response.user);
-          console.log('¡Registro exitoso! Bienvenido a CanchaYa');
-          navigate('/');
+          // Mostrar mensaje de éxito y redirigir al login
+          console.log('¡Registro exitoso! Por favor inicia sesión');
+          setStep('redirect-login');
         } else {
           setServerError(response.error);
         }
@@ -183,6 +179,21 @@ function SignUpPage() {
     }
   };
 
+  if (step === 'redirect-login') {
+    return (
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
+        <FaUser className="mx-auto h-16 w-16 text-primary" />
+        <h2 className="mt-6 text-2xl font-bold text-gray-900">¡Registro Exitoso!</h2>
+        <p className="mt-2 text-gray-600">
+          Tu cuenta ha sido creada correctamente. Por favor inicia sesión para continuar.
+        </p>
+        <Link to="/login" className="mt-6 inline-block w-full bg-primary text-white font-bold py-2 px-4 rounded-md hover:bg-primary-dark transition-colors">
+          Ir al Login
+        </Link>
+      </div>
+    );
+  }
+
   if (step === 'confirmation') {
     return (
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
@@ -191,8 +202,8 @@ function SignUpPage() {
         <p className="mt-2 text-gray-600">
             Gracias por registrar tu complejo. Nuestro equipo revisará tu solicitud y te notificaremos por mail cuando sea aprobada.
         </p>
-        <Link to="/" className="mt-6 inline-block w-full bg-primary text-white font-bold py-2 px-4 rounded-md hover:bg-primary-dark transition-colors">
-            Volver al Inicio
+        <Link to="/login" className="mt-6 inline-block w-full bg-primary text-white font-bold py-2 px-4 rounded-md hover:bg-primary-dark transition-colors">
+          Ir al Login
         </Link>
       </div>
     );
