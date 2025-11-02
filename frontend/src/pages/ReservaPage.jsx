@@ -171,43 +171,42 @@ function ReservaPage() {
       
       // Función para determinar el estado del turno
       const determinarEstadoTurno = (turno) => {
-        // 🔴 PRIMERO: Si el backend indica que el turno ya pasó, está FINALIZADO
+        // 1️⃣ PRIMERO: Si el backend indica que el turno ya pasó → FINALIZADO
         if (turno.yaPaso === true) {
           return 'finalizado';
         }
         
-        // Si está deshabilitado
+        // 2️⃣ Si está deshabilitado temporalmente → DESHABILITADO
         if (turno.deshabilitado) {
           return 'deshabilitado';
         }
         
-        // Si está reservado por un cliente
+        // 3️⃣ Si está reservado → puede ser por CLIENTE o MANUALMENTE por DUEÑO
         if (turno.reservado) {
-          return 'reservado';
-        }
-        
-        // Si tiene alquilerId pero NO está reservado, verificar estado del alquiler
-        if (turno.alquilerId && !turno.reservado) {
-          // Si el alquiler está cancelado, el turno está disponible
-          if (turno.alquiler && turno.alquiler.estado === 'CANCELADO') {
-            console.log(`✅ Turno ${turno.id} de alquiler cancelado ${turno.alquilerId} - marcando como disponible`);
-            return 'disponible';
+          if (turno.alquilerId) {
+            // Tiene alquiler = Cliente reservó
+            return 'reservado';
           }
-          // Si no, está ocupado manualmente por el dueño
-          console.log(`🔒 Turno ${turno.id} con alquilerId ${turno.alquilerId} estado ${turno.alquiler?.estado || 'SIN INFO'} - marcando como ocupado`);
+          // NO tiene alquiler = Dueño lo marcó manualmente como ocupado
           return 'ocupado';
         }
         
-        // Si está disponible
+        // 4️⃣ Tiene alquilerId pero NO está reservado → CANCELADO por cliente
+        if (turno.alquilerId && !turno.reservado) {
+          if (turno.alquiler?.estado === 'CANCELADO') {
+            // Cliente canceló → Turno DISPONIBLE nuevamente
+            return 'disponible';
+          }
+          // Caso raro: tiene alquiler, no está reservado, pero no está cancelado
+          console.log(`⚠️ Turno ${turno.id} con alquilerId ${turno.alquilerId} pero estado ${turno.alquiler?.estado || 'SIN INFO'}`);
+          return 'ocupado';
+        }
+        
+        // 5️⃣ Si no tiene alquilerId y no está reservado → DISPONIBLE
         return 'disponible';
       };
       
       const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
-        // Debug: verificar si el campo alquiler está llegando del backend
-        if (turno.alquilerId && !turno.reservado) {
-          console.log(`🔍 Turno ${turno.id} tiene alquilerId=${turno.alquilerId}, alquiler=`, turno.alquiler);
-        }
-        
         const estado = determinarEstadoTurno(turno);
         
         return {
