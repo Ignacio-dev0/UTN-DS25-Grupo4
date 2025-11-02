@@ -248,9 +248,11 @@ function ReservaPage() {
           if (turno.alquilerId && !turno.reservado) {
             // Si el alquiler está cancelado, el turno está disponible
             if (turno.alquiler && turno.alquiler.estado === 'CANCELADO') {
+              console.log(`✅ Turno ${turno.id} de alquiler cancelado ${turno.alquilerId} - marcando como disponible`);
               return 'disponible';
             }
             // Si no, está ocupado manualmente por el dueño
+            console.log(`🔒 Turno ${turno.id} con alquilerId ${turno.alquilerId} estado ${turno.alquiler?.estado || 'SIN INFO'} - marcando como ocupado`);
             return 'ocupado';
           }
           
@@ -272,7 +274,8 @@ function ReservaPage() {
             horaCompleta: turno.horaInicio, // Agregar para debugging
             reservado: turno.reservado,
             deshabilitado: turno.deshabilitado,
-            alquilerId: turno.alquilerId
+            alquilerId: turno.alquilerId,
+            alquiler: turno.alquiler // IMPORTANTE: Pasar estado del alquiler para verificar si está cancelado
           };
         });
         
