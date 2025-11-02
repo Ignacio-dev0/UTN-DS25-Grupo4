@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "dev:local": "cp .env.local .env && npm run dev",
+    "dev:supabase": "cp .env.supabase .env && npm run dev",
     "dev:railway": "cp .env.railway .env && npm run dev",
     "build": "npx prisma generate && tsc",
     "start": "echo 'Starting CanchaYa Backend...' && node dist/server.js",

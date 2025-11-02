@@ -126,15 +126,146 @@ function ReservaPage() {
     }
   }, [canchaId]);
 
-  // Efecto para refrescar reseñas cuando la página viene al foco
+  // Función para cargar turnos (separada para poder reutilizarla)
+  const cargarTurnos = useCallback(async () => {
+    if (!canchaId) return;
+    
+    try {
+      console.log('🔄 Recargando turnos...');
+      
+      // USAR ENDPOINT DE SEMANA en lugar de todos los turnos
+      const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
+      if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
+      const turnosData = await turnosResponse.json();
+      
+      console.log('📊 Turnos recibidos del backend:', {
+        total: turnosData.turnos?.length || 0,
+        primerosTres: turnosData.turnos?.slice(0, 3)
+      });
+      
+      // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
+      const obtenerDiaSemana = (fecha) => {
+        const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+        
+        // Si la fecha viene como string "2025-10-22", parsearlo correctamente
+        let fechaStr = fecha;
+        if (fechaStr.includes('T')) {
+          fechaStr = fechaStr.split('T')[0]; // Extraer solo la fecha
+        }
+        
+        // Usar Date con componentes individuales para evitar problemas de timezone
+        const [year, month, day] = fechaStr.split('-').map(Number);
+        const fechaObj = new Date(year, month - 1, day); // month es 0-indexed
+        
+        return diasSemana[fechaObj.getDay()]; // getDay() usa timezone local
+      };
+
+      // Función auxiliar para formatear hora desde ISO string
+      const formatearHora = (horaISO) => {
+        const fecha = new Date(horaISO);
+        // Usar UTC para evitar problemas de timezone
+        const horas = fecha.getUTCHours().toString().padStart(2, '0');
+        const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
+        return `${horas}:${minutos}`;
+      };
+      
+      // Función para determinar el estado del turno
+      const determinarEstadoTurno = (turno) => {
+        // 1️⃣ PRIMERO: Si el backend indica que el turno ya pasó → FINALIZADO
+        if (turno.yaPaso === true) {
+          return 'finalizado';
+        }
+        
+        // 2️⃣ Si está deshabilitado temporalmente → DESHABILITADO
+        if (turno.deshabilitado) {
+          return 'deshabilitado';
+        }
+        
+        // 3️⃣ Si está reservado → puede ser por CLIENTE o MANUALMENTE por DUEÑO
+        if (turno.reservado) {
+          if (turno.alquilerId) {
+            // Tiene alquiler = Cliente reservó
+            return 'reservado';
+          }
+          // NO tiene alquiler = Dueño lo marcó manualmente como ocupado
+          return 'ocupado';
+        }
+        
+        // 4️⃣ Tiene alquilerId pero NO está reservado → Verificar estado del alquiler
+        if (turno.alquilerId && !turno.reservado) {
+          const estadoAlquiler = turno.alquiler?.estado;
+          
+          if (estadoAlquiler === 'CANCELADO') {
+            // Cliente canceló → Turno DISPONIBLE nuevamente
+            return 'disponible';
+          }
+          
+          if (estadoAlquiler === 'PROGRAMADO' || estadoAlquiler === 'PAGADO') {
+            // Reserva en proceso (race condition: alquiler creado pero turno aún no marcado como reservado)
+            // O turno ya pagado → Mostrar como RESERVADO
+            return 'reservado';
+          }
+          
+          if (estadoAlquiler === 'FINALIZADO') {
+            // Alquiler finalizado → Turno ya pasó (debería estar en yaPaso, pero por si acaso)
+            return 'finalizado';
+          }
+          
+          // Caso raro: tiene alquiler pero estado desconocido
+          console.log(`⚠️ Turno ${turno.id} con alquilerId ${turno.alquilerId} pero estado ${estadoAlquiler || 'SIN INFO'}`);
+          return 'ocupado';
+        }
+        
+        // 5️⃣ Si no tiene alquilerId y no está reservado → DISPONIBLE
+        return 'disponible';
+      };
+      
+      const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
+        const estado = determinarEstadoTurno(turno);
+        
+        return {
+          id: turno.id,
+          dia: obtenerDiaSemana(turno.fecha),
+          hora: formatearHora(turno.horaInicio),
+          precio: turno.precio,
+          estado,
+          fecha: turno.fecha,
+          fechaCompleta: turno.fecha,
+          horaCompleta: turno.horaInicio,
+          reservado: turno.reservado,
+          deshabilitado: turno.deshabilitado,
+          alquilerId: turno.alquilerId,
+          alquiler: turno.alquiler
+        };
+      });
+      
+      console.log('📊 Resumen de turnos formateados:', {
+        total: turnosFormateados.length,
+        disponibles: turnosFormateados.filter(t => t.estado === 'disponible').length,
+        reservados: turnosFormateados.filter(t => t.estado === 'reservado').length,
+        ocupados: turnosFormateados.filter(t => t.estado === 'ocupado').length,
+        finalizados: turnosFormateados.filter(t => t.estado === 'finalizado').length,
+        deshabilitados: turnosFormateados.filter(t => t.estado === 'deshabilitado').length
+      });
+      
+      setTurnos(turnosFormateados);
+      
+    } catch (error) {
+      console.error('Error cargando turnos:', error);
+    }
+  }, [canchaId]);
+
+  // Efecto para refrescar reseñas Y TURNOS cuando la página viene al foco
   useEffect(() => {
     const handleFocus = () => {
+      console.log('🔄 Ventana enfocada - recargando reseñas y turnos');
       cargarReseñas();
+      cargarTurnos();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [cargarReseñas]);
+  }, [cargarReseñas, cargarTurnos]);
 
   // Cargar datos dinámicos desde el backend
   useEffect(() => {
@@ -188,99 +319,8 @@ function ReservaPage() {
         // Cargar reseñas de la cancha
         await cargarReseñas();
         
-        // USAR ENDPOINT DE SEMANA en lugar de todos los turnos
-        // Esto trae solo los turnos de los próximos 7 días (hoy + 6)
-        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
-        if (!turnosResponse.ok) throw new Error('Error al cargar turnos');
-        const turnosData = await turnosResponse.json();
-        
-        console.log('📊 Turnos recibidos del backend:', {
-          total: turnosData.turnos?.length || 0,
-          primerosTres: turnosData.turnos?.slice(0, 3)
-        });
-        
-        // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
-        const obtenerDiaSemana = (fecha) => {
-          const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-          
-          // Si la fecha viene como string "2025-10-22", parsearlo correctamente
-          let fechaStr = fecha;
-          if (fechaStr.includes('T')) {
-            fechaStr = fechaStr.split('T')[0]; // Extraer solo la fecha
-          }
-          
-          // Usar Date con componentes individuales para evitar problemas de timezone
-          const [year, month, day] = fechaStr.split('-').map(Number);
-          const fechaObj = new Date(year, month - 1, day); // month es 0-indexed
-          
-          return diasSemana[fechaObj.getDay()]; // getDay() usa timezone local
-        };
-
-        // Función auxiliar para formatear hora desde ISO string
-        const formatearHora = (horaISO) => {
-          const fecha = new Date(horaISO);
-          // Usar UTC para evitar problemas de timezone
-          const horas = fecha.getUTCHours().toString().padStart(2, '0');
-          const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
-          return `${horas}:${minutos}`;
-        };
-        
-        // Función para determinar el estado del turno
-        // IMPORTANTE: Ahora usamos el campo 'yaPaso' que viene del backend
-        const determinarEstadoTurno = (turno) => {
-          // 🔴 PRIMERO: Si el backend indica que el turno ya pasó, está FINALIZADO
-          if (turno.yaPaso === true) {
-            return 'finalizado';
-          }
-          
-          // 🟡 SEGUNDO: Verificar estados especiales (solo para turnos futuros)
-          // Si está deshabilitado temporalmente
-          if (turno.deshabilitado) {
-            return 'deshabilitado';
-          }
-          
-          // Si está reservado por un cliente
-          if (turno.reservado) {
-            return 'reservado';
-          }
-          
-          // Si está ocupado manualmente por el dueño (alquilerId sin reservado)
-          if (turno.alquilerId && !turno.reservado) {
-            return 'ocupado';
-          }
-          
-          // Si está disponible
-          return 'disponible';
-        };
-        
-        const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
-          const estado = determinarEstadoTurno(turno);
-          
-          return {
-            id: turno.id,
-            dia: obtenerDiaSemana(turno.fecha),
-            hora: formatearHora(turno.horaInicio),
-            precio: turno.precio,
-            estado,
-            fecha: turno.fecha,
-            fechaCompleta: turno.fecha, // Agregar para debugging
-            horaCompleta: turno.horaInicio, // Agregar para debugging
-            reservado: turno.reservado,
-            deshabilitado: turno.deshabilitado,
-            alquilerId: turno.alquilerId
-          };
-        });
-        
-        console.log('📊 Resumen de turnos formateados:', {
-          total: turnosFormateados.length,
-          disponibles: turnosFormateados.filter(t => t.estado === 'disponible').length,
-          reservados: turnosFormateados.filter(t => t.estado === 'reservado').length,
-          ocupados: turnosFormateados.filter(t => t.estado === 'ocupado').length,
-          finalizados: turnosFormateados.filter(t => t.estado === 'finalizado').length,
-          deshabilitados: turnosFormateados.filter(t => t.estado === 'deshabilitado').length
-        });
-        
-        setTurnos(turnosFormateados);
+        // Cargar turnos usando la función separada
+        await cargarTurnos();
         
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -291,7 +331,7 @@ function ReservaPage() {
     };
 
     cargarDatos();
-  }, [canchaId, cargarReseñas]);
+  }, [canchaId, cargarReseñas, cargarTurnos]);
 
   const canchaMostrada = useMemo(() => {
     if (!cancha || !complejo) return null;

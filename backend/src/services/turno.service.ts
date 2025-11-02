@@ -208,6 +208,12 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
                             }
                         }
                     }
+                },
+                // Incluir estado del alquiler para verificar si está cancelado
+                alquiler: {
+                    select: {
+                        estado: true
+                    }
                 }
             },
             orderBy: [
@@ -291,6 +297,20 @@ export async function deleteTurno(id: number): Promise<Turno> {
     return deleted;
 }
 
+// Función para invalidar el caché de turnos de una cancha específica
+export function invalidateTurnosCache(canchaId: number): void {
+    turnosCache.delete(canchaId);
+    console.log(`🗑️ Cache invalidado para cancha ${canchaId}`);
+}
+
+// Función para invalidar el caché de múltiples canchas
+export function invalidateMultipleTurnosCache(canchaIds: number[]): void {
+    canchaIds.forEach(canchaId => {
+        turnosCache.delete(canchaId);
+    });
+    console.log(`🗑️ Cache invalidado para ${canchaIds.length} cancha(s): [${canchaIds.join(', ')}]`);
+}
+
 export async function getTurnosPorSemana(canchaId: number, semanaOffset: number = 0): Promise<Turno[]> {
     try {
         console.log(`🔍 Servicio getTurnosPorSemana: cancha ${canchaId}, semana offset ${semanaOffset}`);
@@ -335,6 +355,12 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
                                 nombre: true
                             }
                         }
+                    }
+                },
+                // Incluir estado del alquiler para verificar si está cancelado
+                alquiler: {
+                    select: {
+                        estado: true
                     }
                 }
             },
