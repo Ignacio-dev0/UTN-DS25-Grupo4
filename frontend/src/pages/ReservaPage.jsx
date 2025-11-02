@@ -244,8 +244,13 @@ function ReservaPage() {
             return 'reservado';
           }
           
-          // Si está ocupado manualmente por el dueño (alquilerId sin reservado)
+          // Si tiene alquilerId pero NO está reservado, verificar estado del alquiler
           if (turno.alquilerId && !turno.reservado) {
+            // Si el alquiler está cancelado, el turno está disponible
+            if (turno.alquiler && turno.alquiler.estado === 'CANCELADO') {
+              return 'disponible';
+            }
+            // Si no, está ocupado manualmente por el dueño
             return 'ocupado';
           }
           

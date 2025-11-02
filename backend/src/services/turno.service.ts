@@ -208,6 +208,12 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
                             }
                         }
                     }
+                },
+                // Incluir estado del alquiler para verificar si está cancelado
+                alquiler: {
+                    select: {
+                        estado: true
+                    }
                 }
             },
             orderBy: [

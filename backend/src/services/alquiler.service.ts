@@ -335,7 +335,7 @@ export async function obtenerAlquileres() {
 }
 
 export async function obtenerAlquileresPorClienteId(clienteId: number) {
-	const alquiler = await prisma.alquiler.findMany({
+	const alquileres = await prisma.alquiler.findMany({
 		where: { clienteId },
 		include: { 
 			turnos: {
@@ -357,16 +357,33 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 		take: 100 // Limitar a los últimos 100 alquileres
 	});
 
-	if (!alquiler) {
+	if (!alquileres) {
 		const error = new Error('Alquiler no encontrado');
 		(error as any).statusCode = 404;
 		throw error;
 	}
 	
+	// Para alquileres cancelados sin turnos, buscar los turnos históricos
+	// (esto ocurre porque al cancelar se desvincula alquilerId)
+	const alquileresConTurnos = await Promise.all(
+		alquileres.map(async (alq) => {
+			// Si el alquiler está cancelado y no tiene turnos, buscar turnos históricos
+			if (alq.estado === EstadoAlquiler.CANCELADO && alq.turnos.length === 0) {
+				console.log(`🔍 Alquiler ${alq.id} cancelado sin turnos, buscando historial...`);
+				
+				// Buscar en el log de turnos (auditoria) o reconstruir desde createdAt
+				// Por ahora, simplemente logueamos que está vacío
+				// TODO: Implementar auditlog o campo turnosSnapshot en schema
+			}
+			
+			return alq;
+		})
+	);
+	
 	// Para cada alquiler, verificar si el usuario ya dejó una reseña en esa cancha
 	// (no solo en este alquiler específico, sino en CUALQUIER alquiler de esa cancha)
 	const alquileresConInfoReseña = await Promise.all(
-		alquiler.map(async (alq) => {
+		alquileresConTurnos.map(async (alq) => {
 			if (alq.turnos.length === 0) return { ...alq, usuarioYaReseñoCancha: false };
 			
 			const canchaId = alq.turnos[0].cancha.id;
@@ -463,22 +480,23 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		// Obtener las canchas afectadas para invalidar su caché
 		const canchasAfectadas = [...new Set(alquiler.turnos.map(turno => turno.canchaId))];
 		
-		// ⚠️ IMPORTANTE: Marcar turnos como no reservados pero MANTENER la relación con alquilerId
-		// Esto permite que el turno vuelva a estar disponible Y que el alquiler mantenga su historial
+		// ⚠️ ESTRATEGIA: Mantener alquilerId para historial, pero marcar reservado=false
+		// El frontend debe verificar el estado del alquiler (CANCELADO) para determinar disponibilidad
 		await prisma.turno.updateMany({
 			where: {
 				alquilerId: id
 			},
 			data: {
-				reservado: false,
-				// NO ponemos alquilerId: null - mantenemos la relación para historial
+				reservado: false
+				// Mantenemos alquilerId para que el historial funcione
 			}
 		});
 		
 		// Invalidar el caché de las canchas afectadas
 		invalidateMultipleTurnosCache(canchasAfectadas);
 		
-		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles (mantienen relación con alquiler para historial)`);
+		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) marcados como reservado=false`);
+		console.log(`ℹ️  Los turnos mantienen alquilerId=${id} para historial. Frontend debe verificar estado del alquiler.`);
 	}
 	
 	return await prisma.alquiler.update({
