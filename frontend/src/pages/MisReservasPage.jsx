@@ -106,11 +106,23 @@ function MisReservasPage() {
                 
                 console.log('📦 Datos completos del backend:', JSON.stringify(data, null, 2));
                 console.log('📊 Total alquileres recibidos:', data.alquileres?.length || 0);
+                
+                // Log detallado de CADA alquiler
                 if (data.alquileres && data.alquileres.length > 0) {
-                    console.log('🔍 PRIMER ALQUILER COMPLETO:', JSON.stringify(data.alquileres[0], null, 2));
-                    if (data.alquileres[0].turnos && data.alquileres[0].turnos.length > 0) {
-                        console.log('⏰ PRIMER TURNO:', JSON.stringify(data.alquileres[0].turnos[0], null, 2));
-                    }
+                    console.log('🔍 ANALIZANDO TODOS LOS ALQUILERES:');
+                    data.alquileres.forEach((alq, index) => {
+                        console.log(`  Alquiler ${index + 1}:`, {
+                            id: alq.id,
+                            estado: alq.estado,
+                            cantidadTurnos: alq.turnos?.length || 0,
+                            primerTurno: alq.turnos && alq.turnos.length > 0 ? {
+                                fecha: alq.turnos[0].fecha,
+                                horaInicio: alq.turnos[0].horaInicio,
+                                cancha: alq.turnos[0].cancha?.nroCancha,
+                                complejo: alq.turnos[0].cancha?.complejo?.nombre
+                            } : 'SIN TURNOS'
+                        });
+                    });
                 }
                 
                 // Filtrar solo alquileres que tengan turnos
@@ -118,6 +130,13 @@ function MisReservasPage() {
                     alquiler.turnos && alquiler.turnos.length > 0
                 );
                 console.log('✅ Alquileres con turnos:', alquileresConTurnos.length);
+                
+                const alquileresSinTurnos = (data.alquileres || []).filter(alquiler => 
+                    !alquiler.turnos || alquiler.turnos.length === 0
+                );
+                if (alquileresSinTurnos.length > 0) {
+                    console.warn('⚠️ ALQUILERES SIN TURNOS:', alquileresSinTurnos.length, 'alquileres no se mostrarán');
+                }
                 
                 const reservasFormateadas = alquileresConTurnos.map(alquiler => {
                     // Ordenar los turnos por horaInicio para asegurar el orden correcto
@@ -135,6 +154,9 @@ function MisReservasPage() {
                     }
                     
                     const fecha = new Date(primerTurno.fecha);
+                    
+                    // Formatear fecha a DD/MM/YYYY - HACER ESTO PRIMERO
+                    const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
                     
                     // Función auxiliar para parsear hora desde ISO string
                     const parsearHora = (horaISO) => {
@@ -187,13 +209,21 @@ function MisReservasPage() {
                     // Construir fecha/hora de fin del turno
                     const fechaHoraFinTurno = new Date(anio, mes, dia, horaFinParsed, minFinParsed);
                     
+                    console.log(`⏱️ Alquiler ${alquiler.id}:`, {
+                        fecha: fechaFormateada,
+                        horaInicio: horaInicio,
+                        horaFin: horaFin,
+                        fechaHoraFinTurno: fechaHoraFinTurno.toLocaleString('es-ES'),
+                        ahora: ahora.toLocaleString('es-ES'),
+                        yaTermino: ahora > fechaHoraFinTurno,
+                        estado: estado
+                    });
+                    
                     // Si el turno ya terminó (hora de fin pasó), marcar como finalizado
                     if ((estado === 'Confirmada' || estado === 'Pendiente') && ahora > fechaHoraFinTurno) {
+                        console.log(`  ⚠️ Auto-finalizando turno ${alquiler.id} porque ya pasó su hora`);
                         estado = 'Finalizada';
                     }
-
-                    // Formatear fecha a DD/MM/YYYY
-                    const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
                     
                     // Verificar si el USUARIO ya dejó una reseña en esta CANCHA (en cualquier alquiler)
                     const usuarioYaReseñoCancha = alquiler.usuarioYaReseñoCancha || false;
@@ -215,6 +245,16 @@ function MisReservasPage() {
                 
                 // Filtrar los null (alquileres con datos incompletos)
                 const reservasValidas = reservasFormateadas.filter(r => r !== null);
+                console.log('✅ Reservas válidas después de formatear:', reservasValidas.length);
+                
+                // Log de resumen por estado
+                const conteoEstados = {
+                    Pendiente: reservasValidas.filter(r => r.estado === 'Pendiente').length,
+                    Confirmada: reservasValidas.filter(r => r.estado === 'Confirmada').length,
+                    Finalizada: reservasValidas.filter(r => r.estado === 'Finalizada').length,
+                    Cancelada: reservasValidas.filter(r => r.estado === 'Cancelada').length
+                };
+                console.log('📊 RESUMEN POR ESTADO:', conteoEstados);
                 
                 // Ordenar reservas por estado (pendientes primero) y luego por fecha más reciente
                 const reservasOrdenadas = reservasValidas.sort((a, b) => {
