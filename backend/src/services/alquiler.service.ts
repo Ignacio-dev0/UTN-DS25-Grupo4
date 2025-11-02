@@ -476,9 +476,11 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 	// Si se está cancelando el alquiler, liberar los turnos asociados
 	if (data.estado === EstadoAlquiler.CANCELADO) {
 		console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
+		console.log(`📋 Turnos a liberar:`, alquiler.turnos.map(t => ({ id: t.id, canchaId: t.canchaId })));
 		
 		// Obtener las canchas afectadas para invalidar su caché
 		const canchasAfectadas = [...new Set(alquiler.turnos.map(turno => turno.canchaId))];
+		console.log(`🎯 Canchas afectadas para invalidar caché:`, canchasAfectadas);
 		
 		// ⚠️ ESTRATEGIA: Mantener alquilerId para historial, pero marcar reservado=false
 		// El frontend debe verificar el estado del alquiler (CANCELADO) para determinar disponibilidad
@@ -493,7 +495,9 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		});
 		
 		// Invalidar el caché de las canchas afectadas
+		console.log(`🗑️ Invalidando caché ANTES...`);
 		invalidateMultipleTurnosCache(canchasAfectadas);
+		console.log(`🗑️ Cache invalidado para ${canchasAfectadas.length} cancha(s): [${canchasAfectadas.join(', ')}]`);
 		
 		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) marcados como reservado=false`);
 		console.log(`ℹ️  Los turnos mantienen alquilerId=${id} para historial. Frontend debe verificar estado del alquiler.`);
