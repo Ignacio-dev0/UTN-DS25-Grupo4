@@ -12,6 +12,11 @@ Thumbs.db
 *.swp
 # Configuración de entorno (no se comparte)
 .env
+.env.production
+.env.local
+.env.supabase
+.env.railway
+.env.*.local
 # Archivos de backup de base de datos
 railway_backup.sql
 railway_data.sql

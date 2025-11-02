@@ -9,7 +9,6 @@ import ModalPago from '../components/ModalPago';
 import { getUserProfile, updateUserProfile } from '../services/auth';
 import { API_BASE_URL } from '../config/api.js';
 import { parseFechaBackend, parseHoraBackend, formatearFecha, calcularHoraFin, turnoYaPaso } from '../utils/dateUtils';
-import './MisReservasPage.css';
 
 function MisReservasPage() {
     const navigate = useNavigate();

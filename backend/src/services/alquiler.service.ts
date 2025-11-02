@@ -463,21 +463,22 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		// Obtener las canchas afectadas para invalidar su caché
 		const canchasAfectadas = [...new Set(alquiler.turnos.map(turno => turno.canchaId))];
 		
-		// Actualizar todos los turnos del alquiler para que no estén reservados
+		// ⚠️ IMPORTANTE: Marcar turnos como no reservados pero MANTENER la relación con alquilerId
+		// Esto permite que el turno vuelva a estar disponible Y que el alquiler mantenga su historial
 		await prisma.turno.updateMany({
 			where: {
 				alquilerId: id
 			},
 			data: {
 				reservado: false,
-				alquilerId: null
+				// NO ponemos alquilerId: null - mantenemos la relación para historial
 			}
 		});
 		
 		// Invalidar el caché de las canchas afectadas
 		invalidateMultipleTurnosCache(canchasAfectadas);
 		
-		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles`);
+		console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles (mantienen relación con alquiler para historial)`);
 	}
 	
 	return await prisma.alquiler.update({
