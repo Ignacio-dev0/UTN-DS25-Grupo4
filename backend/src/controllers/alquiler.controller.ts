@@ -4,6 +4,19 @@ import * as alquilerService from "../services/alquiler.service";
 
 export async function crearAlquiler(req: Request, res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
+		console.log('🎫 CREAR ALQUILER - Usuario:', req.usuario);
+		console.log('🎫 CREAR ALQUILER - Usuario ID:', req.usuario?.id);
+		console.log('🎫 CREAR ALQUILER - Body:', JSON.stringify(req.body, null, 2));
+		
+		if (!req.usuario || !req.usuario.id) {
+			console.error('❌ CREAR ALQUILER - req.usuario no existe o no tiene ID');
+			return res.status(401).json({
+				error: 'Usuario no autenticado',
+				message: 'No se pudo identificar al usuario',
+				alquiler: null
+			} as any);
+		}
+		
 		const alquiler = await alquilerService.crearAlquiler(req.usuario.id, req.body);
 		res.status(201).json({
 			alquiler,
