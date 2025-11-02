@@ -91,6 +91,22 @@ function MisReservasPage() {
         cargarPerfilUsuario();
     }, [isAuthenticated, navigate, isUpdatingProfile, profileLoaded]);
 
+    // Agregar listener para recargar reservas cuando la ventana recupera el foco
+    useEffect(() => {
+        const handleFocus = () => {
+            if (isAuthenticated && usuario?.id) {
+                console.log('🔄 Ventana enfocada - recargando reservas');
+                cargarReservas(usuario.id);
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [isAuthenticated, usuario?.id]);
+
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
         try {
