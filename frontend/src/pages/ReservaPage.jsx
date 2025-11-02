@@ -261,6 +261,11 @@ function ReservaPage() {
         };
         
         const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
+          // Debug: verificar si el campo alquiler está llegando del backend
+          if (turno.alquilerId && !turno.reservado) {
+            console.log(`🔍 Turno ${turno.id} tiene alquilerId=${turno.alquilerId}, alquiler=`, turno.alquiler);
+          }
+          
           const estado = determinarEstadoTurno(turno);
           
           return {
