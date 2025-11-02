@@ -356,6 +356,12 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
                             }
                         }
                     }
+                },
+                // Incluir estado del alquiler para verificar si está cancelado
+                alquiler: {
+                    select: {
+                        estado: true
+                    }
                 }
             },
             orderBy: [
