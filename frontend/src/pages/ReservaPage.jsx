@@ -191,14 +191,28 @@ function ReservaPage() {
           return 'ocupado';
         }
         
-        // 4️⃣ Tiene alquilerId pero NO está reservado → CANCELADO por cliente
+        // 4️⃣ Tiene alquilerId pero NO está reservado → Verificar estado del alquiler
         if (turno.alquilerId && !turno.reservado) {
-          if (turno.alquiler?.estado === 'CANCELADO') {
+          const estadoAlquiler = turno.alquiler?.estado;
+          
+          if (estadoAlquiler === 'CANCELADO') {
             // Cliente canceló → Turno DISPONIBLE nuevamente
             return 'disponible';
           }
-          // Caso raro: tiene alquiler, no está reservado, pero no está cancelado
-          console.log(`⚠️ Turno ${turno.id} con alquilerId ${turno.alquilerId} pero estado ${turno.alquiler?.estado || 'SIN INFO'}`);
+          
+          if (estadoAlquiler === 'PROGRAMADO' || estadoAlquiler === 'PAGADO') {
+            // Reserva en proceso (race condition: alquiler creado pero turno aún no marcado como reservado)
+            // O turno ya pagado → Mostrar como RESERVADO
+            return 'reservado';
+          }
+          
+          if (estadoAlquiler === 'FINALIZADO') {
+            // Alquiler finalizado → Turno ya pasó (debería estar en yaPaso, pero por si acaso)
+            return 'finalizado';
+          }
+          
+          // Caso raro: tiene alquiler pero estado desconocido
+          console.log(`⚠️ Turno ${turno.id} con alquilerId ${turno.alquilerId} pero estado ${estadoAlquiler || 'SIN INFO'}`);
           return 'ocupado';
         }
         
