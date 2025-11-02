@@ -104,6 +104,15 @@ function MisReservasPage() {
             if (response.ok) {
                 const data = await response.json();
                 
+                console.log('📦 Datos completos del backend:', JSON.stringify(data, null, 2));
+                console.log('📊 Total alquileres recibidos:', data.alquileres?.length || 0);
+                if (data.alquileres && data.alquileres.length > 0) {
+                    console.log('🔍 PRIMER ALQUILER COMPLETO:', JSON.stringify(data.alquileres[0], null, 2));
+                    if (data.alquileres[0].turnos && data.alquileres[0].turnos.length > 0) {
+                        console.log('⏰ PRIMER TURNO:', JSON.stringify(data.alquileres[0].turnos[0], null, 2));
+                    }
+                }
+                
                 // Filtrar solo alquileres que tengan turnos
                 const alquileresConTurnos = (data.alquileres || []).filter(alquiler => 
                     alquiler.turnos && alquiler.turnos.length > 0
