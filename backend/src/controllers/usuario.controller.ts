@@ -277,6 +277,20 @@ export async function register(req: Request, res: Response) {
       rol: rol
     });
 
+    // Generar token JWT
+    const jwt = require('jsonwebtoken');
+    console.log('🔑 Generando JWT para nuevo usuario con rol:', rol);
+    const token = jwt.sign(
+      {
+        id: newUsuario.id,
+        email: newUsuario.email,
+        rol: newUsuario.rol
+      },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+    console.log('✅ Token generado exitosamente en registro');
+
     // Si es dueño, intentar crear la solicitud automáticamente
     if (rol === 'DUENIO' && req.body.solicitudComplejo) {
       try {
@@ -316,6 +330,7 @@ export async function register(req: Request, res: Response) {
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
           },
+          token,
           solicitud: nuevaSolicitud,
           message: 'Usuario y solicitud registrados exitosamente'
         });
@@ -334,6 +349,7 @@ export async function register(req: Request, res: Response) {
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
         },
+        token,
         message: 'Usuario registrado exitosamente'
       });
       enviarEmailBienvenida(newUsuario.email, newUsuario.nombre);
@@ -419,6 +435,20 @@ export async function registerWithImage(req: Request, res: Response) {
       image: imageBase64 || undefined
     });
 
+    // Generar token JWT
+    const jwt = require('jsonwebtoken');
+    console.log('🔑 Generando JWT para nuevo usuario (con imagen) con rol:', finalRole);
+    const token = jwt.sign(
+      {
+        id: newUsuario.id,
+        email: newUsuario.email,
+        rol: newUsuario.rol
+      },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+    console.log('✅ Token generado exitosamente en registro con imagen');
+
     // Si es dueño, crear la solicitud automáticamente
     if (finalRole === 'DUENIO' && cuit && nombreComplejo && calle && altura && localidadId) {
       try {
@@ -452,6 +482,7 @@ export async function registerWithImage(req: Request, res: Response) {
             apellido: newUsuario.apellido,
             rol: newUsuario.rol
           },
+          token,
           solicitud: nuevaSolicitud,
           message: 'Usuario y solicitud registrados exitosamente'
         });
@@ -474,6 +505,7 @@ export async function registerWithImage(req: Request, res: Response) {
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
         },
+        token,
         message: 'Usuario registrado exitosamente'
       });
     }
