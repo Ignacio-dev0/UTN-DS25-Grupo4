@@ -526,7 +526,18 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       });
 
       if (!responseTurno.ok) {
-        throw new Error('Error al eliminar turno');
+        const errorData = await responseTurno.json().catch(() => ({}));
+        console.error('❌ Error del servidor:', errorData);
+        
+        if (responseTurno.status === 404) {
+          throw new Error('Turno no encontrado en la base de datos');
+        } else if (responseTurno.status === 400) {
+          throw new Error(errorData.error || 'No se puede eliminar este turno');
+        } else if (responseTurno.status === 401 || responseTurno.status === 403) {
+          throw new Error('No tienes permisos para eliminar este turno');
+        } else {
+          throw new Error('Error al eliminar turno');
+        }
       }
 
       // 3. Actualizar localmente removiendo el turno
