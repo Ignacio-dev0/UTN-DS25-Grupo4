@@ -8,6 +8,8 @@ import ModalReseña from '../components/ModalReseña';
 import ModalPago from '../components/ModalPago';
 import { getUserProfile, updateUserProfile } from '../services/auth';
 import { API_BASE_URL } from '../config/api.js';
+import { parseFechaBackend, parseHoraBackend, formatearFecha, calcularHoraFin, turnoYaPaso } from '../utils/dateUtils';
+import './MisReservasPage.css';
 
 function MisReservasPage() {
     const navigate = useNavigate();
@@ -153,37 +155,15 @@ function MisReservasPage() {
                         return null;
                     }
                     
-                    const fecha = new Date(primerTurno.fecha);
+                    // Usar utilidad para parsear fecha correctamente (sin problemas de timezone)
+                    const fecha = parseFechaBackend(primerTurno.fecha);
+                    const fechaFormateada = formatearFecha(fecha);
                     
-                    // Formatear fecha a DD/MM/YYYY - HACER ESTO PRIMERO
-                    const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
-                    
-                    // Función auxiliar para parsear hora desde ISO string
-                    const parsearHora = (horaISO) => {
-                        if (typeof horaISO === 'string') {
-                            const timeMatch = horaISO.match(/T(\d{2}:\d{2})/);
-                            if (timeMatch) {
-                                return timeMatch[1]; // "20:00"
-                            }
-                            const d = new Date(horaISO);
-                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
-                        } else if (horaISO instanceof Date || horaISO) {
-                            const d = new Date(horaISO);
-                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
-                        }
-                        return '00:00';
-                    };
-                    
-                    // Parsear hora de inicio del primer turno
-                    const horaInicio = parsearHora(primerTurno.horaInicio);
-                    
-                    // Calcular hora de fin del último turno
-                    // Siempre calcular sumando 1 hora a la hora de inicio del último turno
-                    // (ya que los turnos no tienen campo horaFin en la base de datos)
-                    const horaInicioUltimo = parsearHora(ultimoTurno.horaInicio);
-                    const [horaNum, minNum] = horaInicioUltimo.split(':').map(Number);
-                    const horaFinNum = (horaNum + 1) % 24;
-                    const horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minNum.toString().padStart(2, '0')}`;
+                    // Parsear horas usando utilidad
+                    const horaInicio = parseHoraBackend(primerTurno.horaInicio);
+                    const horaInicioUltimo = parseHoraBackend(ultimoTurno.horaInicio);
+                    const horaFin = calcularHoraFin(horaInicioUltimo, 1);
+
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';
@@ -195,32 +175,20 @@ function MisReservasPage() {
                         estado = 'Finalizada';
                     }
 
-                    // Auto-finalizar turnos pasados (comparando fecha Y hora)
-                    const ahora = new Date();
-                    
-                    // Crear fecha/hora completa del turno de finalización
-                    const anio = fecha.getFullYear();
-                    const mes = fecha.getMonth();
-                    const dia = fecha.getDate();
-                    
-                    // Parsear hora de fin (formato "HH:MM")
-                    const [horaFinParsed, minFinParsed] = horaFin.split(':').map(Number);
-                    
-                    // Construir fecha/hora de fin del turno
-                    const fechaHoraFinTurno = new Date(anio, mes, dia, horaFinParsed, minFinParsed);
+                    // Auto-finalizar turnos pasados (usando función utilitaria)
+                    const yaTermino = turnoYaPaso(primerTurno.fecha, horaFin);
                     
                     console.log(`⏱️ Alquiler ${alquiler.id}:`, {
                         fecha: fechaFormateada,
                         horaInicio: horaInicio,
                         horaFin: horaFin,
-                        fechaHoraFinTurno: fechaHoraFinTurno.toLocaleString('es-ES'),
-                        ahora: ahora.toLocaleString('es-ES'),
-                        yaTermino: ahora > fechaHoraFinTurno,
+                        ahora: new Date().toLocaleString('es-ES'),
+                        yaTermino: yaTermino,
                         estado: estado
                     });
                     
                     // Si el turno ya terminó (hora de fin pasó), marcar como finalizado
-                    if ((estado === 'Confirmada' || estado === 'Pendiente') && ahora > fechaHoraFinTurno) {
+                    if ((estado === 'Confirmada' || estado === 'Pendiente') && yaTermino) {
                         console.log(`  ⚠️ Auto-finalizando turno ${alquiler.id} porque ya pasó su hora`);
                         estado = 'Finalizada';
                     }

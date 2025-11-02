@@ -267,6 +267,14 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 		}
 	});
 	
+	// 🔧 IMPORTANTE: Marcar turnos como reservados
+	console.log('🔒 MARCANDO TURNOS COMO RESERVADOS...');
+	await prisma.turno.updateMany({
+		where: { id: { in: turnos.map(t => t.id) } },
+		data: { reservado: true }
+	});
+	console.log('✅ TURNOS MARCADOS COMO RESERVADOS');
+	
 	console.log('✅ ALQUILER CREADO EXITOSAMENTE:', {
 		id: nuevoAlquiler.id,
 		turnos: nuevoAlquiler.turnos.length,
