@@ -105,6 +105,7 @@ function MisReservasPage() {
                 const data = await response.json();
                 
                 console.log('📦 Alquileres recibidos:', data.alquileres?.length || 0);
+                console.log('🔍 PRIMER ALQUILER COMPLETO:', JSON.stringify(data.alquileres?.[0], null, 2));
                 
                 const reservasFormateadas = (data.alquileres || []).map(alquiler => {
                     // Si no tiene turnos (caso raro, pero por las dudas)
