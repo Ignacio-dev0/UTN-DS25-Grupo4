@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { CanchaFull } from '../types/cancha.types'
 import { Prisma, EstadoAlquiler } from '@prisma/client';
 import { CreateCanchaData, UpdateCanchaData } from '../validations/cancha.validation';
+import { actualizarPrecioDesdeComplejo } from './camposCalculados.service';
 
 // Los puntajes de cancha y complejo se actualizan cada vez que se instancia una reseña
 
@@ -47,7 +48,6 @@ export async function recalcularPrecioDesde(canchaId: number) {
 
         // También actualizar el precio "desde" del complejo
         try {
-            const { actualizarPrecioDesdeComplejo } = require('./camposCalculados.service.js');
             const cancha = await prisma.cancha.findUnique({
                 where: { id: canchaId },
                 select: { complejoId: true }
