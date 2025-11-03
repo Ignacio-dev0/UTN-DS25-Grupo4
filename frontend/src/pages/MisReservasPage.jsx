@@ -36,6 +36,7 @@ function MisReservasPage() {
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
     const [profileLoaded, setProfileLoaded] = useState(false); // Track if profile was initially loaded
     const [filtroEstado, setFiltroEstado] = useState('Todas'); // Estado para el filtro
+    const [mostrarPoliticas, setMostrarPoliticas] = useState(true); // Controlar visibilidad de políticas
 
     // Verificar autenticación al montar el componente
     useEffect(() => {
@@ -623,24 +624,37 @@ function MisReservasPage() {
                     )}
                     
                     {/* Mensaje informativo sobre políticas de cancelación */}
-                    <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    {mostrarPoliticas && (
+                        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm relative">
+                            {/* Botón de cerrar */}
+                            <button
+                                onClick={() => setMostrarPoliticas(false)}
+                                className="absolute top-2 right-2 text-blue-400 hover:text-blue-600 transition-colors"
+                                title="Cerrar"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                            </div>
-                            <div className="ml-3">
-                                <h4 className="text-blue-800 font-semibold text-sm">📋 Políticas de Reserva y Cancelación</h4>
-                                <div className="mt-2 text-blue-700 text-sm space-y-1">
-                                    <p>• <strong>Reserva:</strong> Debes reservar con al menos <strong>1 hora de anticipación</strong></p>
-                                    <p>• <strong>Cancelación:</strong> Debes cancelar con al menos <strong>2 horas de anticipación</strong></p>
-                                    <p>• <strong>Límite:</strong> Máximo <strong>2 cancelaciones cada 30 días</strong>. Exceder este límite suspenderá temporalmente tu cuenta</p>
-                                    <p className="mt-2 text-blue-600 text-xs italic">💡 Planifica tus reservas con responsabilidad para mantener tu cuenta activa</p>
+                            </button>
+                            
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3 pr-8">
+                                    <h4 className="text-blue-800 font-semibold text-sm">📋 Políticas de Reserva y Cancelación</h4>
+                                    <div className="mt-2 text-blue-700 text-sm space-y-1">
+                                        <p>• <strong>Reserva:</strong> Debes reservar con al menos <strong>1 hora de anticipación</strong></p>
+                                        <p>• <strong>Cancelación:</strong> Debes cancelar con al menos <strong>2 horas de anticipación</strong></p>
+                                        <p>• <strong>Límite:</strong> Máximo <strong>2 cancelaciones cada 30 días</strong>. Exceder este límite suspenderá temporalmente tu cuenta</p>
+                                        <p className="mt-2 text-blue-600 text-xs italic">💡 Planifica tus reservas con responsabilidad para mantener tu cuenta activa</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                     
                     <div className="flex flex-col md:flex-row -mx-4">
                         <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
