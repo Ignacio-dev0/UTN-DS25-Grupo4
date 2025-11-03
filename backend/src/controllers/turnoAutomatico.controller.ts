@@ -249,12 +249,12 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         
         // Buscar la próxima ocurrencia de ese día dentro de los próximos 7 días
         let diasAgregar = (indiceDia - hoy.getUTCDay() + 7) % 7;
-        if (diasAgregar === 0 && hoy.getUTCHours() < parseInt(hora.split(':')[0])) {
-            // Si es el mismo día y aún no pasó la hora, usar hoy
-            diasAgregar = 0;
-        } else if (diasAgregar === 0) {
-            // Si es el mismo día pero ya pasó la hora, usar la próxima semana
-            diasAgregar = 7;
+        
+        // Si diasAgregar es 0, significa que es el mismo día de la semana
+        // En ese caso, SIEMPRE usar la próxima semana (dentro de 7 días)
+        // porque el calendario del dueño muestra turnos FUTUROS
+        if (diasAgregar === 0) {
+            diasAgregar = 7; // Próxima semana
         }
         
         console.log('  - Días a agregar:', diasAgregar);
