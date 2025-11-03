@@ -432,34 +432,54 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 		})
 	);
 	
-	// Para cada alquiler, verificar si el usuario ya dejó una reseña en esa cancha
-	// (no solo en este alquiler específico, sino en CUALQUIER alquiler de esa cancha)
-	const alquileresConInfoReseña = await Promise.all(
-		alquileresConTurnos.map(async (alq) => {
-			if (alq.turnos.length === 0) return { ...alq, usuarioYaReseñoCancha: false };
-			
-			const canchaId = alq.turnos[0].cancha.id;
-			
-			// Buscar si existe alguna reseña del usuario para esta cancha
-			const reseñaExistente = await prisma.resenia.findFirst({
-				where: {
-					alquiler: {
-						clienteId: clienteId,
-						turnos: {
-							some: {
-								canchaId: canchaId
-							}
+	// Optimización: Hacer una sola consulta para obtener todas las canchas con reseñas del usuario
+	// en lugar de hacer una consulta por cada alquiler
+	const canchasIds = alquileresConTurnos
+		.filter(alq => alq.turnos.length > 0)
+		.map(alq => alq.turnos[0].cancha.id);
+	
+	// Obtener todas las reseñas del usuario para las canchas en cuestión (una sola query)
+	const reseñasUsuario = canchasIds.length > 0 ? await prisma.resenia.findMany({
+		where: {
+			alquiler: {
+				clienteId: clienteId,
+				turnos: {
+					some: {
+						canchaId: {
+							in: canchasIds
 						}
 					}
 				}
-			});
-			
-			return {
-				...alq,
-				usuarioYaReseñoCancha: reseñaExistente !== null
-			};
-		})
+			}
+		},
+		include: {
+			alquiler: {
+				include: {
+					turnos: {
+						select: {
+							canchaId: true
+						}
+					}
+				}
+			}
+		}
+	}) : [];
+	
+	// Crear un Set con las canchas que ya tienen reseña
+	const canchasConReseña = new Set(
+		reseñasUsuario.flatMap(r => r.alquiler.turnos.map(t => t.canchaId))
 	);
+	
+	// Mapear los alquileres con la información de reseña
+	const alquileresConInfoReseña = alquileresConTurnos.map(alq => {
+		if (alq.turnos.length === 0) return { ...alq, usuarioYaReseñoCancha: false };
+		
+		const canchaId = alq.turnos[0].cancha.id;
+		return {
+			...alq,
+			usuarioYaReseñoCancha: canchasConReseña.has(canchaId)
+		};
+	});
 	
 	return alquileresConInfoReseña;
 }
