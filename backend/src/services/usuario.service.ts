@@ -186,11 +186,25 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
                         });
                     }
                     
-                    // Eliminar turnos asociados
+                    // Liberar turnos asociados (no eliminarlos, solo desvincularloss)
                     if (alquiler.turnos.length > 0) {
-                        await tx.turno.deleteMany({
-                            where: { alquilerId: alquiler.id }
+                        console.log(`🔓 [${new Date().toISOString()}] Liberando ${alquiler.turnos.length} turnos del alquiler ${alquiler.id}`);
+                        
+                        // Obtener IDs únicos de canchas afectadas para invalidar cache
+                        const canchaIds = [...new Set(alquiler.turnos.map(t => t.canchaId))];
+                        
+                        await tx.turno.updateMany({
+                            where: { alquilerId: alquiler.id },
+                            data: { 
+                                reservado: false,
+                                alquilerId: null 
+                            }
                         });
+                        
+                        // Invalidar cache de las canchas afectadas
+                        console.log(`🗑️ [${new Date().toISOString()}] Invalidando cache para canchas:`, canchaIds);
+                        const { invalidateMultipleTurnosCache } = await import('./turno.service');
+                        invalidateMultipleTurnosCache(canchaIds);
                     }
                     
                     // Eliminar el alquiler

@@ -5,7 +5,7 @@ import jwt, { TokenExpiredError } from 'jsonwebtoken'
 export type UsuarioPayload = {
   id: number;
   email: string;
-  rol: 'USUARIO' | 'DUENIO' | 'ADMINISTRADOR';
+  rol: 'CLIENTE' | 'DUENIO' | 'ADMINISTRADOR';
 }
 
 // Extender tipo Request

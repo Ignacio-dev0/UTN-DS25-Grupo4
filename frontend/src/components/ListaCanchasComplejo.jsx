@@ -185,14 +185,20 @@ function ListaCanchasComplejo({ canchas, onDisable, onDelete, onRecargarCanchas,
   let confirmText = '';
 
   if (canchaSeleccionada) {
+    // Obtener nombre del deporte
+    const deporteNombre = canchaSeleccionada.deporte?.nombre || 
+                          deportes.find(d => d.id === canchaSeleccionada.deporteId)?.nombre || 
+                          'Cancha';
+    const nroCancha = canchaSeleccionada.nroCancha || canchaSeleccionada.noCancha || 'S/N';
+    
     if (accion === 'eliminar') {
       modalTitle = 'Confirmar Eliminación';
-      modalMessage = `¿Estás seguro de que deseas eliminar la cancha "${canchaSeleccionada.deporte} - N°${canchaSeleccionada.noCancha}"? Esta acción no se puede deshacer.`;
+      modalMessage = `¿Estás seguro de que deseas eliminar la cancha "${deporteNombre} - N°${nroCancha}"? Esta acción no se puede deshacer.`;
       confirmText = 'Sí, Eliminar';
     } else {
-      const esHabilitada = canchaSeleccionada.estado === 'habilitada';
+      const esHabilitada = canchaSeleccionada.estado === 'habilitada' || canchaSeleccionada.activa === true;
       modalTitle = esHabilitada ? 'Confirmar Deshabilitación' : 'Confirmar Habilitación';
-      modalMessage = `¿Estás seguro de que deseas ${esHabilitada ? 'deshabilitar' : 'habilitar'} la cancha "${canchaSeleccionada.deporte} - N°${canchaSeleccionada.noCancha}"?`;
+      modalMessage = `¿Estás seguro de que deseas ${esHabilitada ? 'deshabilitar' : 'habilitar'} la cancha "${deporteNombre} - N°${nroCancha}"?`;
       confirmText = esHabilitada ? 'Sí, Deshabilitar' : 'Sí, Habilitar';
     }
   }

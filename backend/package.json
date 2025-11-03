@@ -17,6 +17,7 @@
     "seed": "ts-node prisma/seed.ts",
     "seed:local": "cp .env.local .env && npm run seed",
     "seed:railway": "cp .env.railway .env && npm run seed",
+    "demo:resenas": "ts-node scripts/preparar-demo-resenas.ts",
     "studio:local": "cp .env.local .env && npx prisma studio",
     "studio:railway": "cp .env.railway .env && npx prisma studio",
     "test": "jest",

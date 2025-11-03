@@ -249,12 +249,25 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         
         // Buscar la próxima ocurrencia de ese día dentro de los próximos 7 días
         let diasAgregar = (indiceDia - hoy.getUTCDay() + 7) % 7;
-        if (diasAgregar === 0 && hoy.getUTCHours() < parseInt(hora.split(':')[0])) {
-            // Si es el mismo día y aún no pasó la hora, usar hoy
-            diasAgregar = 0;
-        } else if (diasAgregar === 0) {
-            // Si es el mismo día pero ya pasó la hora, usar la próxima semana
-            diasAgregar = 7;
+        
+        // Si diasAgregar es 0, significa que es el mismo día de la semana
+        if (diasAgregar === 0) {
+            // Verificar si la hora ya pasó comparando con la hora actual
+            const horaActual = hoy.getUTCHours();
+            const horaSolicitada = parseInt(hora.split(':')[0]);
+            
+            console.log('  - Hora actual UTC:', horaActual);
+            console.log('  - Hora solicitada:', horaSolicitada);
+            
+            // Si la hora solicitada ya pasó o es la hora actual, usar próxima semana
+            if (horaSolicitada <= horaActual) {
+                diasAgregar = 7; // Próxima semana
+                console.log('  - Hora ya pasó, usando próxima semana');
+            } else {
+                // La hora no pasó, se puede crear para hoy
+                diasAgregar = 0;
+                console.log('  - Hora no pasó, creando para hoy');
+            }
         }
         
         console.log('  - Días a agregar:', diasAgregar);

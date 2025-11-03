@@ -2,6 +2,7 @@
 import prisma from '../config/prisma';
 import { Resenia } from '@prisma/client';
 import { CreateReseniaRequest, UpdateReseniaRequest } from '../types/resenia.types';
+import { actualizarCamposCalculadosCancha } from './camposCalculados.service';
 
 export async function getAllResenas(): Promise<Resenia[]> {
     const resenas = await prisma.resenia.findMany({
@@ -275,8 +276,6 @@ export async function createResenia(data: CreateReseniaRequest): Promise<Resenia
     // Actualizar campos calculados para todas las canchas afectadas
     console.log('🔄 RESENIA SERVICE - Actualizando campos calculados...');
     try {
-        const { actualizarCamposCalculadosCancha } = require('./camposCalculados.service.js');
-        
         // Obtener las canchas únicas de los turnos del alquiler
         const canchasIds = [...new Set(created.alquiler.turnos.map(turno => turno.canchaId))];
         
@@ -333,8 +332,6 @@ export async function updateResenia(id: number, updateData: UpdateReseniaRequest
         if (updateData.puntaje !== undefined) {
             console.log('🔄 RESENIA SERVICE - Actualizando campos calculados por cambio de puntaje...');
             try {
-                const { actualizarCamposCalculadosCancha } = require('./camposCalculados.service.js');
-                
                 // Obtener las canchas únicas de los turnos del alquiler
                 const canchasIds = [...new Set(updated.alquiler.turnos.map(turno => turno.canchaId))];
                 

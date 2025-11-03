@@ -1,12 +1,13 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 /**
  * Calcula y actualiza el puntaje promedio de una cancha basado en sus reseñas
- * @param {number} canchaId - ID de la cancha
- * @returns {Promise<number>} - Puntaje promedio calculado
+ * @param canchaId - ID de la cancha
+ * @returns Puntaje promedio calculado
  */
-async function actualizarPuntajeCancha(canchaId) {
+export async function actualizarPuntajeCancha(canchaId: number): Promise<number> {
   try {
     // Obtener todas las reseñas de la cancha a través de los alquileres
     const resenas = await prisma.resenia.findMany({
@@ -50,10 +51,10 @@ async function actualizarPuntajeCancha(canchaId) {
 
 /**
  * Calcula y actualiza el precio "desde" de una cancha basado en sus turnos disponibles
- * @param {number} canchaId - ID de la cancha
- * @returns {Promise<number>} - Precio mínimo encontrado
+ * @param canchaId - ID de la cancha
+ * @returns Precio mínimo encontrado
  */
-async function actualizarPrecioDesdeCancha(canchaId) {
+export async function actualizarPrecioDesdeCancha(canchaId: number): Promise<number> {
   try {
     // Obtener el precio mínimo de los turnos disponibles de la cancha
     const precioMinimo = await prisma.turno.aggregate({
@@ -100,10 +101,10 @@ async function actualizarPrecioDesdeCancha(canchaId) {
 
 /**
  * Calcula y actualiza el puntaje promedio de un complejo basado en todas sus canchas
- * @param {number} complejoId - ID del complejo
- * @returns {Promise<number>} - Puntaje promedio calculado
+ * @param complejoId - ID del complejo
+ * @returns Puntaje promedio calculado
  */
-async function actualizarPuntajeComplejo(complejoId) {
+export async function actualizarPuntajeComplejo(complejoId: number): Promise<number> {
   try {
     // Obtener todas las canchas del complejo con sus puntajes
     const canchas = await prisma.cancha.findMany({
@@ -136,10 +137,10 @@ async function actualizarPuntajeComplejo(complejoId) {
 
 /**
  * Calcula y actualiza el precio "desde" de un complejo basado en el precio mínimo de todas sus canchas
- * @param {number} complejoId - ID del complejo
- * @returns {Promise<number>} - Precio mínimo encontrado
+ * @param complejoId - ID del complejo
+ * @returns Precio mínimo encontrado
  */
-async function actualizarPrecioDesdeComplejo(complejoId) {
+export async function actualizarPrecioDesdeComplejo(complejoId: number): Promise<number> {
   try {
     // Obtener el precio mínimo de todas las canchas activas del complejo
     const precioMinimo = await prisma.cancha.aggregate({
@@ -173,10 +174,10 @@ async function actualizarPrecioDesdeComplejo(complejoId) {
 
 /**
  * Actualiza todos los campos calculados de una cancha
- * @param {number} canchaId - ID de la cancha
- * @returns {Promise<Object>} - Objeto con los valores actualizados
+ * @param canchaId - ID de la cancha
+ * @returns Objeto con los valores actualizados
  */
-async function actualizarCamposCalculadosCancha(canchaId) {
+export async function actualizarCamposCalculadosCancha(canchaId: number): Promise<{ puntaje: number; precioDesde: number }> {
   try {
     // Obtener el complejo de la cancha
     const cancha = await prisma.cancha.findUnique({
@@ -205,10 +206,9 @@ async function actualizarCamposCalculadosCancha(canchaId) {
 
 /**
  * Actualiza todos los campos calculados de un complejo y sus canchas
- * @param {number} complejoId - ID del complejo
- * @returns {Promise<void>}
+ * @param complejoId - ID del complejo
  */
-async function actualizarCamposCalculadosComplejo(complejoId) {
+export async function actualizarCamposCalculadosComplejo(complejoId: number): Promise<void> {
   try {
     // Obtener todas las canchas del complejo
     const canchas = await prisma.cancha.findMany({
@@ -232,12 +232,3 @@ async function actualizarCamposCalculadosComplejo(complejoId) {
     throw error;
   }
 }
-
-module.exports = {
-  actualizarPuntajeCancha,
-  actualizarPrecioDesdeCancha,
-  actualizarPuntajeComplejo,
-  actualizarPrecioDesdeComplejo,
-  actualizarCamposCalculadosCancha,
-  actualizarCamposCalculadosComplejo
-};

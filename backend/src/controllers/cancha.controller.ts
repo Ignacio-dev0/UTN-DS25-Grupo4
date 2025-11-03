@@ -90,17 +90,48 @@ export async function obtenerCanchaPorId(req: Request, res: Response<CanchaRespo
 export async function actualizarCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
     const canchaId = Number(req.params.id);
-    const { usuario } = req
-    // Permitir si es ADMINISTRADOR o si es dueño de la cancha
-    if(usuario.rol !== 'ADMINISTRADOR' && !(await canchaService.esDuenioDeCancha(canchaId, usuario.id))) {
-      throw new Error('No tienes permiso para actualizar esta cancha.');
+    const { usuario } = req;
+    
+    console.log('🔧 ACTUALIZAR CANCHA - ID:', canchaId);
+    console.log('👤 Usuario:', usuario.email, 'Rol:', usuario.rol);
+    console.log('📦 Datos recibidos:', req.body);
+    
+    // Verificar que la cancha existe primero (permitir inactivas para que el dueño pueda reactivarlas)
+    try {
+      const canchaExistente = await canchaService.obtenerCanchaPorId(canchaId, true); // Permitir inactivas
+      console.log('✅ Cancha encontrada:', canchaExistente.id, 'Complejo:', canchaExistente.complejoId, 'Activa:', canchaExistente.activa);
+    } catch (error) {
+      console.error('❌ Cancha no encontrada:', canchaId);
+      return res.status(404).json({
+        message: 'Cancha no encontrada',
+        cancha: null
+      } as any);
     }
+    
+    // Permitir si es ADMINISTRADOR o si es dueño de la cancha
+    if(usuario.rol !== 'ADMINISTRADOR') {
+      const esDuenio = await canchaService.esDuenioDeCancha(canchaId, usuario.id);
+      console.log('🔑 Es dueño de la cancha?', esDuenio);
+      
+      if (!esDuenio) {
+        console.error('🚫 Usuario no tiene permiso para actualizar esta cancha');
+        return res.status(403).json({
+          message: 'No tienes permiso para actualizar esta cancha. Solo el dueño del complejo o un administrador pueden hacerlo.',
+          cancha: null
+        } as any);
+      }
+    }
+    
+    console.log('💾 Datos que se van a actualizar:', req.body);
     const cancha = await canchaService.actualizarCancha(canchaId, req.body);
+    console.log('✅ Cancha actualizada:', { id: cancha.id, activa: cancha.activa });
+    
     res.status(200).json({
 			cancha,
 			message: 'Cancha actualizada exitosamente',
 		});
   } catch (error) {
+    console.error('❌ Error al actualizar cancha:', error);
     next(error);
 	}
 };

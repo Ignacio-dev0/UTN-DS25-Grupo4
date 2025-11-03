@@ -166,6 +166,15 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
         const nuevoTurnoCreado = await crearTurnoEnBD(canchaId, dia, hora, nuevoPrecio);
         console.log("✅ Turno creado en BD:", nuevoTurnoCreado);
         
+        // Verificar que se haya creado el turno correctamente
+        if (!nuevoTurnoCreado || !nuevoTurnoCreado.id) {
+          console.warn("⚠️ No se pudo crear el turno o ya existía");
+          // Remover el turno temporal si falló
+          const turnosSinTemporal = turnosConNuevo.filter(t => t.id !== turnoTemporal.id);
+          onTurnosChange(turnosSinTemporal);
+          return; // Salir sin mostrar error adicional (ya se mostró en crearTurnoEnBD)
+        }
+        
         // 3. Actualizar el turno temporal con los datos reales de la BD
         const turnosActualizados = turnosConNuevo.map(turno => 
           turno.id === turnoTemporal.id ? {
@@ -183,6 +192,10 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
         
       } catch (error) {
         console.error("❌ Error al crear turno:", error);
+        
+        // Remover el turno temporal si hubo error
+        const turnosSinTemporal = turnosConNuevo.filter(t => t.id !== turnoTemporal.id);
+        onTurnosChange(turnosSinTemporal);
         
         // Manejo específico para errores de cancha inexistente
         if (error.message.includes('Foreign key constraint') || 
@@ -364,13 +377,13 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                 return horaFormateada;
               };
               
-              // FILTRAR SOLO TURNOS DE LA SEMANA ACTUAL (desde hoy hasta +6 días)  
+              // FILTRAR SOLO TURNOS DE LOS PRÓXIMOS 8 DÍAS (desde hoy hasta +7 días)  
               const hoy = new Date();
               const inicioSemana = new Date(hoy);
               inicioSemana.setHours(0, 0, 0, 0);
               
               const finSemana = new Date(hoy);
-              finSemana.setDate(hoy.getDate() + 6);
+              finSemana.setDate(hoy.getDate() + 7); // +7 para mostrar 8 días totales (hoy + 7)
               finSemana.setHours(23, 59, 59, 999);
 
               const turnosEstaSemana = (turnosData.turnos || turnosData || []).filter(turno => {
@@ -408,11 +421,16 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                 recalcularPrecioDesdeLocal(turnosConPrecioActualizado);
                 
                 alert(`✅ Precio del turno actualizado a $${precio.toLocaleString('es-AR')}`);
+                return turnoExistente; // Retornar el turno existente
               } else {
                 alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+                // Buscar el turno en los datos recargados
+                const turnoEncontrado = turnosFormateados.find(t => 
+                  String(t.dia).toUpperCase().includes(dia.substring(0, 3).toUpperCase()) || 
+                  t.hora === hora
+                );
+                return turnoEncontrado || null; // Retornar algo en lugar de undefined
               }
-              
-              return; // No lanzar error, solo informar
             }
           } catch (reloadError) {
             console.error('Error recargando turnos:', reloadError);
@@ -424,6 +442,13 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       const result = await response.json();
       console.log('✅ Turno creado en BD:', result);
+      
+      // Asegurarse de que siempre retornamos un turno válido
+      if (!result.turno || !result.turno.id) {
+        console.error('❌ La respuesta del backend no contiene un turno válido:', result);
+        throw new Error('El backend no retornó un turno válido');
+      }
+      
       return result.turno;
     } catch (error) {
       console.error('❌ Error al crear turno:', error);

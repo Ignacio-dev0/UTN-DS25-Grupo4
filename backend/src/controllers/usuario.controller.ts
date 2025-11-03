@@ -318,7 +318,7 @@ export async function register(req: Request, res: Response) {
             rol: newUsuario.rol
           },
           solicitud: nuevaSolicitud,
-          message: 'Usuario y solicitud registrados exitosamente'
+          message: 'Usuario y solicitud registrados exitosamente. Por favor inicia sesión.'
         });
       } catch (error) {
         // Rollback usuario si falla la solicitud
@@ -335,7 +335,7 @@ export async function register(req: Request, res: Response) {
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
         },
-        message: 'Usuario registrado exitosamente'
+        message: 'Usuario registrado exitosamente. Por favor inicia sesión.'
       });
       enviarEmailBienvenida(newUsuario.email, newUsuario.nombre);
     }
@@ -454,7 +454,7 @@ export async function registerWithImage(req: Request, res: Response) {
             rol: newUsuario.rol
           },
           solicitud: nuevaSolicitud,
-          message: 'Usuario y solicitud registrados exitosamente'
+          message: 'Usuario y solicitud registrados exitosamente. Por favor inicia sesión.'
         });
       } catch (error: any) {
         console.error('Error creando solicitud:', error);
@@ -475,7 +475,7 @@ export async function registerWithImage(req: Request, res: Response) {
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
         },
-        message: 'Usuario registrado exitosamente'
+        message: 'Usuario registrado exitosamente. Por favor inicia sesión.'
       });
     }
 
