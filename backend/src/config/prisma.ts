@@ -7,8 +7,8 @@ const prismaClientSingleton = () => {
     // Y limitar connection pool para evitar "too many clients"
     const databaseUrl = process.env.DATABASE_URL
     const urlWithPgBouncer = databaseUrl?.includes('?') 
-        ? `${databaseUrl}&pgbouncer=true&connection_limit=5&pool_timeout=10`
-        : `${databaseUrl}?pgbouncer=true&connection_limit=5&pool_timeout=10`
+        ? `${databaseUrl}&pgbouncer=true&connection_limit=10&pool_timeout=20`
+        : `${databaseUrl}?pgbouncer=true&connection_limit=10&pool_timeout=20`
     
     return new PrismaClient({
         log: process.env.NODE_ENV === 'development' ? ['error'] : ['error'],
