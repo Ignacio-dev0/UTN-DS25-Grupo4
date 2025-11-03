@@ -96,10 +96,10 @@ export async function actualizarCancha(req: Request, res: Response<CanchaRespons
     console.log('👤 Usuario:', usuario.email, 'Rol:', usuario.rol);
     console.log('📦 Datos recibidos:', req.body);
     
-    // Verificar que la cancha existe primero
+    // Verificar que la cancha existe primero (permitir inactivas para que el dueño pueda reactivarlas)
     try {
-      const canchaExistente = await canchaService.obtenerCanchaPorId(canchaId);
-      console.log('✅ Cancha encontrada:', canchaExistente.id, 'Complejo:', canchaExistente.complejoId);
+      const canchaExistente = await canchaService.obtenerCanchaPorId(canchaId, true); // Permitir inactivas
+      console.log('✅ Cancha encontrada:', canchaExistente.id, 'Complejo:', canchaExistente.complejoId, 'Activa:', canchaExistente.activa);
     } catch (error) {
       console.error('❌ Cancha no encontrada:', canchaId);
       return res.status(404).json({

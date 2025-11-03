@@ -560,6 +560,11 @@ export async function eliminarCancha(id: number) {
 };
 
 export async function esDuenioDeCancha(canchaId: number, usuarioId: number): Promise<boolean> {
-  const cancha = await obtenerCanchaPorId(canchaId);
-  return cancha.complejo.usuarioId === usuarioId;
+  try {
+    const cancha = await obtenerCanchaPorId(canchaId, true); // Permitir inactivas
+    return cancha.complejo.usuarioId === usuarioId;
+  } catch (error) {
+    console.error('Error verificando dueño de cancha:', error);
+    return false;
+  }
 }
