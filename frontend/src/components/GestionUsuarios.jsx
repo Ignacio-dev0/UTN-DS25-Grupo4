@@ -617,23 +617,21 @@ function GestionUsuarios() {
                           >
                             <FaPencilAlt />
                           </button>
+                          <button
+                            onClick={() => handleSuspenderUsuario(usuario)}
+                            className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
+                            title="Suspender usuario"
+                          >
+                            <FaBan />
+                          </button>
                           {debeResaltar && (
-                            <>
-                              <button
-                                onClick={() => handleSuspenderUsuario(usuario)}
-                                className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
-                                title="Suspender usuario"
-                              >
-                                <FaBan />
-                              </button>
-                              <button
-                                onClick={() => handleReactivarUsuario(usuario)}
-                                className="text-green-600 hover:text-white hover:bg-green-600 p-2 rounded-full transition-colors shadow-md"
-                                title="Reactivar cuenta (resetear cancelaciones)"
-                              >
-                                <FaCheckCircle />
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleReactivarUsuario(usuario)}
+                              className="text-green-600 hover:text-white hover:bg-green-600 p-2 rounded-full transition-colors shadow-md"
+                              title="Reactivar cuenta (resetear cancelaciones)"
+                            >
+                              <FaCheckCircle />
+                            </button>
                           )}
                           <button
                             onClick={() => handleDeleteUsuario(usuario)}
