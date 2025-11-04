@@ -542,6 +542,39 @@ function MiComplejoPage() {
       <h1 className="text-3xl font-bold font-lora text-gray-800 border-b border-gray-200 pb-4 mb-4">
         Mi Complejo
       </h1>
+      
+      {/* Mensaje de cuenta suspendida */}
+      {user?.suspendido && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-lg font-semibold text-red-800">
+                ⛔ Complejo Suspendido Temporalmente
+              </h3>
+              <p className="mt-2 text-red-700">
+                Tu cuenta ha sido suspendida debido a <strong>2 o más cancelaciones en los últimos 30 días</strong>.
+              </p>
+              <p className="mt-2 text-red-700">
+                Durante la suspensión:
+              </p>
+              <ul className="mt-2 ml-5 list-disc text-red-700">
+                <li><strong>Tu complejo está oculto</strong> para los clientes en el listado público</li>
+                <li>No aparecerá en búsquedas ni en la página principal</li>
+                <li>No podrás realizar nuevas reservas hasta que se reactive tu cuenta</li>
+              </ul>
+              <p className="mt-3 text-red-800 font-medium">
+                💡 <strong>Para reactivar tu cuenta:</strong> Contacta al administrador o espera 30 días desde tu primera cancelación.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row -mx-4">
         <ComplejoInfo 
           complejo={infoDelComplejo} 

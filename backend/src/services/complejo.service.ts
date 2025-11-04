@@ -108,7 +108,11 @@ export const getAllComplejos = async () => {
 export const getComplejosAprobados = async () => {
   return await prisma.complejo.findMany({
     where: {
-      estado: 'APROBADO'
+      estado: 'APROBADO',
+      // Filtrar complejos cuyo dueño esté suspendido
+      usuario: {
+        suspendido: false
+      }
     },
     include: { 
       domicilio: {

@@ -8,18 +8,19 @@ datasource db {
 }
 
 model Usuario {
-  id        Int        @id @default(autoincrement())
-  apellido  String
-  nombre    String
-  dni       String     @unique
-  email     String     @unique
-  password  String
-  telefono  String?
-  rol       Rol        @default(CLIENTE)
-  image     String?
-  direccion String?
-  reservas  Alquiler[]
-  complejo  Complejo?
+  id         Int        @id @default(autoincrement())
+  apellido   String
+  nombre     String
+  dni        String     @unique
+  email      String     @unique
+  password   String
+  telefono   String?
+  rol        Rol        @default(CLIENTE)
+  image      String?
+  direccion  String?
+  suspendido Boolean    @default(false) // Usuario suspendido temporalmente por cancelaciones
+  reservas   Alquiler[]
+  complejo   Complejo?
 
   @@map("Usuario")
 }

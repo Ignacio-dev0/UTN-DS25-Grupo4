@@ -575,6 +575,11 @@ function GestionUsuarios() {
                           <div>
                             <p className="font-semibold text-gray-900">
                               {usuario.nombre || 'Sin nombre'} {usuario.apellido || 'Sin apellido'}
+                              {usuario.suspendido && (
+                                <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                                  SUSPENDIDO
+                                </span>
+                              )}
                             </p>
                             <p className="text-sm text-gray-500">ID: {usuario.id}</p>
                             {debeResaltar && (
@@ -617,14 +622,27 @@ function GestionUsuarios() {
                           >
                             <FaPencilAlt />
                           </button>
-                          <button
-                            onClick={() => handleSuspenderUsuario(usuario)}
-                            className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
-                            title="Suspender usuario"
-                          >
-                            <FaBan />
-                          </button>
-                          {debeResaltar && (
+                          
+                          {/* Mostrar botón de Reactivar si está suspendido, sino Suspender */}
+                          {usuario.suspendido ? (
+                            <button
+                              onClick={() => handleReactivarUsuario(usuario)}
+                              className="text-green-600 hover:text-white hover:bg-green-600 p-2 rounded-full transition-colors shadow-md"
+                              title="Reactivar usuario"
+                            >
+                              <FaCheckCircle />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSuspenderUsuario(usuario)}
+                              className="text-orange-600 hover:text-white hover:bg-orange-600 p-2 rounded-full transition-colors shadow-md"
+                              title="Suspender usuario"
+                            >
+                              <FaBan />
+                            </button>
+                          )}
+                          
+                          {debeResaltar && !usuario.suspendido && (
                             <button
                               onClick={() => handleReactivarUsuario(usuario)}
                               className="text-green-600 hover:text-white hover:bg-green-600 p-2 rounded-full transition-colors shadow-md"

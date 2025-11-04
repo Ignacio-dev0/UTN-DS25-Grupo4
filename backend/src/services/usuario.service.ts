@@ -289,12 +289,15 @@ export async function suspenderUsuario(id: number, suspendido: boolean): Promise
             throw error;
         }
 
-        // Por ahora solo devolvemos el usuario
-        // En una implementación completa, agregaríamos un campo 'suspendido' al schema
-        // o usaríamos una tabla separada para suspensiones
-        console.log(`Usuario ${id} ${suspendido ? 'suspendido' : 'reactivado'}`);
+        // Actualizar el campo suspendido
+        const usuarioActualizado = await prisma.usuario.update({
+            where: { id },
+            data: { suspendido }
+        });
         
-        return usuario;
+        console.log(`✅ Usuario ${id} ${suspendido ? 'SUSPENDIDO' : 'REACTIVADO'} exitosamente`);
+        
+        return usuarioActualizado;
     } catch (e: any) {
         if (e.code === 'P2025') {
             const error = new Error('Usuario not found');
