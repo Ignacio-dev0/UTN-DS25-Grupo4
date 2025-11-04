@@ -245,10 +245,12 @@ export async function getEstadisticasCancelaciones(): Promise<{ usuarioId: numbe
     const hace30Dias = new Date(getNowInArgentina());
     hace30Dias.setDate(hace30Dias.getDate() - 30);
 
-    // Obtener todos los alquileres cancelados en los últimos 30 días
+    // Obtener solo los alquileres cancelados QUE CUENTAN (penalizados) en los últimos 30 días
+    // cancelacionPenalizada = true significa que la cancelación se hizo con menos de 2 horas
     const alquileresCancelados = await prisma.alquiler.findMany({
         where: {
             estado: 'CANCELADO',
+            cancelacionPenalizada: true, // ✅ Solo contar las que SÍ penalizan
             createdAt: {
                 gte: hace30Dias
             }

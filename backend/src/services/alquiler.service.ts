@@ -562,6 +562,8 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		// Obtener el primer turno (el más cercano)
 		const primerTurno = alquiler.turnos[0];
 		
+		let esCancelacionPenalizada = false;
+		
 		if (primerTurno) {
 			const validacionTiempo = validarTiempoMinimoCancelacion(primerTurno.fecha, primerTurno.horaInicio);
 			
@@ -572,8 +574,16 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 				throw error;
 			}
 			
+			// ✅ NUEVA LÓGICA: La cancelación NO cuenta si se hace con 2+ horas de anticipación
+			// Solo penaliza si alguien intenta forzar cancelación muy cercana (aunque está bloqueado arriba)
+			esCancelacionPenalizada = (validacionTiempo.horasRestantes || 0) < 2;
+			
 			console.log(`✅ Cancelación permitida: ${validacionTiempo.horasRestantes?.toFixed(2)} horas de anticipación`);
+			console.log(`📊 ¿Cuenta como cancelación penalizada?: ${esCancelacionPenalizada ? 'SÍ' : 'NO'}`);
 		}
+		
+		// Agregar el flag de penalización a los datos de actualización
+		(data as any).cancelacionPenalizada = esCancelacionPenalizada;
 		
 		console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
 		console.log(`📋 Turnos a liberar:`, alquiler.turnos.map(t => ({ id: t.id, canchaId: t.canchaId })));

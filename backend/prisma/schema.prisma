@@ -132,14 +132,15 @@ model Resenia {
 }
 
 model Alquiler {
-  id        Int            @id @default(autoincrement())
-  createdAt DateTime       @default(now())
-  estado    EstadoAlquiler @default(PROGRAMADO)
-  clienteId Int
-  cliente   Usuario        @relation(fields: [clienteId], references: [id])
-  pago      Pago?
-  resenia   Resenia?
-  turnos    Turno[]
+  id                    Int            @id @default(autoincrement())
+  createdAt             DateTime       @default(now())
+  estado                EstadoAlquiler @default(PROGRAMADO)
+  cancelacionPenalizada Boolean        @default(false) // TRUE si la cancelación cuenta para el límite de 2/30 días
+  clienteId             Int
+  cliente               Usuario        @relation(fields: [clienteId], references: [id])
+  pago                  Pago?
+  resenia               Resenia?
+  turnos                Turno[]
 }
 
 model Pago {
