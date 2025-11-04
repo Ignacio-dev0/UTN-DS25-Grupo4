@@ -6,23 +6,33 @@ import { getNowInArgentina } from './timezone';
 export function validarTiempoMinimoReserva(fechaTurno: Date, horaTurno: Date): { valido: boolean; mensaje?: string; horasRestantes?: number } {
     const ahora = getNowInArgentina();
     
-    // Construir fecha+hora completa del turno
-    const year = fechaTurno.getFullYear();
-    const month = fechaTurno.getMonth();
-    const day = fechaTurno.getDate();
-    const hora = horaTurno.getUTCHours();
-    const minutos = horaTurno.getUTCMinutes();
+    // 🔍 DEBUG: Ver qué valores estamos recibiendo
+    console.log('📋 Validación tiempo mínimo reserva - Datos recibidos:', {
+        fechaTurno: fechaTurno.toISOString(),
+        horaTurno: horaTurno.toISOString(),
+        ahoraArgentina: ahora.toISOString()
+    });
     
-    const fechaHoraTurno = new Date(year, month, day, hora, minutos);
+    // Construir fecha+hora completa del turno usando fecha de Argentina
+    // fechaTurno contiene la fecha (día/mes/año)
+    // horaTurno contiene la hora y minutos
+    const fechaHoraTurno = new Date(
+        fechaTurno.getFullYear(),
+        fechaTurno.getMonth(),
+        fechaTurno.getDate(),
+        horaTurno.getHours(), // ✅ Hora local
+        horaTurno.getMinutes() // ✅ Minutos locales
+    );
     
     // Calcular diferencia en horas
     const diferenciaMs = fechaHoraTurno.getTime() - ahora.getTime();
     const diferenciaHoras = diferenciaMs / (1000 * 60 * 60);
     
-    console.log('🕐 Validación tiempo mínimo reserva:', {
-        ahora: ahora.toISOString(),
-        fechaHoraTurno: fechaHoraTurno.toISOString(),
-        diferenciaHoras: diferenciaHoras.toFixed(2)
+    console.log('🕐 Validación tiempo mínimo reserva - Cálculo:', {
+        fechaHoraTurnoCompleta: fechaHoraTurno.toISOString(),
+        ahoraArgentina: ahora.toISOString(),
+        diferenciaHoras: diferenciaHoras.toFixed(2),
+        validacion: diferenciaHoras >= 1 ? 'PERMITIDO ✅' : 'BLOQUEADO ❌'
     });
     
     if (diferenciaHoras < 1) {
@@ -42,23 +52,33 @@ export function validarTiempoMinimoReserva(fechaTurno: Date, horaTurno: Date): {
 export function validarTiempoMinimoCancelacion(fechaTurno: Date, horaTurno: Date): { valido: boolean; mensaje?: string; horasRestantes?: number } {
     const ahora = getNowInArgentina();
     
-    // Construir fecha+hora completa del turno
-    const year = fechaTurno.getFullYear();
-    const month = fechaTurno.getMonth();
-    const day = fechaTurno.getDate();
-    const hora = horaTurno.getUTCHours();
-    const minutos = horaTurno.getUTCMinutes();
+    // 🔍 DEBUG: Ver qué valores estamos recibiendo
+    console.log('📋 Validación tiempo mínimo cancelación - Datos recibidos:', {
+        fechaTurno: fechaTurno.toISOString(),
+        horaTurno: horaTurno.toISOString(),
+        ahoraArgentina: ahora.toISOString()
+    });
     
-    const fechaHoraTurno = new Date(year, month, day, hora, minutos);
+    // Construir fecha+hora completa del turno usando fecha de Argentina
+    // fechaTurno contiene la fecha (día/mes/año)
+    // horaTurno contiene la hora y minutos
+    const fechaHoraTurno = new Date(
+        fechaTurno.getFullYear(),
+        fechaTurno.getMonth(),
+        fechaTurno.getDate(),
+        horaTurno.getHours(), // ✅ Hora local
+        horaTurno.getMinutes() // ✅ Minutos locales
+    );
     
     // Calcular diferencia en horas
     const diferenciaMs = fechaHoraTurno.getTime() - ahora.getTime();
     const diferenciaHoras = diferenciaMs / (1000 * 60 * 60);
     
-    console.log('🕐 Validación tiempo mínimo cancelación:', {
-        ahora: ahora.toISOString(),
-        fechaHoraTurno: fechaHoraTurno.toISOString(),
-        diferenciaHoras: diferenciaHoras.toFixed(2)
+    console.log('🕐 Validación tiempo mínimo cancelación - Cálculo:', {
+        fechaHoraTurnoCompleta: fechaHoraTurno.toISOString(),
+        ahoraArgentina: ahora.toISOString(),
+        diferenciaHoras: diferenciaHoras.toFixed(2),
+        validacion: diferenciaHoras >= 2 ? 'PERMITIDO ✅' : 'BLOQUEADO ❌ (SE PENALIZA)'
     });
     
     if (diferenciaHoras < 2) {
@@ -92,12 +112,12 @@ export function validarLimiteCancelaciones(cancelacionesRecientes: number, maxim
 export function debeLiberarTurnoPorFaltaDePago(fechaTurno: Date, horaTurno: Date): boolean {
     const ahora = getNowInArgentina();
     
-    // Construir fecha+hora completa del turno + 2 horas
+    // Construir fecha+hora completa del turno + 2 horas usando hora local de Argentina
     const year = fechaTurno.getFullYear();
     const month = fechaTurno.getMonth();
     const day = fechaTurno.getDate();
-    const hora = horaTurno.getUTCHours();
-    const minutos = horaTurno.getUTCMinutes();
+    const hora = horaTurno.getHours(); // ✅ Usar getHours() en lugar de getUTCHours()
+    const minutos = horaTurno.getMinutes(); // ✅ Usar getMinutes() en lugar de getUTCMinutes()
     
     const fechaHoraTurno = new Date(year, month, day, hora, minutos);
     const limitePago = new Date(fechaHoraTurno.getTime() + (2 * 60 * 60 * 1000)); // +2 horas
