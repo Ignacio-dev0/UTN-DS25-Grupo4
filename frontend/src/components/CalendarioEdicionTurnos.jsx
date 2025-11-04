@@ -664,7 +664,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   // Calcular localmente si no viene del backend
                   // Un turno está pasado si:
                   // 1. La fecha es anterior a hoy, O
-                  // 2. Es hoy pero la hora ya pasó
+                  // 2. Es hoy pero la hora ya pasó (incluso si está en curso)
                   const hoyInicio = new Date();
                   hoyInicio.setHours(0, 0, 0, 0);
                   
@@ -675,8 +675,9 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   const horaActual = new Date().getHours();
                   const horaTurno = parseInt(hora.split(':')[0]);
                   
-                  // Un turno está pasado solo si la hora ya finalizó (no si está en curso)
-                  esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno < horaActual);
+                  // Un turno está pasado si la hora ya comenzó o pasó
+                  // Si son las 18:24, el turno de las 18:00 YA pasó (18 <= 18)
+                  esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno <= horaActual);
                 }
                 
                 // Normalizar el día para comparar con horarios deshabilitados (sin tildes)
