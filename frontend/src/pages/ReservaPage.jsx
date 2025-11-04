@@ -5,6 +5,7 @@ import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
 import CalendarioTurnos from '../components/CalendarioTurnos.jsx';
 import CarruselReseñas from '../components/CarruselReseñas.jsx';
+import ModalPago from '../components/ModalPago.jsx';
 import { API_BASE_URL } from '../config/api.js';
 
 // Función helper para construir la dirección completa
@@ -104,6 +105,79 @@ function ReservaPage() {
   const [loading, setLoading] = useState(true);
   const [_error, setError] = useState(null);
   const [serviciosCompleto, setServiciosCompleto] = useState([]);
+  
+  // Estados para modal de pago inmediato
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
+  const [reservaPendiente, setReservaPendiente] = useState(null);
+  const [turnosPendientes, setTurnosPendientes] = useState([]);
+
+  // Función para manejar el pago inmediato
+  const handlePagoInmediato = async (metodoPago) => {
+    try {
+      console.log('💰 Procesando pago inmediato:', metodoPago);
+      
+      // Crear la reserva con los turnosIds guardados
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/alquileres`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          turnosIds: turnosPendientes
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Error al crear la reserva');
+      }
+
+      const reservaData = await response.json();
+      console.log('✅ Reserva creada:', reservaData);
+      
+      // Ahora procesar el pago
+      const pagoResponse = await fetch(`${API_BASE_URL}/alquileres/${reservaData.alquiler.id}/pagar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          metodoPago: metodoPago
+        }),
+      });
+
+      if (!pagoResponse.ok) {
+        const errorData = await pagoResponse.json();
+        throw new Error(errorData.error || errorData.message || 'Error al procesar el pago');
+      }
+
+      const pagoData = await pagoResponse.json();
+      console.log('✅ Pago procesado:', pagoData);
+      
+      // Cerrar modal y limpiar estados
+      setModalPagoVisible(false);
+      setReservaPendiente(null);
+      setTurnosPendientes([]);
+      
+      // Ir a Mis Reservas
+      alert(`¡Reserva confirmada y pagada! Tu reserva está lista.`);
+      navigate('/mis-reservas');
+      
+    } catch (error) {
+      console.error('❌ Error en pago inmediato:', error);
+      alert(error.message);
+    }
+  };
+
+  // Función para cerrar el modal sin confirmar
+  const handleCerrarModal = () => {
+    setModalPagoVisible(false);
+    setReservaPendiente(null);
+    setTurnosPendientes([]);
+  };
 
   // Función para cargar reseñas de la cancha
   const cargarReseñas = useCallback(async () => {
@@ -398,11 +472,11 @@ function ReservaPage() {
       puntaje: puntajeCancha, // Usar puntaje del backend
       cantidadReseñas: cantidadReseñasCancha,
       imageUrl: imageUrl,
-      otrasImagenes: otrasImagenes, // Agregar otras imágenes
+      otrasImagenes: otrasImagenes,
       turnos: turnos,
       complejo: complejoAdaptado
     };
-  }, [cancha, deporte, turnos, canchaId, complejo, reseñasDeLaCancha, serviciosCompleto]);
+  }, [cancha, turnos, canchaId, complejo, reseñasDeLaCancha, serviciosCompleto]);
 
   const handleConfirmarReserva = async (turnosSeleccionados) => {
     if (!turnosSeleccionados || turnosSeleccionados.length === 0 || !cancha || !complejo) return false;
@@ -510,6 +584,59 @@ function ReservaPage() {
 
       console.log('🎯 Enviando turnosIds:', turnosIds);
 
+      // NUEVO: Verificar si requiere pago inmediato ANTES de crear la reserva
+      const primerTurnoData = Object.values(turnosPorDia)[0][0];
+      const fechaTurno = new Date(primerTurnoData.fechaCompleta);
+      const horaTurno = new Date(primerTurnoData.horaCompleta);
+      
+      // Construir fecha+hora completa del turno
+      const fechaHoraTurno = new Date(
+        fechaTurno.getFullYear(),
+        fechaTurno.getMonth(),
+        fechaTurno.getDate(),
+        horaTurno.getHours(),
+        horaTurno.getMinutes()
+      );
+      
+      const ahora = new Date();
+      const diferenciaMs = fechaHoraTurno.getTime() - ahora.getTime();
+      const diferenciaHoras = diferenciaMs / (1000 * 60 * 60);
+      const requierePagoInmediato = diferenciaHoras < 2;
+      
+      console.log('⏰ Verificación pago inmediato:', {
+        fechaHoraTurno: fechaHoraTurno.toISOString(),
+        ahora: ahora.toISOString(),
+        diferenciaHoras: diferenciaHoras.toFixed(2),
+        requierePagoInmediato
+      });
+      
+      if (requierePagoInmediato) {
+        // FLUJO PAGO INMEDIATO: Guardar datos y mostrar modal SIN crear reserva aún
+        console.log('🚨 PAGO INMEDIATO REQUERIDO - Mostrando modal antes de crear reserva');
+        
+        // Calcular precio total
+        const precioTotal = turnosSeleccionados.reduce((sum, t) => {
+          const turnoCompleto = turnos.find(tc => tc.dia === t.dia && tc.hora === t.hora);
+          return sum + (turnoCompleto?.precio || 0);
+        }, 0);
+        
+        // Guardar datos para crear reserva después del pago
+        setTurnosPendientes(turnosIds);
+        setReservaPendiente({
+          turnosSeleccionados,
+          precioTotal,
+          cancha: cancha.nombre,
+          complejo: complejo.nombre
+        });
+        
+        // Mostrar modal de pago
+        setModalPagoVisible(true);
+        return false; // No recargar turnos todavía
+      }
+      
+      // FLUJO NORMAL (>= 2 horas): Crear reserva directamente
+      console.log('✅ Pago posterior permitido - Creando reserva normalmente');
+
       // Llamar al backend para crear el alquiler/reserva
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/alquileres`, {
@@ -525,7 +652,6 @@ function ReservaPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Usar el mensaje de error del backend si está disponible
         const errorMessage = errorData.error || errorData.message || 'Error al crear la reserva';
         throw new Error(errorMessage);
       }
@@ -533,78 +659,13 @@ function ReservaPage() {
       const reservaData = await response.json();
       console.log('Reserva creada exitosamente:', reservaData);
       
-      // NUEVO: Si requiere pago inmediato, mostrar modal de pago AHORA
-      if (reservaData.alquiler?.requierePagoInmediato) {
-        console.log('🚨 PAGO INMEDIATO REQUERIDO - Mostrando modal de pago');
-        
-        // Redirigir a Mis Reservas con parámetro para abrir modal inmediatamente
-        navigate(`/mis-reservas?pagarAhora=${reservaData.alquiler.id}`);
-        return true;
-      }
-      
-      // Recargar los turnos desde el backend para reflejar los cambios
-      try {
-        const turnosResponse = await fetch(`${API_BASE_URL}/turnos/cancha/${canchaId}/semana/0`);
-        if (turnosResponse.ok) {
-          const turnosData = await turnosResponse.json();
-          
-          // Función auxiliar para obtener el día de la semana en español (SIN ACENTOS para consistencia)
-          const obtenerDiaSemana = (fecha) => {
-            const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-            let fechaStr = fecha;
-            if (fechaStr.includes('T')) {
-              fechaStr = fechaStr.split('T')[0];
-            }
-            const [year, month, day] = fechaStr.split('-').map(Number);
-            const fechaObj = new Date(year, month - 1, day);
-            return diasSemana[fechaObj.getDay()];
-          };
-
-          // Función auxiliar para formatear hora desde ISO string
-          const formatearHora = (horaISO) => {
-            const fecha = new Date(horaISO);
-            const horas = fecha.getUTCHours().toString().padStart(2, '0');
-            const minutos = fecha.getUTCMinutes().toString().padStart(2, '0');
-            return `${horas}:${minutos}`;
-          };
-          
-          // Función para determinar el estado del turno
-          const determinarEstadoTurno = (turno) => {
-            if (turno.yaPaso === true) return 'finalizado';
-            if (turno.deshabilitado) return 'deshabilitado';
-            if (turno.reservado) return 'reservado';
-            if (turno.alquilerId && !turno.reservado) return 'ocupado';
-            return 'disponible';
-          };
-          
-          const turnosFormateados = (turnosData.turnos || turnosData || []).map(turno => {
-            const estado = determinarEstadoTurno(turno);
-            return {
-              id: turno.id,
-              dia: obtenerDiaSemana(turno.fecha),
-              hora: formatearHora(turno.horaInicio),
-              precio: turno.precio,
-              estado,
-              fecha: turno.fecha,
-              fechaCompleta: turno.fecha,
-              horaCompleta: turno.horaInicio,
-              reservado: turno.reservado,
-              deshabilitado: turno.deshabilitado,
-              alquilerId: turno.alquilerId
-            };
-          });
-          
-          setTurnos(turnosFormateados);
-        }
-      } catch (error) {
-        console.warn('Error al recargar turnos:', error);
-      }
-      
-      // Reserva creada exitosamente
+      // FLUJO NORMAL: Redirigir a Mis Reservas (reserva queda PENDIENTE para pagar después)
+      alert('¡Reserva creada exitosamente! Puedes pagarla desde "Mis Reservas".');
+      navigate('/mis-reservas');
       return true;
+      
     } catch (error) {
       console.error('Error al confirmar reserva:', error);
-      // Lanzar el error para que CalendarioTurnos lo capture y muestre
       throw error;
     }
   };
@@ -648,6 +709,16 @@ function ReservaPage() {
         
         <CarruselReseñas reseñas={reseñasDeLaCancha} />
       </div>
+
+      {/* Modal de pago inmediato */}
+      {modalPagoVisible && reservaPendiente && (
+        <ModalPago
+          visible={modalPagoVisible}
+          onCerrar={handleCerrarModal}
+          onConfirmarPago={handlePagoInmediato}
+          reserva={reservaPendiente}
+        />
+      )}
     </div>
   );
 }
