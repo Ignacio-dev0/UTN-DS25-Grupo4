@@ -27,6 +27,14 @@ router.get(
   usuarioController.obtenerUsuarios
 );
 
+// Ruta para obtener estadísticas de cancelaciones (admin) - debe ir antes de /:id
+router.get(
+  "/estadisticas/cancelaciones",
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  usuarioController.obtenerEstadisticasCancelaciones
+);
+
 router.get(
   "/:id/image",
   usuarioController.obtenerImagenUsuario
@@ -82,6 +90,22 @@ router.delete(
   authenticate,
   authorize('ADMINISTRADOR'),
   usuarioController.eliminarUsuario
+);
+
+// Ruta para suspender/reactivar usuario (admin)
+router.put(
+  "/:id/suspender",
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  usuarioController.suspenderUsuario
+);
+
+// Ruta para reactivar usuario (eliminar cancelaciones y permitir reservas)
+router.put(
+  "/:id/reactivar",
+  authenticate,
+  authorize('ADMINISTRADOR'),
+  usuarioController.reactivarUsuario
 );
 
 export default router;

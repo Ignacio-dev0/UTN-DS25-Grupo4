@@ -4,6 +4,19 @@ import * as alquilerService from "../services/alquiler.service";
 
 export async function crearAlquiler(req: Request, res: Response<AlquilerResponse>, next: NextFunction) {
 	try {
+		console.log('🎫 CREAR ALQUILER - Usuario:', req.usuario);
+		console.log('🎫 CREAR ALQUILER - Usuario ID:', req.usuario?.id);
+		console.log('🎫 CREAR ALQUILER - Body:', JSON.stringify(req.body, null, 2));
+		
+		if (!req.usuario || !req.usuario.id) {
+			console.error('❌ CREAR ALQUILER - req.usuario no existe o no tiene ID');
+			return res.status(401).json({
+				error: 'Usuario no autenticado',
+				message: 'No se pudo identificar al usuario',
+				alquiler: null
+			} as any);
+		}
+		
 		const alquiler = await alquilerService.crearAlquiler(req.usuario.id, req.body);
 		res.status(201).json({
 			alquiler,
@@ -19,8 +32,23 @@ export async function crearAlquiler(req: Request, res: Response<AlquilerResponse
 				alquiler: null
 			} as any);
 		}
+		
+		// Manejo específico para el límite de cancelaciones
+		if (error.message && error.message.includes('límite de')) {
+			console.error('💥 ERROR:', error.message);
+			return res.status(403).json({ 
+				error: error.message,
+				message: error.message,
+				alquiler: null
+			} as any);
+		}
+		
 		console.error('💥 CREAR ALQUILER - Error:', error);
-		next(error);
+		return res.status(500).json({ 
+			error: error.message || 'Error al crear el alquiler',
+			message: error.message || 'Error interno del servidor',
+			alquiler: null
+		} as any);
 	}
 }
 

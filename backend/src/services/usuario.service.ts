@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { Prisma, Usuario} from '@prisma/client';
 import { CrearUsuarioData, ActualizarUsuarioData } from '../validations/usuario.validation';
 import bcrypt from 'bcrypt';
+import { getNowInArgentina } from '../utils/timezone';
 
 export async function getAllUsuarios(): Promise<Usuario[]> {
   const usuarios = await prisma.usuario.findMany({
@@ -185,11 +186,25 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
                         });
                     }
                     
-                    // Eliminar turnos asociados
+                    // Liberar turnos asociados (no eliminarlos, solo desvincularloss)
                     if (alquiler.turnos.length > 0) {
-                        await tx.turno.deleteMany({
-                            where: { alquilerId: alquiler.id }
+                        console.log(`🔓 [${new Date().toISOString()}] Liberando ${alquiler.turnos.length} turnos del alquiler ${alquiler.id}`);
+                        
+                        // Obtener IDs únicos de canchas afectadas para invalidar cache
+                        const canchaIds = [...new Set(alquiler.turnos.map(t => t.canchaId))];
+                        
+                        await tx.turno.updateMany({
+                            where: { alquilerId: alquiler.id },
+                            data: { 
+                                reservado: false,
+                                alquilerId: null 
+                            }
                         });
+                        
+                        // Invalidar cache de las canchas afectadas
+                        console.log(`🗑️ [${new Date().toISOString()}] Invalidando cache para canchas:`, canchaIds);
+                        const { invalidateMultipleTurnosCache } = await import('./turno.service');
+                        invalidateMultipleTurnosCache(canchaIds);
                     }
                     
                     // Eliminar el alquiler
@@ -222,4 +237,76 @@ export async function deleteUsuario(id: number): Promise<Usuario>{
         throw e;
     }
 }
+
+/**
+ * Obtener estadísticas de cancelaciones de usuarios en los últimos 30 días
+ */
+export async function getEstadisticasCancelaciones(): Promise<{ usuarioId: number, cancelaciones: number }[]> {
+    const hace30Dias = new Date(getNowInArgentina());
+    hace30Dias.setDate(hace30Dias.getDate() - 30);
+
+    // Obtener solo los alquileres cancelados QUE CUENTAN (penalizados) en los últimos 30 días
+    // cancelacionPenalizada = true significa que la cancelación se hizo con menos de 2 horas
+    const alquileresCancelados = await prisma.alquiler.findMany({
+        where: {
+            estado: 'CANCELADO',
+            cancelacionPenalizada: true, // Solo contar las que SÍ penalizan
+            createdAt: {
+                gte: hace30Dias
+            }
+        },
+        select: {
+            clienteId: true
+        }
+    });
+
+    // Contar cancelaciones por usuario
+    const conteo: { [key: number]: number } = {};
+    alquileresCancelados.forEach(alq => {
+        conteo[alq.clienteId] = (conteo[alq.clienteId] || 0) + 1;
+    });
+
+    // Convertir a array
+    return Object.entries(conteo).map(([usuarioId, cancelaciones]) => ({
+        usuarioId: parseInt(usuarioId),
+        cancelaciones
+    }));
+}
+
+/**
+ * Suspender o reactivar un usuario mediante un campo personalizado
+ * Nota: Como Usuario no tiene campo 'estado' en el schema, usamos el campo 'direccion' 
+ * con un valor especial para marcar usuarios suspendidos
+ */
+export async function suspenderUsuario(id: number, suspendido: boolean): Promise<Usuario> {
+    try {
+        // Verificar que el usuario existe
+        const usuario = await prisma.usuario.findUnique({ where: { id } });
+        
+        if (!usuario) {
+            const error = new Error('Usuario not found');
+            (error as any).statusCode = 404;
+            throw error;
+        }
+
+        // Actualizar el campo suspendido
+        const usuarioActualizado = await prisma.usuario.update({
+            where: { id },
+            data: { suspendido }
+        });
+        
+        console.log(`✅ Usuario ${id} ${suspendido ? 'SUSPENDIDO' : 'REACTIVADO'} exitosamente`);
+        
+        return usuarioActualizado;
+    } catch (e: any) {
+        if (e.code === 'P2025') {
+            const error = new Error('Usuario not found');
+            (error as any).statusCode = 404;
+            throw error;
+        }
+        throw e;
+    }
+}
+
+
 

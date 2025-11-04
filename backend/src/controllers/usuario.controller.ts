@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import * as usuarioService from "../services/usuario.service";
 import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
+import prisma from '../config/prisma';
 import { enviarEmailBienvenida } from "../services/email.service";
 
 export async function crearUsuario(req: Request, res: Response<UsuarioResponse>) {
@@ -317,7 +318,7 @@ export async function register(req: Request, res: Response) {
             rol: newUsuario.rol
           },
           solicitud: nuevaSolicitud,
-          message: 'Usuario y solicitud registrados exitosamente'
+          message: 'Usuario y solicitud registrados exitosamente. Por favor inicia sesión.'
         });
       } catch (error) {
         // Rollback usuario si falla la solicitud
@@ -334,7 +335,7 @@ export async function register(req: Request, res: Response) {
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
         },
-        message: 'Usuario registrado exitosamente'
+        message: 'Usuario registrado exitosamente. Por favor inicia sesión.'
       });
       enviarEmailBienvenida(newUsuario.email, newUsuario.nombre);
     }
@@ -453,7 +454,7 @@ export async function registerWithImage(req: Request, res: Response) {
             rol: newUsuario.rol
           },
           solicitud: nuevaSolicitud,
-          message: 'Usuario y solicitud registrados exitosamente'
+          message: 'Usuario y solicitud registrados exitosamente. Por favor inicia sesión.'
         });
       } catch (error: any) {
         console.error('Error creando solicitud:', error);
@@ -474,7 +475,7 @@ export async function registerWithImage(req: Request, res: Response) {
           apellido: newUsuario.apellido,
           rol: newUsuario.rol
         },
-        message: 'Usuario registrado exitosamente'
+        message: 'Usuario registrado exitosamente. Por favor inicia sesión.'
       });
     }
 
@@ -579,6 +580,106 @@ export async function actualizarUsuarioConImagen(req: Request, res: Response) {
         error: 'El DNI o email ya están en uso por otro usuario'
       });
     }
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+}
+
+export async function obtenerEstadisticasCancelaciones(req: Request, res: Response) {
+  try {
+    const estadisticas = await usuarioService.getEstadisticasCancelaciones();
+    
+    res.json({
+      estadisticas,
+      total: estadisticas.length
+    });
+  } catch (error: any) {
+    console.error('Error obteniendo estadísticas de cancelaciones:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+}
+
+export async function suspenderUsuario(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { suspendido } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        error: 'ID de usuario requerido'
+      });
+    }
+
+    if (suspendido === undefined || suspendido === null) {
+      return res.status(400).json({
+        error: 'Campo "suspendido" requerido (true/false)'
+      });
+    }
+
+    const usuarioActualizado = await usuarioService.suspenderUsuario(parseInt(id), suspendido);
+
+    res.json({
+      message: `Usuario ${suspendido ? 'suspendido' : 'reactivado'} exitosamente`,
+      usuario: usuarioActualizado
+    });
+  } catch (error: any) {
+    console.error('Error suspendiendo usuario:', error);
+    
+    if (error.statusCode === 404) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      details: error.message
+    });
+  }
+}
+
+export async function reactivarUsuario(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        error: 'ID de usuario requerido'
+      });
+    }
+
+    // Reactivar usuario eliminando sus cancelaciones recientes
+    const usuarioId = parseInt(id);
+    
+    // Calcular fecha hace 30 días
+    const fechaLimite = new Date();
+    fechaLimite.setDate(fechaLimite.getDate() - 30);
+
+    // Eliminar alquileres cancelados de los últimos 30 días
+    const resultado = await prisma.alquiler.deleteMany({
+      where: {
+        clienteId: usuarioId,
+        estado: 'CANCELADO',
+        createdAt: {
+          gte: fechaLimite
+        }
+      }
+    });
+
+    console.log(`✅ Reactivación: Eliminados ${resultado.count} alquileres cancelados para usuario ${usuarioId}`);
+
+    res.json({
+      message: 'Usuario reactivado exitosamente. Se han eliminado sus cancelaciones recientes.',
+      cancelacionesEliminadas: resultado.count
+    });
+  } catch (error: any) {
+    console.error('Error reactivando usuario:', error);
+    
     res.status(500).json({
       error: 'Error interno del servidor',
       details: error.message

@@ -117,7 +117,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
 
     // Si existe el turno, actualizarlo en la base de datos
     if (turnoExistente && turnoExistente.id) {
-      // ✅ ACTUALIZACIÓN INSTANTÁNEA: Actualizar estado local PRIMERO (optimistic update)
+      // ACTUALIZACIÓN INSTANTÁNEA: Actualizar estado local PRIMERO (optimistic update)
       const turnosActualizados = turnos.map(t => 
         t.id === turnoExistente.id 
           ? { ...t, precio: nuevoPrecio }
@@ -166,6 +166,15 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
         const nuevoTurnoCreado = await crearTurnoEnBD(canchaId, dia, hora, nuevoPrecio);
         console.log("✅ Turno creado en BD:", nuevoTurnoCreado);
         
+        // Verificar que se haya creado el turno correctamente
+        if (!nuevoTurnoCreado || !nuevoTurnoCreado.id) {
+          console.warn("⚠️ No se pudo crear el turno o ya existía");
+          // Remover el turno temporal si falló
+          const turnosSinTemporal = turnosConNuevo.filter(t => t.id !== turnoTemporal.id);
+          onTurnosChange(turnosSinTemporal);
+          return; // Salir sin mostrar error adicional (ya se mostró en crearTurnoEnBD)
+        }
+        
         // 3. Actualizar el turno temporal con los datos reales de la BD
         const turnosActualizados = turnosConNuevo.map(turno => 
           turno.id === turnoTemporal.id ? {
@@ -183,6 +192,10 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
         
       } catch (error) {
         console.error("❌ Error al crear turno:", error);
+        
+        // Remover el turno temporal si hubo error
+        const turnosSinTemporal = turnosConNuevo.filter(t => t.id !== turnoTemporal.id);
+        onTurnosChange(turnosSinTemporal);
         
         // Manejo específico para errores de cancha inexistente
         if (error.message.includes('Foreign key constraint') || 
@@ -364,13 +377,13 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                 return horaFormateada;
               };
               
-              // FILTRAR SOLO TURNOS DE LA SEMANA ACTUAL (desde hoy hasta +6 días)  
+              // FILTRAR SOLO TURNOS DE LOS PRÓXIMOS 8 DÍAS (desde hoy hasta +7 días)  
               const hoy = new Date();
               const inicioSemana = new Date(hoy);
               inicioSemana.setHours(0, 0, 0, 0);
               
               const finSemana = new Date(hoy);
-              finSemana.setDate(hoy.getDate() + 6);
+              finSemana.setDate(hoy.getDate() + 7); // +7 para mostrar 8 días totales (hoy + 7)
               finSemana.setHours(23, 59, 59, 999);
 
               const turnosEstaSemana = (turnosData.turnos || turnosData || []).filter(turno => {
@@ -408,11 +421,16 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                 recalcularPrecioDesdeLocal(turnosConPrecioActualizado);
                 
                 alert(`✅ Precio del turno actualizado a $${precio.toLocaleString('es-AR')}`);
+                return turnoExistente; // Retornar el turno existente
               } else {
                 alert(`El turno de ${dia} a las ${hora} ya existe. Se ha actualizado la vista.`);
+                // Buscar el turno en los datos recargados
+                const turnoEncontrado = turnosFormateados.find(t => 
+                  String(t.dia).toUpperCase().includes(dia.substring(0, 3).toUpperCase()) || 
+                  t.hora === hora
+                );
+                return turnoEncontrado || null; // Retornar algo en lugar de undefined
               }
-              
-              return; // No lanzar error, solo informar
             }
           } catch (reloadError) {
             console.error('Error recargando turnos:', reloadError);
@@ -424,6 +442,13 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       const result = await response.json();
       console.log('✅ Turno creado en BD:', result);
+      
+      // Asegurarse de que siempre retornamos un turno válido
+      if (!result.turno || !result.turno.id) {
+        console.error('❌ La respuesta del backend no contiene un turno válido:', result);
+        throw new Error('El backend no retornó un turno válido');
+      }
+      
       return result.turno;
     } catch (error) {
       console.error('❌ Error al crear turno:', error);
@@ -510,26 +535,19 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       if (!responseHorario.ok) {
         const errorData = await responseHorario.json();
         console.error('Error al deshabilitar horario:', errorData);
-        // Continuar con la eliminación aunque falle el deshabilitar
-      } else {
-        const horarioData = await responseHorario.json();
-        console.log('✅ Horario deshabilitado permanentemente:', horarioData);
-        
-        // Actualizar la lista local de horarios deshabilitados
-        setHorariosDeshabilitados(prev => [...prev, horarioData.horarioDeshabilitado]);
+        throw new Error(errorData.error || 'Error al deshabilitar horario');
       }
       
-      // 2. Eliminar el turno actual de la BD
-      const responseTurno = await fetch(`${API_BASE_URL}/turnos/individual/${turno.id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-
-      if (!responseTurno.ok) {
-        throw new Error('Error al eliminar turno');
-      }
-
-      // 3. Actualizar localmente removiendo el turno
+      const horarioData = await responseHorario.json();
+      console.log('✅ Horario deshabilitado permanentemente:', horarioData);
+      
+      // Actualizar la lista local de horarios deshabilitados
+      setHorariosDeshabilitados(prev => [...prev, horarioData.horarioDeshabilitado]);
+      
+      // NOTA: No necesitamos hacer DELETE del turno porque el backend ya lo eliminó
+      // automáticamente al crear el horario deshabilitado
+      
+      // Actualizar localmente removiendo el turno
       const turnosActualizados = turnos.filter(t => t.id !== turno.id);
       onTurnosChange(turnosActualizados);
       
@@ -646,7 +664,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   // Calcular localmente si no viene del backend
                   // Un turno está pasado si:
                   // 1. La fecha es anterior a hoy, O
-                  // 2. Es hoy pero la hora ya pasó
+                  // 2. Es hoy pero la hora ya pasó (incluso si está en curso)
                   const hoyInicio = new Date();
                   hoyInicio.setHours(0, 0, 0, 0);
                   
@@ -657,8 +675,9 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   const horaActual = new Date().getHours();
                   const horaTurno = parseInt(hora.split(':')[0]);
                   
-                  // Un turno está pasado solo si la hora ya finalizó (no si está en curso)
-                  esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno < horaActual);
+                  // Un turno está pasado si la hora ya comenzó o pasó
+                  // Si son las 18:24, el turno de las 18:00 YA pasó (18 <= 18)
+                  esPasado = fechaDiaInicio < hoyInicio || (esHoy && horaTurno <= horaActual);
                 }
                 
                 // Normalizar el día para comparar con horarios deshabilitados (sin tildes)
@@ -714,8 +733,17 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   <div key={`${fechaKey}-${hora}`} className="p-1">
                     <button 
                       className={clasesBoton}
-                      onClick={() => esEditable ? handleEditarPrecio(dia, hora) : null}
-                      disabled={!esEditable}
+                      onClick={() => {
+                        // No permitir clicks en turnos finalizados o deshabilitados permanentemente
+                        if (esPasado || estadoTurno === 'deshabilitado-permanente') {
+                          return;
+                        }
+                        if (esEditable) {
+                          handleEditarPrecio(dia, hora);
+                        }
+                      }}
+                      disabled={!esEditable || esPasado || estadoTurno === 'deshabilitado-permanente'}
+                      style={{ cursor: (esPasado || estadoTurno === 'deshabilitado-permanente') ? 'not-allowed' : 'pointer' }}
                       title={
                         esPasado ? "Turno finalizado - No editable" :
                         estadoTurno === 'deshabilitado-temporal' ? "Deshabilitado temporalmente - Clic en ▶️ para habilitar" :

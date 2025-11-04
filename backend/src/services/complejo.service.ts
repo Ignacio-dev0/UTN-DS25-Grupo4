@@ -93,14 +93,26 @@ export const updateComplejo = async (id: number, data: UpdateComplejoRequest) =>
 
 export const getAllComplejos = async () => {
   return await prisma.complejo.findMany({
-    include: { domicilio: true },
+    include: { 
+      domicilio: {
+        include: {
+          localidad: true
+        }
+      },
+      usuario: true,
+      administrador: true
+    },
   });
 };
 
 export const getComplejosAprobados = async () => {
   return await prisma.complejo.findMany({
     where: {
-      estado: 'APROBADO'
+      estado: 'APROBADO',
+      // Filtrar complejos cuyo dueño esté suspendido
+      usuario: {
+        suspendido: false
+      }
     },
     include: { 
       domicilio: {

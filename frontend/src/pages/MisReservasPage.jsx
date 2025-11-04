@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { misReservas as initialReservas } from '../data/reservas';
 import PerfilInfo from '../components/PerfilInfo';
@@ -8,9 +8,11 @@ import ModalReseña from '../components/ModalReseña';
 import ModalPago from '../components/ModalPago';
 import { getUserProfile, updateUserProfile } from '../services/auth';
 import { API_BASE_URL } from '../config/api.js';
+import { parseFechaBackend, parseHoraBackend, formatearFecha, calcularHoraFin, turnoYaPaso } from '../utils/dateUtils';
 
 function MisReservasPage() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { isAuthenticated, updateUser, user: contextUser } = useAuth();
     
     const [usuario, setUsuario] = useState({
@@ -35,6 +37,7 @@ function MisReservasPage() {
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
     const [profileLoaded, setProfileLoaded] = useState(false); // Track if profile was initially loaded
     const [filtroEstado, setFiltroEstado] = useState('Todas'); // Estado para el filtro
+    const [mostrarPoliticas, setMostrarPoliticas] = useState(true); // Controlar visibilidad de políticas
 
     // Verificar autenticación al montar el componente
     useEffect(() => {
@@ -90,6 +93,42 @@ function MisReservasPage() {
         cargarPerfilUsuario();
     }, [isAuthenticated, navigate, isUpdatingProfile, profileLoaded]);
 
+    // Agregar listener para recargar reservas cuando la ventana recupera el foco
+    useEffect(() => {
+        const handleFocus = () => {
+            if (isAuthenticated && usuario?.id) {
+                console.log('🔄 Ventana enfocada - recargando reservas');
+                cargarReservas(usuario.id);
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [isAuthenticated, usuario?.id]);
+
+    // NUEVO: Detectar si se requiere pago inmediato (viene de ReservaPage)
+    useEffect(() => {
+        const pagarAhoraId = searchParams.get('pagarAhora');
+        if (pagarAhoraId && reservas.length > 0) {
+            console.log('🚨 PAGO INMEDIATO DETECTADO - Abriendo modal para alquiler:', pagarAhoraId);
+            
+            // Buscar la reserva que acabamos de crear
+            const reserva = reservas.find(r => r.id === parseInt(pagarAhoraId));
+            
+            if (reserva) {
+                // Abrir el modal de pago inmediatamente
+                setReservaParaPagar(reserva);
+                setModalPagoVisible(true);
+                
+                // Limpiar el parámetro de la URL
+                setSearchParams({});
+            }
+        }
+    }, [searchParams, reservas, setSearchParams]);
+
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
         try {
@@ -104,11 +143,39 @@ function MisReservasPage() {
             if (response.ok) {
                 const data = await response.json();
                 
+                console.log('📦 Datos completos del backend:', JSON.stringify(data, null, 2));
+                console.log('📊 Total alquileres recibidos:', data.alquileres?.length || 0);
+                
+                // Log detallado de CADA alquiler
+                if (data.alquileres && data.alquileres.length > 0) {
+                    console.log('🔍 ANALIZANDO TODOS LOS ALQUILERES:');
+                    data.alquileres.forEach((alq, index) => {
+                        console.log(`  Alquiler ${index + 1}:`, {
+                            id: alq.id,
+                            estado: alq.estado,
+                            cantidadTurnos: alq.turnos?.length || 0,
+                            primerTurno: alq.turnos && alq.turnos.length > 0 ? {
+                                fecha: alq.turnos[0].fecha,
+                                horaInicio: alq.turnos[0].horaInicio,
+                                cancha: alq.turnos[0].cancha?.nroCancha,
+                                complejo: alq.turnos[0].cancha?.complejo?.nombre
+                            } : 'SIN TURNOS'
+                        });
+                    });
+                }
+                
                 // Filtrar solo alquileres que tengan turnos
                 const alquileresConTurnos = (data.alquileres || []).filter(alquiler => 
                     alquiler.turnos && alquiler.turnos.length > 0
                 );
                 console.log('✅ Alquileres con turnos:', alquileresConTurnos.length);
+                
+                const alquileresSinTurnos = (data.alquileres || []).filter(alquiler => 
+                    !alquiler.turnos || alquiler.turnos.length === 0
+                );
+                if (alquileresSinTurnos.length > 0) {
+                    console.warn('⚠️ ALQUILERES SIN TURNOS:', alquileresSinTurnos.length, 'alquileres no se mostrarán');
+                }
                 
                 const reservasFormateadas = alquileresConTurnos.map(alquiler => {
                     // Ordenar los turnos por horaInicio para asegurar el orden correcto
@@ -125,34 +192,15 @@ function MisReservasPage() {
                         return null;
                     }
                     
-                    const fecha = new Date(primerTurno.fecha);
+                    // Usar utilidad para parsear fecha correctamente (sin problemas de timezone)
+                    const fecha = parseFechaBackend(primerTurno.fecha);
+                    const fechaFormateada = formatearFecha(fecha);
                     
-                    // Función auxiliar para parsear hora desde ISO string
-                    const parsearHora = (horaISO) => {
-                        if (typeof horaISO === 'string') {
-                            const timeMatch = horaISO.match(/T(\d{2}:\d{2})/);
-                            if (timeMatch) {
-                                return timeMatch[1]; // "20:00"
-                            }
-                            const d = new Date(horaISO);
-                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
-                        } else if (horaISO instanceof Date || horaISO) {
-                            const d = new Date(horaISO);
-                            return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
-                        }
-                        return '00:00';
-                    };
-                    
-                    // Parsear hora de inicio del primer turno
-                    const horaInicio = parsearHora(primerTurno.horaInicio);
-                    
-                    // Calcular hora de fin del último turno
-                    // Siempre calcular sumando 1 hora a la hora de inicio del último turno
-                    // (ya que los turnos no tienen campo horaFin en la base de datos)
-                    const horaInicioUltimo = parsearHora(ultimoTurno.horaInicio);
-                    const [horaNum, minNum] = horaInicioUltimo.split(':').map(Number);
-                    const horaFinNum = (horaNum + 1) % 24;
-                    const horaFin = `${horaFinNum.toString().padStart(2, '0')}:${minNum.toString().padStart(2, '0')}`;
+                    // Parsear horas usando utilidad
+                    const horaInicio = parseHoraBackend(primerTurno.horaInicio);
+                    const horaInicioUltimo = parseHoraBackend(ultimoTurno.horaInicio);
+                    const horaFin = calcularHoraFin(horaInicioUltimo, 1);
+
                     
                     // Determinar estado basado en el estado del alquiler y pago
                     let estado = 'Pendiente';
@@ -164,27 +212,23 @@ function MisReservasPage() {
                         estado = 'Finalizada';
                     }
 
-                    // Auto-finalizar turnos pasados (comparando fecha Y hora)
-                    const ahora = new Date();
+                    // Auto-finalizar turnos pasados (usando función utilitaria)
+                    const yaTermino = turnoYaPaso(primerTurno.fecha, horaFin);
                     
-                    // Crear fecha/hora completa del turno de finalización
-                    const anio = fecha.getFullYear();
-                    const mes = fecha.getMonth();
-                    const dia = fecha.getDate();
-                    
-                    // Parsear hora de fin (formato "HH:MM")
-                    const [horaFinParsed, minFinParsed] = horaFin.split(':').map(Number);
-                    
-                    // Construir fecha/hora de fin del turno
-                    const fechaHoraFinTurno = new Date(anio, mes, dia, horaFinParsed, minFinParsed);
+                    console.log(`⏱️ Alquiler ${alquiler.id}:`, {
+                        fecha: fechaFormateada,
+                        horaInicio: horaInicio,
+                        horaFin: horaFin,
+                        ahora: new Date().toLocaleString('es-ES'),
+                        yaTermino: yaTermino,
+                        estado: estado
+                    });
                     
                     // Si el turno ya terminó (hora de fin pasó), marcar como finalizado
-                    if ((estado === 'Confirmada' || estado === 'Pendiente') && ahora > fechaHoraFinTurno) {
+                    if ((estado === 'Confirmada' || estado === 'Pendiente') && yaTermino) {
+                        console.log(`  ⚠️ Auto-finalizando turno ${alquiler.id} porque ya pasó su hora`);
                         estado = 'Finalizada';
                     }
-
-                    // Formatear fecha a DD/MM/YYYY
-                    const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
                     
                     // Verificar si el USUARIO ya dejó una reseña en esta CANCHA (en cualquier alquiler)
                     const usuarioYaReseñoCancha = alquiler.usuarioYaReseñoCancha || false;
@@ -200,12 +244,23 @@ function MisReservasPage() {
                         total: alquiler.turnos.reduce((sum, turno) => sum + turno.precio, 0),
                         estado: estado,
                         reseñada: usuarioYaReseñoCancha, // Verificar si usuario ya reseñó esta cancha
-                        userId: usuarioId
+                        userId: usuarioId,
+                        createdAt: alquiler.createdAt // Fecha de creación del alquiler
                     };
                 });
                 
                 // Filtrar los null (alquileres con datos incompletos)
                 const reservasValidas = reservasFormateadas.filter(r => r !== null);
+                console.log('✅ Reservas válidas después de formatear:', reservasValidas.length);
+                
+                // Log de resumen por estado
+                const conteoEstados = {
+                    Pendiente: reservasValidas.filter(r => r.estado === 'Pendiente').length,
+                    Confirmada: reservasValidas.filter(r => r.estado === 'Confirmada').length,
+                    Finalizada: reservasValidas.filter(r => r.estado === 'Finalizada').length,
+                    Cancelada: reservasValidas.filter(r => r.estado === 'Cancelada').length
+                };
+                console.log('📊 RESUMEN POR ESTADO:', conteoEstados);
                 
                 // Ordenar reservas por estado (pendientes primero) y luego por fecha más reciente
                 const reservasOrdenadas = reservasValidas.sort((a, b) => {
@@ -527,6 +582,30 @@ function MisReservasPage() {
         'Cancelada': reservas.filter(r => r.estado === 'Cancelada').length,
     };
 
+    // Verificar si el usuario tiene 2 o más cancelaciones en los últimos 30 días
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hace30Dias.getDate() - 30);
+    
+    // Contar cancelaciones usando la fecha de creación de la reserva (createdAt) o la fecha del turno
+    const cancelacionesRecientes = reservas.filter(r => {
+        if (r.estado !== 'Cancelada') return false;
+        
+        // Usar createdAt si está disponible, sino usar la fecha de la reserva
+        const fechaParaComparar = r.createdAt ? new Date(r.createdAt) : new Date(r.fecha);
+        return fechaParaComparar >= hace30Dias;
+    }).length;
+
+    const usuarioBloqueado = cancelacionesRecientes >= 2;
+
+    // Log para debug
+    console.log('🔍 DEBUG Cancelaciones:', {
+        totalReservas: reservas.length,
+        canceladas: reservas.filter(r => r.estado === 'Cancelada').length,
+        cancelacionesRecientes,
+        usuarioBloqueado,
+        hace30Dias: hace30Dias.toISOString()
+    });
+
     return (
         <div className="max-w-7xl mx-auto p-6 md:p-8 rounded-lg relative z-10">
             {loading ? (
@@ -537,19 +616,81 @@ function MisReservasPage() {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col md:flex-row -mx-4">
-                    <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
-                    <ListaReservas 
-                        reservas={reservasFiltradas} 
-                        onCancelReserva={handleCancelReserva}
-                        onDejarReseña={handleOpenReseñaModal}
-                        onPagarReserva={handleOpenPagoModal}
-                        onVerDetalle={handleVerDetalle}
-                        filtroEstado={filtroEstado}
-                        setFiltroEstado={setFiltroEstado}
-                        conteoEstados={conteoEstados}
-                    />
-                </div>
+                <>
+                    {/* Alerta de usuario bloqueado por cancelaciones */}
+                    {usuarioBloqueado && (
+                        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-md">
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3 flex-1">
+                                    <h3 className="text-red-800 font-semibold text-lg">⚠️ Cuenta Suspendida Temporalmente</h3>
+                                    <p className="text-red-700 mt-2">
+                                        Has alcanzado el límite de <strong>{cancelacionesRecientes} cancelaciones</strong> en los últimos 30 días.
+                                    </p>
+                                    <p className="text-red-600 mt-1 text-sm">
+                                        No podrás realizar nuevas reservas hasta que pasen 30 días desde tu primera cancelación o hasta que un administrador reactive tu cuenta.
+                                    </p>
+                                    <div className="mt-3 bg-red-100 p-3 rounded">
+                                        <p className="text-red-800 text-sm font-medium">
+                                            💡 Consejo: Evita cancelaciones frecuentes para mantener tu cuenta activa.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Mensaje informativo sobre políticas de cancelación */}
+                    {mostrarPoliticas && (
+                        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm relative">
+                            {/* Botón de cerrar */}
+                            <button
+                                onClick={() => setMostrarPoliticas(false)}
+                                className="absolute top-2 right-2 text-blue-400 hover:text-blue-600 transition-colors"
+                                title="Cerrar"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                            
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3 pr-8">
+                                    <h4 className="text-blue-800 font-semibold text-sm">📋 Políticas de Reserva y Cancelación</h4>
+                                    <div className="mt-2 text-blue-700 text-sm space-y-1">
+                                        <p>• <strong>Reserva:</strong> Debes reservar con al menos <strong>1 hora de anticipación</strong></p>
+                                        <p>• <strong>Cancelación:</strong> Debes cancelar con al menos <strong>2 horas de anticipación</strong></p>
+                                        <p>• <strong>Límite:</strong> Máximo <strong>2 cancelaciones cada 30 días</strong>. Exceder este límite suspenderá temporalmente tu cuenta</p>
+                                        <p className="mt-2 text-blue-600 text-xs italic">💡 Planifica tus reservas con responsabilidad para mantener tu cuenta activa</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="flex flex-col md:flex-row -mx-4">
+                        <PerfilInfo usuario={usuario} onSave={handleSaveProfile} turnosFinalizados={turnosFinalizados} />
+                        <ListaReservas 
+                            reservas={reservasFiltradas} 
+                            onCancelReserva={handleCancelReserva}
+                            onDejarReseña={handleOpenReseñaModal}
+                            onPagarReserva={handleOpenPagoModal}
+                            onVerDetalle={handleVerDetalle}
+                            filtroEstado={filtroEstado}
+                            setFiltroEstado={setFiltroEstado}
+                            conteoEstados={conteoEstados}
+                        />
+                    </div>
+                </>
             )}
 
             {modalReseñaVisible && (

@@ -208,6 +208,12 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
                             }
                         }
                     }
+                },
+                // Incluir estado del alquiler para verificar si está cancelado
+                alquiler: {
+                    select: {
+                        estado: true
+                    }
                 }
             },
             orderBy: [
@@ -291,6 +297,20 @@ export async function deleteTurno(id: number): Promise<Turno> {
     return deleted;
 }
 
+// Función para invalidar el caché de turnos de una cancha específica
+export function invalidateTurnosCache(canchaId: number): void {
+    turnosCache.delete(canchaId);
+    console.log(`🗑️ Cache invalidado para cancha ${canchaId}`);
+}
+
+// Función para invalidar el caché de múltiples canchas
+export function invalidateMultipleTurnosCache(canchaIds: number[]): void {
+    canchaIds.forEach(canchaId => {
+        turnosCache.delete(canchaId);
+    });
+    console.log(`🗑️ Cache invalidado para ${canchaIds.length} cancha(s): [${canchaIds.join(', ')}]`);
+}
+
 export async function getTurnosPorSemana(canchaId: number, semanaOffset: number = 0): Promise<Turno[]> {
     try {
         console.log(`🔍 Servicio getTurnosPorSemana: cancha ${canchaId}, semana offset ${semanaOffset}`);
@@ -336,6 +356,12 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
                             }
                         }
                     }
+                },
+                // Incluir estado del alquiler para verificar si está cancelado
+                alquiler: {
+                    select: {
+                        estado: true
+                    }
                 }
             },
             orderBy: [
@@ -356,4 +382,24 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
         console.error(`❌ Servicio: Error en getTurnosPorSemana:`, error);
         throw error;
     }
+}
+
+/**
+ * Obtener todos los turnos con pago pendiente (alquilerId presente pero reservado=false)
+ * Estos turnos deben ser liberados si han pasado 2 horas desde la hora del turno
+ */
+export async function getTurnosConPagoPendiente() {
+    return await prisma.turno.findMany({
+        where: {
+            alquilerId: { not: null },
+            reservado: false // Pago pendiente
+        },
+        include: {
+            cancha: {
+                include: {
+                    complejo: true
+                }
+            }
+        }
+    });
 }

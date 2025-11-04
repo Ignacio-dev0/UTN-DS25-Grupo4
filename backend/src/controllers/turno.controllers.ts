@@ -1,5 +1,7 @@
 import { Request,Response } from "express";
 import * as turnoService from "../services/turno.service";
+import { getNowInArgentina } from "../utils/timezone";
+import prisma from "../config/prisma";
 
 export async function generarTurnos(req: Request, res: Response) {
     try {
@@ -144,8 +146,8 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
         console.log(`✅ Turnos encontrados para semana ${semanaOffset}: ${turnos.length}`);
         
         // Agregar el campo 'dia' (día de la semana) y detectar si el turno ya pasó
-        const ahora = new Date();
-        console.log(`🕐 Hora actual del servidor: ${ahora.toISOString()} (local: ${ahora.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
+        const ahora = getNowInArgentina();
+        console.log(`🕐 Hora actual en Argentina: ${ahora.toISOString()} (local: ${ahora.toLocaleString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})})`);
         
         const turnosConDia = turnos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
@@ -364,3 +366,65 @@ export async function habilitarTurno(req: Request, res: Response) {
     }
 }
 
+/**
+ * Liberar turnos con pago pendiente (reservado=false) después de 2 horas
+ * Este endpoint debe ser llamado periódicamente (cron job)
+ */
+export async function liberarTurnosPagoPendiente(req: Request, res: Response) {
+    try {
+        console.log('🔄 Verificando turnos con pago pendiente...');
+        
+        const ahora = getNowInArgentina();
+        
+        // Buscar turnos con alquilerId pero reservado=false (pago pendiente)
+        const turnosPendientes = await turnoService.getTurnosConPagoPendiente();
+        
+        console.log(`📊 Encontrados ${turnosPendientes.length} turnos con pago pendiente`);
+        
+        const turnosALiberar = [];
+        
+        for (const turno of turnosPendientes) {
+            // Construir fecha+hora del turno + 2 horas
+            const year = turno.fecha.getFullYear();
+            const month = turno.fecha.getMonth();
+            const day = turno.fecha.getDate();
+            const hora = turno.horaInicio.getUTCHours();
+            const minutos = turno.horaInicio.getUTCMinutes();
+            
+            const fechaHoraTurno = new Date(year, month, day, hora, minutos);
+            const limitePago = new Date(fechaHoraTurno.getTime() + (2 * 60 * 60 * 1000)); // +2 horas
+            
+            if (ahora >= limitePago) {
+                turnosALiberar.push(turno);
+                console.log(`⏰ Turno ${turno.id} excedió el límite de pago (${fechaHoraTurno.toISOString()}) - LIBERANDO`);
+            }
+        }
+        
+        if (turnosALiberar.length > 0) {
+            // Liberar los turnos
+            await prisma.turno.updateMany({
+                where: {
+                    id: { in: turnosALiberar.map(t => t.id) }
+                },
+                data: {
+                    reservado: false,
+                    alquilerId: null
+                }
+            });
+            
+            console.log(`✅ ${turnosALiberar.length} turnos liberados por falta de pago`);
+        } else {
+            console.log('✅ No hay turnos para liberar');
+        }
+        
+        res.json({
+            message: `Proceso completado: ${turnosALiberar.length} turnos liberados`,
+            turnosLiberados: turnosALiberar.length,
+            turnosRevisados: turnosPendientes.length
+        });
+        
+    } catch (error: any) {
+        console.error('Error liberando turnos con pago pendiente:', error);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+}

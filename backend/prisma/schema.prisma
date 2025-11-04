@@ -8,18 +8,19 @@ datasource db {
 }
 
 model Usuario {
-  id        Int        @id @default(autoincrement())
-  apellido  String
-  nombre    String
-  dni       String     @unique
-  email     String     @unique
-  password  String
-  telefono  String?
-  rol       Rol        @default(CLIENTE)
-  image     String?
-  direccion String?
-  reservas  Alquiler[]
-  complejo  Complejo?
+  id         Int        @id @default(autoincrement())
+  apellido   String
+  nombre     String
+  dni        String     @unique
+  email      String     @unique
+  password   String
+  telefono   String?
+  rol        Rol        @default(CLIENTE)
+  image      String?
+  direccion  String?
+  suspendido Boolean    @default(false) // Usuario suspendido temporalmente por cancelaciones
+  reservas   Alquiler[]
+  complejo   Complejo?
 
   @@map("Usuario")
 }
@@ -132,14 +133,16 @@ model Resenia {
 }
 
 model Alquiler {
-  id        Int            @id @default(autoincrement())
-  createdAt DateTime       @default(now())
-  estado    EstadoAlquiler @default(PROGRAMADO)
-  clienteId Int
-  cliente   Usuario        @relation(fields: [clienteId], references: [id])
-  pago      Pago?
-  resenia   Resenia?
-  turnos    Turno[]
+  id                     Int            @id @default(autoincrement())
+  createdAt              DateTime       @default(now())
+  estado                 EstadoAlquiler @default(PROGRAMADO)
+  cancelacionPenalizada  Boolean        @default(false) // TRUE si la cancelación cuenta para el límite de 2/30 días
+  requierePagoInmediato  Boolean        @default(false) // TRUE si se reservó con <2 horas de anticipación
+  clienteId              Int
+  cliente                Usuario        @relation(fields: [clienteId], references: [id])
+  pago                   Pago?
+  resenia                Resenia?
+  turnos                 Turno[]
 }
 
 model Pago {
@@ -185,6 +188,7 @@ model HorarioDeshabilitado {
 }
 
 enum MetodoPago {
+  EFECTIVO
   DEBITO
   CREDITO
   TRANSFERENCIA

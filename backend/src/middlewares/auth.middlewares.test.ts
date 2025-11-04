@@ -33,7 +33,7 @@ describe('authenticate middleware', () => {
 
   test('debe agregar req.usuario y llamar a next() con un token válido', () => {
     // 1. Arrange
-    const mockPayload: UsuarioPayload = { id: 1, email: 'test@test.com', rol: 'USUARIO' };
+    const mockPayload: UsuarioPayload = { id: 1, email: 'test@test.com', rol: 'CLIENTE' };
     const token = 'valid-token';
     mockReq.headers = { authorization: `Bearer ${token}` };
 
@@ -142,7 +142,7 @@ describe('authorize middleware', () => {
     test('debe llamar a next(error) si el usuario no tiene el rol permitido', () => {
         // 1. Arrange
         const middleware = authorize('ADMINISTRADOR');
-        mockReq.usuario = { id: 3, email: 'user@test.com', rol: 'USUARIO' };
+        mockReq.usuario = { id: 3, email: 'user@test.com', rol: 'CLIENTE' };
 
         // 2. Act
         middleware(mockReq as Request, mockRes as Response, mockNext);
