@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GaleriaFotos from '../components/GaleriaFotos.jsx';
 import InfoCancha from '../components/InfoCancha.jsx';
@@ -94,6 +94,7 @@ const getCoordinatesForLocation = (domicilio) => {
 
 function ReservaPage() {
   const { canchaId } = useParams();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [cancha, setCancha] = useState(null);
   const [complejo, setComplejo] = useState(null);
@@ -531,6 +532,15 @@ function ReservaPage() {
 
       const reservaData = await response.json();
       console.log('Reserva creada exitosamente:', reservaData);
+      
+      // 🚨 NUEVO: Si requiere pago inmediato, mostrar modal de pago AHORA
+      if (reservaData.alquiler?.requierePagoInmediato) {
+        console.log('🚨 PAGO INMEDIATO REQUERIDO - Mostrando modal de pago');
+        
+        // Redirigir a Mis Reservas con parámetro para abrir modal inmediatamente
+        navigate(`/mis-reservas?pagarAhora=${reservaData.alquiler.id}`);
+        return true;
+      }
       
       // Recargar los turnos desde el backend para reflejar los cambios
       try {

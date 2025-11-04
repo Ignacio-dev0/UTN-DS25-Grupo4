@@ -203,31 +203,20 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 	
 	console.log(`⏰ VALIDACIÓN TIEMPO PAGO:`, {
 		horasRestantes: horasRestantes.toFixed(2),
-		requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
+		requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO REQUERIDO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
 	});
 	
 	// Calcular monto total
 	const montoTotal = turnosConsecutivos.reduce((sum, t) => sum + t.precio, 0);
 	
-	// ⚠️ IMPORTANTE: Si requiere pago inmediato, crear el alquiler YA CONFIRMADO con pago
-	// Si NO requiere pago inmediato, crear en estado PROGRAMADO sin pago (pendiente)
+	// ⚠️ NUEVO FLUJO: SIEMPRE crear en PROGRAMADO sin pago
+	// El frontend mostrará el modal de pago inmediatamente si requierePagoInmediato=true
 	const dataAlquiler: any = {
 		cliente: { connect: { id: usuarioId } },
 		turnos: { connect: turnosConsecutivos.map(t => ({ id: t.id })) },
-		estado: requierePagoInmediato ? EstadoAlquiler.PAGADO : EstadoAlquiler.PROGRAMADO,
-		requierePagoInmediato: requierePagoInmediato
+		estado: EstadoAlquiler.PROGRAMADO, // Siempre PROGRAMADO al crear
+		requierePagoInmediato: requierePagoInmediato // Flag para que frontend sepa si mostrar modal
 	};
-	
-	// Si requiere pago inmediato, crear el pago simulado automáticamente
-	if (requierePagoInmediato) {
-		dataAlquiler.pago = {
-			create: {
-				metodoPago: 'EFECTIVO',
-				monto: montoTotal,
-				codigoTransaccion: `SIM-${Date.now()}-${usuarioId}`
-			}
-		};
-	}
 	
 	const nuevoAlquiler = await prisma.alquiler.create({
 		data: dataAlquiler,
@@ -244,37 +233,30 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 		}
 	});
 	
-	// 🔴 CRUCIAL: Marcar los turnos según tipo de pago
-	// Si requiere pago inmediato → reservado=true (CONFIRMADO)
-	// Si NO requiere pago inmediato → reservado=false (PENDIENTE)
+	// 🔴 CRUCIAL: Marcar turnos como reservado=false (pendiente de pago)
+	// El pago se confirma en un paso posterior (desde frontend)
 	await prisma.turno.updateMany({
 		where: {
 			id: { in: turnosConsecutivos.map(t => t.id) }
 		},
 		data: {
 			alquilerId: nuevoAlquiler.id,
-			reservado: requierePagoInmediato // true si pago inmediato, false si pendiente
+			reservado: false // Siempre false hasta que se pague
 		}
 	});
 	
-	if (requierePagoInmediato) {
-		console.log('✅ ALQUILER CREADO CON PAGO INMEDIATO (CONFIRMADO):', {
-			id: nuevoAlquiler.id,
-			turnos: nuevoAlquiler.turnos.length,
-			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
-			estado: '✅ CONFIRMADO (pago inmediato)',
-			monto: montoTotal,
-			horasRestantes: horasRestantes.toFixed(2)
-		});
-	} else {
-		console.log('✅ ALQUILER CREADO CON PAGO PENDIENTE:', {
-			id: nuevoAlquiler.id,
-			turnos: nuevoAlquiler.turnos.length,
-			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
-			estado: '⏳ PENDIENTE DE PAGO (reservado=false)',
-			horasRestantes: horasRestantes.toFixed(2)
-		});
-	}
+	console.log('✅ ALQUILER CREADO:', {
+		id: nuevoAlquiler.id,
+		turnos: nuevoAlquiler.turnos.length,
+		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+		estado: '⏳ PROGRAMADO (pendiente pago)',
+		requierePagoInmediato: requierePagoInmediato,
+		monto: montoTotal,
+		horasRestantes: horasRestantes.toFixed(2),
+		mensaje: requierePagoInmediato ? 
+			'🚨 FRONTEND DEBE MOSTRAR MODAL DE PAGO INMEDIATAMENTE' : 
+			'✅ Usuario puede pagar después desde Mis Reservas'
+	});
 
 	return nuevoAlquiler;
 }
@@ -358,27 +340,16 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 	
 	console.log(`⏰ VALIDACIÓN TIEMPO PAGO:`, {
 		horasRestantes: horasRestantes.toFixed(2),
-		requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
+		requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO REQUERIDO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
 	});
 
 	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
 	const dataAlquiler: any = {
 		cliente: { connect: { id: usuarioId } },
 		turnos: { connect: turnos.map(t => ({ id: t.id })) },
-		estado: requierePagoInmediato ? EstadoAlquiler.PAGADO : EstadoAlquiler.PROGRAMADO,
-		requierePagoInmediato: requierePagoInmediato
+		estado: EstadoAlquiler.PROGRAMADO, // Siempre PROGRAMADO al crear
+		requierePagoInmediato: requierePagoInmediato // Flag para que frontend sepa si mostrar modal
 	};
-	
-	// Si requiere pago inmediato, crear el pago simulado automáticamente
-	if (requierePagoInmediato) {
-		dataAlquiler.pago = {
-			create: {
-				metodoPago: 'EFECTIVO',
-				monto: precioTotal,
-				codigoTransaccion: `SIM-${Date.now()}-${usuarioId}`
-			}
-		};
-	}
 	
 	const nuevoAlquiler = await prisma.alquiler.create({
 		data: dataAlquiler,
@@ -395,35 +366,29 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 		}
 	});
 	
-	// 🔧 IMPORTANTE: Marcar turnos según tipo de pago
+	// 🔧 IMPORTANTE: Marcar turnos como reservado=false (pendiente de pago)
 	console.log('🔒 MARCANDO TURNOS...');
 	await prisma.turno.updateMany({
 		where: { id: { in: turnos.map(t => t.id) } },
 		data: { 
-			reservado: requierePagoInmediato, // true si pago inmediato, false si pendiente
+			reservado: false, // Siempre false hasta que se pague
 			alquilerId: nuevoAlquiler.id 
 		}
 	});
-	console.log(`✅ TURNOS MARCADOS: reservado=${requierePagoInmediato}`);
+	console.log(`✅ TURNOS MARCADOS: reservado=false (pendiente pago)`);
 	
-	if (requierePagoInmediato) {
-		console.log('✅ ALQUILER CREADO CON PAGO INMEDIATO:', {
-			id: nuevoAlquiler.id,
-			turnos: nuevoAlquiler.turnos.length,
-			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
-			estado: '✅ PAGADO',
-			monto: precioTotal,
-			horasRestantes: horasRestantes.toFixed(2)
-		});
-	} else {
-		console.log('✅ ALQUILER CREADO CON PAGO PENDIENTE:', {
-			id: nuevoAlquiler.id,
-			turnos: nuevoAlquiler.turnos.length,
-			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
-			estado: '⏳ PROGRAMADO (pendiente de pago)',
-			horasRestantes: horasRestantes.toFixed(2)
-		});
-	}
+	console.log('✅ ALQUILER CREADO:', {
+		id: nuevoAlquiler.id,
+		turnos: nuevoAlquiler.turnos.length,
+		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+		estado: '⏳ PROGRAMADO (pendiente pago)',
+		requierePagoInmediato: requierePagoInmediato,
+		monto: precioTotal,
+		horasRestantes: horasRestantes.toFixed(2),
+		mensaje: requierePagoInmediato ? 
+			'🚨 FRONTEND DEBE MOSTRAR MODAL DE PAGO INMEDIATAMENTE' : 
+			'✅ Usuario puede pagar después desde Mis Reservas'
+	});
 
 	return nuevoAlquiler;
 }

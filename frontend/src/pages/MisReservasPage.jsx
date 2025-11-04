@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { misReservas as initialReservas } from '../data/reservas';
 import PerfilInfo from '../components/PerfilInfo';
@@ -12,6 +12,7 @@ import { parseFechaBackend, parseHoraBackend, formatearFecha, calcularHoraFin, t
 
 function MisReservasPage() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { isAuthenticated, updateUser, user: contextUser } = useAuth();
     
     const [usuario, setUsuario] = useState({
@@ -107,6 +108,26 @@ function MisReservasPage() {
             window.removeEventListener('focus', handleFocus);
         };
     }, [isAuthenticated, usuario?.id]);
+
+    // 🚨 NUEVO: Detectar si se requiere pago inmediato (viene de ReservaPage)
+    useEffect(() => {
+        const pagarAhoraId = searchParams.get('pagarAhora');
+        if (pagarAhoraId && reservas.length > 0) {
+            console.log('🚨 PAGO INMEDIATO DETECTADO - Abriendo modal para alquiler:', pagarAhoraId);
+            
+            // Buscar la reserva que acabamos de crear
+            const reserva = reservas.find(r => r.id === parseInt(pagarAhoraId));
+            
+            if (reserva) {
+                // Abrir el modal de pago inmediatamente
+                setReservaParaPagar(reserva);
+                setModalPagoVisible(true);
+                
+                // Limpiar el parámetro de la URL
+                setSearchParams({});
+            }
+        }
+    }, [searchParams, reservas, setSearchParams]);
 
     // Nueva función para cargar reservas desde el backend
     const cargarReservas = async (usuarioId) => {
