@@ -732,8 +732,17 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
                   <div key={`${fechaKey}-${hora}`} className="p-1">
                     <button 
                       className={clasesBoton}
-                      onClick={() => esEditable ? handleEditarPrecio(dia, hora) : null}
-                      disabled={!esEditable}
+                      onClick={() => {
+                        // No permitir clicks en turnos finalizados o deshabilitados permanentemente
+                        if (esPasado || estadoTurno === 'deshabilitado-permanente') {
+                          return;
+                        }
+                        if (esEditable) {
+                          handleEditarPrecio(dia, hora);
+                        }
+                      }}
+                      disabled={!esEditable || esPasado || estadoTurno === 'deshabilitado-permanente'}
+                      style={{ cursor: (esPasado || estadoTurno === 'deshabilitado-permanente') ? 'not-allowed' : 'pointer' }}
                       title={
                         esPasado ? "Turno finalizado - No editable" :
                         estadoTurno === 'deshabilitado-temporal' ? "Deshabilitado temporalmente - Clic en ▶️ para habilitar" :

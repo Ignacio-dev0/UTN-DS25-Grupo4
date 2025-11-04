@@ -259,14 +259,15 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             console.log('  - Hora actual UTC:', horaActual);
             console.log('  - Hora solicitada:', horaSolicitada);
             
-            // Si la hora solicitada ya pasó o es la hora actual, usar próxima semana
+            // Si la hora solicitada YA PASÓ (menor o igual), usar próxima semana
+            // Pero si la hora es FUTURA (mayor), permitir crear para hoy
             if (horaSolicitada <= horaActual) {
                 diasAgregar = 7; // Próxima semana
-                console.log('  - Hora ya pasó, usando próxima semana');
+                console.log('  - Hora ya pasó o es actual, usando próxima semana');
             } else {
                 // La hora no pasó, se puede crear para hoy
                 diasAgregar = 0;
-                console.log('  - Hora no pasó, creando para hoy');
+                console.log('  - Hora futura, creando para hoy');
             }
         }
         
