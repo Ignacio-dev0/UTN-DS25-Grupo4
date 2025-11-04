@@ -2,7 +2,7 @@ import prisma from '../config/prisma';
 import { EstadoAlquiler } from '@prisma/client';
 import { CreateAlquilerRequest, PagarAlquilerRequest, UpdateAlquilerRequest } from '../types/alquiler.types';
 import { CrearAlquilerData } from '../validations/alquiler.validation';
-import { validarTiempoMinimoReserva, validarLimiteCancelaciones, validarTiempoMinimoCancelacion } from '../utils/reservaValidations';
+import { validarLimiteCancelaciones, validarTiempoMinimoCancelacion } from '../utils/reservaValidations';
 import { getNowInArgentina } from '../utils/timezone';
 import { invalidateMultipleTurnosCache } from './turno.service';
 
@@ -100,14 +100,25 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 		throw new Error('El turno seleccionado ya está reservado');
 	}
 	
-	// ✅ VALIDACIÓN 2: Verificar tiempo mínimo de anticipación (1 hora)
-	const validacionTiempo = validarTiempoMinimoReserva(turnoOriginal.fecha, turnoOriginal.horaInicio);
-	if (!validacionTiempo.valido) {
-		console.log(`❌ Reserva muy cercana: ${validacionTiempo.horasRestantes?.toFixed(2)} horas`);
-		throw new Error(validacionTiempo.mensaje);
+	// ✅ VALIDACIÓN 2: Verificar que el turno no haya finalizado (permitir reservar hasta el inicio del turno)
+	const ahora = getNowInArgentina();
+	const fechaHoraTurno = new Date(
+		turnoOriginal.fecha.getFullYear(),
+		turnoOriginal.fecha.getMonth(),
+		turnoOriginal.fecha.getDate(),
+		turnoOriginal.horaInicio.getHours(),
+		turnoOriginal.horaInicio.getMinutes()
+	);
+	
+	const diferenciaMs = fechaHoraTurno.getTime() - ahora.getTime();
+	const diferenciaHoras = diferenciaMs / (1000 * 60 * 60);
+	
+	if (diferenciaHoras < 0) {
+		console.log(`❌ Turno ya finalizado: ${Math.abs(diferenciaHoras).toFixed(2)} horas atrás`);
+		throw new Error('No puedes reservar un turno que ya finalizó');
 	}
 	
-	console.log(`✅ Reserva con ${validacionTiempo.horasRestantes?.toFixed(2)} horas de anticipación`);
+	console.log(`✅ Turno disponible: Inicia en ${diferenciaHoras.toFixed(2)} horas`);
 
 	// Buscar la duración del turno en el cronograma
 	const horarioCronograma = turnoOriginal.cancha.cronograma.find(c => {
