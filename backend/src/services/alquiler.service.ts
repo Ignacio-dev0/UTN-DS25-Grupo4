@@ -184,16 +184,42 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 
 	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
 	
-	// ⚠️ IMPORTANTE: El alquiler inicia en estado PROGRAMADO pero los turnos con reservado=false
-	// Esto significa "Reserva pendiente de pago"
-	// Cuando el usuario "paga", se actualiza reservado=true
+	// 🕐 DETERMINAR SI REQUIERE PAGO INMEDIATO (menos de 2 horas de anticipación)
+	const primerTurno = turnosConsecutivos[0];
+	const validacionTiempoPago = validarTiempoMinimoCancelacion(primerTurno.fecha, primerTurno.horaInicio);
+	const requierePagoInmediato = !validacionTiempoPago.valido; // Si no hay 2 horas, requiere pago inmediato
+	const horasRestantes = validacionTiempoPago.horasRestantes || 0;
+	
+	console.log(`⏰ VALIDACIÓN TIEMPO PAGO:`, {
+		horasRestantes: horasRestantes.toFixed(2),
+		requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
+	});
+	
+	// Calcular monto total
+	const montoTotal = turnosConsecutivos.reduce((sum, t) => sum + t.precio, 0);
+	
+	// ⚠️ IMPORTANTE: Si requiere pago inmediato, crear el alquiler YA CONFIRMADO con pago
+	// Si NO requiere pago inmediato, crear en estado PROGRAMADO sin pago (pendiente)
+	const dataAlquiler: any = {
+		cliente: { connect: { id: usuarioId } },
+		turnos: { connect: turnosConsecutivos.map(t => ({ id: t.id })) },
+		estado: requierePagoInmediato ? EstadoAlquiler.PAGADO : EstadoAlquiler.PROGRAMADO,
+		requierePagoInmediato: requierePagoInmediato
+	};
+	
+	// Si requiere pago inmediato, crear el pago simulado automáticamente
+	if (requierePagoInmediato) {
+		dataAlquiler.pago = {
+			create: {
+				metodoPago: 'EFECTIVO',
+				monto: montoTotal,
+				codigoTransaccion: `SIM-${Date.now()}-${usuarioId}`
+			}
+		};
+	}
+	
 	const nuevoAlquiler = await prisma.alquiler.create({
-		data: {
-			cliente: { connect: { id: usuarioId } },
-			turnos: { connect: turnosConsecutivos.map(t => ({ id: t.id })) },
-			// El estado es PROGRAMADO, pero el pago está pendiente
-			estado: EstadoAlquiler.PROGRAMADO
-		},
+		data: dataAlquiler,
 		include: {
 			turnos: true,
 			cliente: {
@@ -202,28 +228,42 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 					apellido: true,
 					email: true
 				}
-			}
+			},
+			pago: true
 		}
 	});
 	
-	// 🔴 CRUCIAL: Marcar los turnos con alquilerId PERO reservado=false (pago pendiente)
-	// El usuario tiene hasta 2 horas después del turno para "pagar"
+	// 🔴 CRUCIAL: Marcar los turnos según tipo de pago
+	// Si requiere pago inmediato → reservado=true (CONFIRMADO)
+	// Si NO requiere pago inmediato → reservado=false (PENDIENTE)
 	await prisma.turno.updateMany({
 		where: {
 			id: { in: turnosConsecutivos.map(t => t.id) }
 		},
 		data: {
 			alquilerId: nuevoAlquiler.id,
-			reservado: false // ⚠️ Pago pendiente
+			reservado: requierePagoInmediato // true si pago inmediato, false si pendiente
 		}
 	});
 	
-	console.log('✅ ALQUILER CREADO CON PAGO PENDIENTE:', {
-		id: nuevoAlquiler.id,
-		turnos: nuevoAlquiler.turnos.length,
-		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
-		estado: '⏳ PENDIENTE DE PAGO (reservado=false)'
-	});
+	if (requierePagoInmediato) {
+		console.log('✅ ALQUILER CREADO CON PAGO INMEDIATO (CONFIRMADO):', {
+			id: nuevoAlquiler.id,
+			turnos: nuevoAlquiler.turnos.length,
+			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+			estado: '✅ CONFIRMADO (pago inmediato)',
+			monto: montoTotal,
+			horasRestantes: horasRestantes.toFixed(2)
+		});
+	} else {
+		console.log('✅ ALQUILER CREADO CON PAGO PENDIENTE:', {
+			id: nuevoAlquiler.id,
+			turnos: nuevoAlquiler.turnos.length,
+			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+			estado: '⏳ PENDIENTE DE PAGO (reservado=false)',
+			horasRestantes: horasRestantes.toFixed(2)
+		});
+	}
 
 	return nuevoAlquiler;
 }
@@ -299,14 +339,38 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 	const precioTotal = turnos.reduce((total, turno) => total + turno.precio, 0);
 	console.log('💰 PRECIO TOTAL:', precioTotal, 'para', turnos.length, 'turnos');
 
+	// 🕐 DETERMINAR SI REQUIERE PAGO INMEDIATO (menos de 2 horas de anticipación)
+	const primerTurno = turnos[0];
+	const validacionTiempoPago = validarTiempoMinimoCancelacion(primerTurno.fecha, primerTurno.horaInicio);
+	const requierePagoInmediato = !validacionTiempoPago.valido;
+	const horasRestantes = validacionTiempoPago.horasRestantes || 0;
+	
+	console.log(`⏰ VALIDACIÓN TIEMPO PAGO:`, {
+		horasRestantes: horasRestantes.toFixed(2),
+		requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
+	});
+
 	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
+	const dataAlquiler: any = {
+		cliente: { connect: { id: usuarioId } },
+		turnos: { connect: turnos.map(t => ({ id: t.id })) },
+		estado: requierePagoInmediato ? EstadoAlquiler.PAGADO : EstadoAlquiler.PROGRAMADO,
+		requierePagoInmediato: requierePagoInmediato
+	};
+	
+	// Si requiere pago inmediato, crear el pago simulado automáticamente
+	if (requierePagoInmediato) {
+		dataAlquiler.pago = {
+			create: {
+				metodoPago: 'EFECTIVO',
+				monto: precioTotal,
+				codigoTransaccion: `SIM-${Date.now()}-${usuarioId}`
+			}
+		};
+	}
+	
 	const nuevoAlquiler = await prisma.alquiler.create({
-		data: {
-			cliente: { connect: { id: usuarioId } },
-			turnos: { connect: turnos.map(t => {
-				return { id: t.id } }
-			)},
-		},
+		data: dataAlquiler,
 		include: {
 			turnos: true,
 			cliente: {
@@ -315,23 +379,40 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 					apellido: true,
 					email: true
 				}
-			}
+			},
+			pago: true
 		}
 	});
 	
-	// 🔧 IMPORTANTE: Marcar turnos como reservados
-	console.log('🔒 MARCANDO TURNOS COMO RESERVADOS...');
+	// 🔧 IMPORTANTE: Marcar turnos según tipo de pago
+	console.log('🔒 MARCANDO TURNOS...');
 	await prisma.turno.updateMany({
 		where: { id: { in: turnos.map(t => t.id) } },
-		data: { reservado: true }
+		data: { 
+			reservado: requierePagoInmediato, // true si pago inmediato, false si pendiente
+			alquilerId: nuevoAlquiler.id 
+		}
 	});
-	console.log('✅ TURNOS MARCADOS COMO RESERVADOS');
+	console.log(`✅ TURNOS MARCADOS: reservado=${requierePagoInmediato}`);
 	
-	console.log('✅ ALQUILER CREADO EXITOSAMENTE:', {
-		id: nuevoAlquiler.id,
-		turnos: nuevoAlquiler.turnos.length,
-		cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido
-	});
+	if (requierePagoInmediato) {
+		console.log('✅ ALQUILER CREADO CON PAGO INMEDIATO:', {
+			id: nuevoAlquiler.id,
+			turnos: nuevoAlquiler.turnos.length,
+			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+			estado: '✅ PAGADO',
+			monto: precioTotal,
+			horasRestantes: horasRestantes.toFixed(2)
+		});
+	} else {
+		console.log('✅ ALQUILER CREADO CON PAGO PENDIENTE:', {
+			id: nuevoAlquiler.id,
+			turnos: nuevoAlquiler.turnos.length,
+			cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
+			estado: '⏳ PROGRAMADO (pendiente de pago)',
+			horasRestantes: horasRestantes.toFixed(2)
+		});
+	}
 
 	return nuevoAlquiler;
 }
