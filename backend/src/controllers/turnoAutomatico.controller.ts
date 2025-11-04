@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { recalcularPrecioDesde } from '../services/cancha.service';
+import { getNowInArgentina } from '../utils/timezone';
 
 // Sistema de turnos automáticos que se regeneran semanalmente
 export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
@@ -237,26 +238,27 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Día inválido" });
         }
 
-        // Crear fecha para los próximos 7 días (como en el calendario) usando UTC
-        const hoy = new Date();
+        // Crear fecha para los próximos 7 días (como en el calendario) usando Argentina timezone
+        const hoy = getNowInArgentina(); // ✅ Usar hora de Argentina en lugar de UTC
         
         console.log('📅 DEBUG CREAR TURNO:');
         console.log('  - Día solicitado:', dia);
         console.log('  - Hora solicitada:', hora);
-        console.log('  - Fecha actual:', hoy.toISOString());
-        console.log('  - Día actual UTC:', hoy.getUTCDay(), diasSemana[hoy.getUTCDay()]);
+        console.log('  - Fecha actual (Argentina):', hoy.toISOString());
+        console.log('  - Día actual (Argentina):', hoy.getDay(), diasSemana[hoy.getDay()]);
+        console.log('  - Hora actual (Argentina):', hoy.getHours());
         console.log('  - Índice día solicitado:', indiceDia);
         
         // Buscar la próxima ocurrencia de ese día dentro de los próximos 7 días
-        let diasAgregar = (indiceDia - hoy.getUTCDay() + 7) % 7;
+        let diasAgregar = (indiceDia - hoy.getDay() + 7) % 7; // ✅ Usar getDay() en lugar de getUTCDay()
         
         // Si diasAgregar es 0, significa que es el mismo día de la semana
         if (diasAgregar === 0) {
-            // Verificar si la hora ya pasó comparando con la hora actual
-            const horaActual = hoy.getUTCHours();
+            // Verificar si la hora ya pasó comparando con la hora actual de Argentina
+            const horaActual = hoy.getHours(); // ✅ Usar getHours() en lugar de getUTCHours()
             const horaSolicitada = parseInt(hora.split(':')[0]);
             
-            console.log('  - Hora actual UTC:', horaActual);
+            console.log('  - Hora actual (Argentina):', horaActual);
             console.log('  - Hora solicitada:', horaSolicitada);
             
             // Si la hora solicitada YA PASÓ (menor o igual), usar próxima semana
