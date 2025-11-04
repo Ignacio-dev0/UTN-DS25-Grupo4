@@ -250,7 +250,7 @@ export async function getEstadisticasCancelaciones(): Promise<{ usuarioId: numbe
     const alquileresCancelados = await prisma.alquiler.findMany({
         where: {
             estado: 'CANCELADO',
-            cancelacionPenalizada: true, // ✅ Solo contar las que SÍ penalizan
+            cancelacionPenalizada: true, // Solo contar las que SÍ penalizan
             createdAt: {
                 gte: hace30Dias
             }

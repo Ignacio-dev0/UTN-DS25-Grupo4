@@ -53,7 +53,7 @@ function MiniCanchaCard({ cancha, onAction, isEditing }) {
     : 'bg-secondary hover:shadow-2xl transform hover:-translate-y-1'
   }`;
 
-  // ✅ Usar el precioDesde que viene del backend (ya está actualizado por recalcularPrecioDesde)
+  // Usar el precioDesde que viene del backend (ya está actualizado por recalcularPrecioDesde)
   const precioDesde = cancha.precioDesde > 0 ? cancha.precioDesde : null;
 
   return (

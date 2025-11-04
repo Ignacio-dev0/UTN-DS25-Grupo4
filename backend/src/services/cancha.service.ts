@@ -215,7 +215,7 @@ export async function obtenerCanchasConFiltros(
         canchasFiltradas = await filtrarPorFechaYHora(canchas, filtros.fecha, filtros.hora);
     }
 
-    // ✅ OPTIMIZACIÓN: Usar campo precalculado precioDesde en lugar de calcular dinámicamente
+    // OPTIMIZACIÓN: Usar campo precalculado precioDesde en lugar de calcular dinámicamente
     const canchasConPrecios = canchasFiltradas.map(cancha => ({
         ...cancha,
         precioDesde: cancha.precioDesde || cancha.precioHora || 0

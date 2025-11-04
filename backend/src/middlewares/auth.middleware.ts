@@ -52,7 +52,7 @@ export function authorize(...roles: string[]) {
       console.log('🔐 AUTHORIZE - Tiene permiso:', roles.includes(req.usuario.rol));
       
       if (!roles.includes(req.usuario.rol)) throw new Error('No tiene permiso para esta acción')
-      next(); // ✅ Agregado: continuar si todo está bien
+      next(); // Agregado: continuar si todo está bien
     } catch (e) { 
       next(e); 
     }

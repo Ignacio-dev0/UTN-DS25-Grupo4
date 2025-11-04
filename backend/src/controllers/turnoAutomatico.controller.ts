@@ -239,7 +239,7 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         }
 
         // Crear fecha para los próximos 7 días (como en el calendario) usando Argentina timezone
-        const hoy = getNowInArgentina(); // ✅ Usar hora de Argentina en lugar de UTC
+        const hoy = getNowInArgentina(); // Usar hora de Argentina en lugar de UTC
         
         console.log('📅 DEBUG CREAR TURNO:');
         console.log('  - Día solicitado:', dia);
@@ -250,12 +250,12 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         console.log('  - Índice día solicitado:', indiceDia);
         
         // Buscar la próxima ocurrencia de ese día dentro de los próximos 7 días
-        let diasAgregar = (indiceDia - hoy.getDay() + 7) % 7; // ✅ Usar getDay() en lugar de getUTCDay()
+        let diasAgregar = (indiceDia - hoy.getDay() + 7) % 7; // Usar getDay() en lugar de getUTCDay()
         
         // Si diasAgregar es 0, significa que es el mismo día de la semana
         if (diasAgregar === 0) {
             // Verificar si la hora ya pasó comparando con la hora actual de Argentina
-            const horaActual = hoy.getHours(); // ✅ Usar getHours() en lugar de getUTCHours()
+            const horaActual = hoy.getHours(); // Usar getHours() en lugar de getUTCHours()
             const horaSolicitada = parseInt(hora.split(':')[0]);
             
             console.log('  - Hora actual (Argentina):', horaActual);

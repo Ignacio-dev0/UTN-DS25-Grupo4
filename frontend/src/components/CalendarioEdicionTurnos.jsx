@@ -117,7 +117,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
 
     // Si existe el turno, actualizarlo en la base de datos
     if (turnoExistente && turnoExistente.id) {
-      // ✅ ACTUALIZACIÓN INSTANTÁNEA: Actualizar estado local PRIMERO (optimistic update)
+      // ACTUALIZACIÓN INSTANTÁNEA: Actualizar estado local PRIMERO (optimistic update)
       const turnosActualizados = turnos.map(t => 
         t.id === turnoExistente.id 
           ? { ...t, precio: nuevoPrecio }

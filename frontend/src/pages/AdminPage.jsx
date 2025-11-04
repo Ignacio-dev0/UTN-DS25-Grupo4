@@ -37,7 +37,7 @@ import { API_BASE_URL } from '../config/api.js';function AdminPage() {
             cuit: solicitud.cuit,
             estado: solicitud.estado,
             // Datos transformados para el componente SolicitudDetalle
-            // ✅ solicitud ES el complejo, no tiene .complejo anidado
+            // solicitud ES el complejo, no tiene .complejo anidado
             nombreComplejo: solicitud.nombre || `Complejo de ${solicitud.usuario?.nombre || 'Usuario'} ${solicitud.usuario?.apellido || ''}`,
             calle: solicitud.domicilio?.calle || 'No especificado',
             altura: solicitud.domicilio?.altura || 'No especificado',

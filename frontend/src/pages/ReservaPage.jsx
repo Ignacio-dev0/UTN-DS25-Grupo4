@@ -533,7 +533,7 @@ function ReservaPage() {
       const reservaData = await response.json();
       console.log('Reserva creada exitosamente:', reservaData);
       
-      // 🚨 NUEVO: Si requiere pago inmediato, mostrar modal de pago AHORA
+      // NUEVO: Si requiere pago inmediato, mostrar modal de pago AHORA
       if (reservaData.alquiler?.requierePagoInmediato) {
         console.log('🚨 PAGO INMEDIATO REQUERIDO - Mostrando modal de pago');
         

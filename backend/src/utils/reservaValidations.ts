@@ -6,7 +6,7 @@ import { getNowInArgentina } from './timezone';
 export function validarTiempoMinimoReserva(fechaTurno: Date, horaTurno: Date): { valido: boolean; mensaje?: string; horasRestantes?: number } {
     const ahora = getNowInArgentina();
     
-    // 🔍 DEBUG: Ver qué valores estamos recibiendo
+    // DEBUG: Ver qué valores estamos recibiendo
     console.log('📋 Validación tiempo mínimo reserva - Datos recibidos:', {
         fechaTurno: fechaTurno.toISOString(),
         horaTurno: horaTurno.toISOString(),
@@ -20,8 +20,8 @@ export function validarTiempoMinimoReserva(fechaTurno: Date, horaTurno: Date): {
         fechaTurno.getFullYear(),
         fechaTurno.getMonth(),
         fechaTurno.getDate(),
-        horaTurno.getHours(), // ✅ Hora local
-        horaTurno.getMinutes() // ✅ Minutos locales
+        horaTurno.getHours(), // Hora local
+        horaTurno.getMinutes() // Minutos locales
     );
     
     // Calcular diferencia en horas
@@ -52,7 +52,7 @@ export function validarTiempoMinimoReserva(fechaTurno: Date, horaTurno: Date): {
 export function validarTiempoMinimoCancelacion(fechaTurno: Date, horaTurno: Date): { valido: boolean; mensaje?: string; horasRestantes?: number } {
     const ahora = getNowInArgentina();
     
-    // 🔍 DEBUG: Ver qué valores estamos recibiendo
+    // DEBUG: Ver qué valores estamos recibiendo
     console.log('📋 Validación tiempo mínimo cancelación - Datos recibidos:', {
         fechaTurno: fechaTurno.toISOString(),
         horaTurno: horaTurno.toISOString(),
@@ -66,8 +66,8 @@ export function validarTiempoMinimoCancelacion(fechaTurno: Date, horaTurno: Date
         fechaTurno.getFullYear(),
         fechaTurno.getMonth(),
         fechaTurno.getDate(),
-        horaTurno.getHours(), // ✅ Hora local
-        horaTurno.getMinutes() // ✅ Minutos locales
+        horaTurno.getHours(), // Hora local
+        horaTurno.getMinutes() // Minutos locales
     );
     
     // Calcular diferencia en horas
@@ -116,8 +116,8 @@ export function debeLiberarTurnoPorFaltaDePago(fechaTurno: Date, horaTurno: Date
     const year = fechaTurno.getFullYear();
     const month = fechaTurno.getMonth();
     const day = fechaTurno.getDate();
-    const hora = horaTurno.getHours(); // ✅ Usar getHours() en lugar de getUTCHours()
-    const minutos = horaTurno.getMinutes(); // ✅ Usar getMinutes() en lugar de getUTCMinutes()
+    const hora = horaTurno.getHours(); // Usar getHours() en lugar de getUTCHours()
+    const minutos = horaTurno.getMinutes(); // Usar getMinutes() en lugar de getUTCMinutes()
     
     const fechaHoraTurno = new Date(year, month, day, hora, minutos);
     const limitePago = new Date(fechaHoraTurno.getTime() + (2 * 60 * 60 * 1000)); // +2 horas
