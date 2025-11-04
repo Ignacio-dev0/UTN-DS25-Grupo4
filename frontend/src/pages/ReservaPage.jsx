@@ -112,9 +112,9 @@ function ReservaPage() {
   const [turnosPendientes, setTurnosPendientes] = useState([]);
 
   // Función para manejar el pago inmediato
-  const handlePagoInmediato = async (metodoPago) => {
+  const handlePagoInmediato = async (datosPago) => {
     try {
-      console.log('💰 Procesando pago inmediato:', metodoPago);
+      console.log('💰 Procesando pago inmediato:', datosPago);
       
       // Crear la reserva con los turnosIds guardados
       const token = localStorage.getItem('token');
@@ -145,7 +145,7 @@ function ReservaPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          metodoPago: metodoPago
+          metodoPago: datosPago.metodoPago
         }),
       });
 
@@ -713,10 +713,14 @@ function ReservaPage() {
       {/* Modal de pago inmediato */}
       {modalPagoVisible && reservaPendiente && (
         <ModalPago
-          visible={modalPagoVisible}
-          onCerrar={handleCerrarModal}
+          isOpen={modalPagoVisible}
+          onClose={handleCerrarModal}
           onConfirmarPago={handlePagoInmediato}
-          reserva={reservaPendiente}
+          turno={{
+            dia: reservaPendiente.turnosSeleccionados[0].dia,
+            hora: reservaPendiente.turnosSeleccionados[0].hora,
+            precio: reservaPendiente.precioTotal
+          }}
         />
       )}
     </div>
