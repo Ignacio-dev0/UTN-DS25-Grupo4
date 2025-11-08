@@ -530,41 +530,47 @@ function MisReservasPage() {
         setModalPagoVisible(true);
     };
 
-    const handleConfirmarPago = async (datosPago) => {
-        try {
+    const handleConfirmarPago = async () => {
+        // (ya no recibe 'datosPago')
+        
+        if (!reservaParaPagar) return;
+
+        try {
+            // (Opcional) Puedes añadir un estado de carga si quieres
+            // setLoading(true); 
+
             const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Sesión expirada, por favor inicia sesión de nuevo');
+            }
+
             const response = await fetch(`${API_BASE_URL}/alquileres/${reservaParaPagar.id}/pagar`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    estado: 'PAGADO',
-                    codigoTransaccion: datosPago.codigoTransaccion || `TXN-${Date.now()}`,
-                    metodoPago: datosPago.metodoPago || 'CREDITO'
-                }),
+                    // ¡¡YA NO HAY 'Content-Type' NI 'body'!!
+                },
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Pago confirmado exitosamente:', result);
-                
-                // Actualizar estado local
-                setReservas(reservas.map(r => 
-                    r.id === reservaParaPagar.id ? { ...r, estado: 'Confirmada' } : r
-                ));
-                
-                setModalPagoVisible(false);
-                setReservaParaPagar(null);
-                alert('Pago procesado exitosamente');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al generar el link de pago');
+            }
+
+            // El backend ahora devuelve { init_point: '...' }
+            const data = await response.json();
+
+            // ¡CRÍTICO! Redirigir al checkout de Mercado Pago
+            if (data.init_point) {
+                window.location.href = data.init_point;
             } else {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al procesar el pago');
+                throw new Error('No se recibió la URL de pago');
             }
+
         } catch (error) {
             console.error('Error al procesar pago:', error);
             alert('Error al procesar el pago: ' + error.message);
+            // setLoading(false);
         }
     };
 

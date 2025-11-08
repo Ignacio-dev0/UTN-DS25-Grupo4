@@ -549,10 +549,13 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 // ... (resto de tus funciones: obtenerAlquileresPorComplejo, crearAlquiler, etc.)
 
 // vvv REEMPLAZAR ESTA FUNCIÓN vvv
-export async function pagarAlquiler(id: number) { // <-- 2. QUITAR 'data'
+// En backend/src/services/alquiler.service.ts
+// ... (imports)
+
+export async function pagarAlquiler(id: number) {
   const alquiler = await prisma.alquiler.findUnique({
     where: { id },
-    include: { turnos: true, cliente: true }, // Incluir cliente
+        include: { turnos: true, cliente: true },
   });
 
   if (!alquiler) {
@@ -567,26 +570,39 @@ export async function pagarAlquiler(id: number) { // <-- 2. QUITAR 'data'
     throw error;
   }
 
-  const monto = alquiler.turnos.reduce((acum, t) => acum + t.precio, 0);
+    const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0)
 
-  // --- 3. INICIA NUEVA LÓGICA DE MERCADO PAGO ---
-
-  // 3.1. Configurar MP
+    // 1. Configurar MP
   const client = new MercadoPagoConfig({
-    accessToken: process.env.MP_ACCESS_TOKEN!,
+      accessToken: process.env.MP_ACCESS_TOKEN! 
   });
   const preference = new Preference(client);
 
-  // 3.2. Crear el registro de Pago en nuestra BD (en estado pendiente)
-  const nuevoPago = await prisma.pago.create({
+    // --- 2. ¡AQUÍ ESTÁ LA NUEVA LÓGICA! ---
+    // Buscar si ya existe un pago para este alquiler
+    let pago = await prisma.pago.findUnique({
+        where: { alquilerId: id }
+    });
+
+    // Si no existe, crearlo.
+    if (!pago) {
+        console.log(`No existe pago para Alquiler ${id}, creando uno nuevo...`);
+        pago = await prisma.pago.create({
     data: {
       monto: monto,
       metodoPago: 'MERCADOPAGO',
       alquiler: { connect: { id } },
-    },
+            }
   });
+    } else {
+        console.log(`Pago ${pago.id} ya existe para Alquiler ${id}, re-usándolo...`);
+        // Opcional: podrías verificar si el monto cambió y actualizarlo
+        // await prisma.pago.update({ where: { id: pago.id }, data: { monto: monto } });
+    }
+    // --- FIN DE LA NUEVA LÓGICA ---
 
-  // 3.3. Crear la Preferencia en Mercado Pago
+
+    // 3. Crear la Preferencia en Mercado Pago
   const mpResponse = await preference.create({
     body: {
       items: [
@@ -596,37 +612,31 @@ export async function pagarAlquiler(id: number) { // <-- 2. QUITAR 'data'
           description: `Reserva de ${alquiler.turnos.length} turno(s)`,
           quantity: 1,
           unit_price: monto,
-          currency_id: 'ARS', // Cambia a tu moneda si es necesario
-        },
+            currency_id: 'ARS', 
+          }
       ],
-      // Datos del comprador (mejora la experiencia de pago)
       payer: {
         name: alquiler.cliente.nombre,
         surname: alquiler.cliente.apellido,
         email: alquiler.cliente.email,
       },
-      // Clave: ID de nuestro alquiler para identificarlo en el webhook
       external_reference: alquiler.id.toString(),
-
-      // URL de tu backend en Railway
       notification_url: `${process.env.RAILWAY_PUBLIC_URL}/api/webhooks/mercadopago`,
-
-      // URLs del frontend (cámbialas por las de tu frontend)
       back_urls: {
-        success: `${process.env.FRONTEND_URL}/pago-exitoso`, // URL de tu frontend
-        failure: `${process.env.FRONTEND_URL}/pago-fallido`, // URL de tu frontend
-        pending: `${process.env.FRONTEND_URL}/pago-fallido`, // URL de tu frontend
+          success: `${process.env.FRONTEND_URL}/pago-exitoso`, 
+          failure: `${process.env.FRONTEND_URL}/pago-fallido`, 
+          pending: `${process.env.FRONTEND_URL}/pago-fallido`,
       },
-    },
+      }
   });
 
-  // 3.4. Actualizar nuestro Pago con el ID de la preferencia de MP
+    // 4. Actualizar nuestro Pago (sea nuevo o existente) con el *nuevo* ID de preferencia
   await prisma.pago.update({
-    where: { id: nuevoPago.id },
-    data: { mpPreferenceId: mpResponse.id },
+        where: { id: pago.id },
+        data: { mpPreferenceId: mpResponse.id } // Sobrescribimos el pref ID viejo
   });
 
-  // 3.5. Devolver el link de pago
+    // 5. Devolver el link de pago
   return { init_point: mpResponse.init_point };
 }
 // ^^^ REEMPLAZAR HASTA AQUÍ ^^^
