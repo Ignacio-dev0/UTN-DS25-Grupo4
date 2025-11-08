@@ -539,18 +539,18 @@ function MisReservasPage() {
             // (Opcional) Puedes añadir un estado de carga si quieres
             // setLoading(true); 
 
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error('Sesión expirada, por favor inicia sesión de nuevo');
             }
 
-            const response = await fetch(`${API_BASE_URL}/alquileres/${reservaParaPagar.id}/pagar`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
+            const response = await fetch(`${API_BASE_URL}/alquileres/${reservaParaPagar.id}/pagar`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
                     // ¡¡YA NO HAY 'Content-Type' NI 'body'!!
                 },
-            });
+            });
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -567,12 +567,12 @@ function MisReservasPage() {
                 throw new Error('No se recibió la URL de pago');
             }
 
-        } catch (error) {
-            console.error('Error al procesar pago:', error);
-            alert('Error al procesar el pago: ' + error.message);
+        } catch (error) {
+            console.error('Error al procesar pago:', error);
+            alert('Error al procesar el pago: ' + error.message);
             // setLoading(false);
-        }
-    };
+        }
+    };
 
     // Función para filtrar reservas según el estado seleccionado
     const reservasFiltradas = filtroEstado === 'Todas' 

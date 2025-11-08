@@ -553,30 +553,30 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 // ... (imports)
 
 export async function pagarAlquiler(id: number) {
-  const alquiler = await prisma.alquiler.findUnique({
-    where: { id },
+    const alquiler = await prisma.alquiler.findUnique({
+        where: { id },
         include: { turnos: true, cliente: true },
-  });
+    });
 
-  if (!alquiler) {
-    const error = new Error('Alquiler no encontrado');
-    (error as any).statusCode = 404;
-    throw error;
-  }
+    if (!alquiler) {
+        const error = new Error('Alquiler no encontrado');
+        (error as any).statusCode = 404;
+        throw error;
+    }
 
-  if (alquiler.estado !== EstadoAlquiler.PROGRAMADO) {
-    const error = new Error(`Alquiler debe estar en estado PROGRAMADO`);
-    (error as any).statusCode = 400;
-    throw error;
-  }
+    if (alquiler.estado !== EstadoAlquiler.PROGRAMADO) {
+        const error = new Error(`Alquiler debe estar en estado PROGRAMADO`);
+        (error as any).statusCode = 400;
+        throw error;
+    }
 
     const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0)
 
     // 1. Configurar MP
-  const client = new MercadoPagoConfig({
+    const client = new MercadoPagoConfig({ 
       accessToken: process.env.MP_ACCESS_TOKEN! 
-  });
-  const preference = new Preference(client);
+    });
+    const preference = new Preference(client);
 
     // --- 2. ¡AQUÍ ESTÁ LA NUEVA LÓGICA! ---
     // Buscar si ya existe un pago para este alquiler
@@ -588,12 +588,12 @@ export async function pagarAlquiler(id: number) {
     if (!pago) {
         console.log(`No existe pago para Alquiler ${id}, creando uno nuevo...`);
         pago = await prisma.pago.create({
-    data: {
-      monto: monto,
-      metodoPago: 'MERCADOPAGO',
-      alquiler: { connect: { id } },
+            data: {
+                monto: monto,
+                metodoPago: 'MERCADOPAGO',
+                alquiler: { connect: { id } },
             }
-  });
+        });
     } else {
         console.log(`Pago ${pago.id} ya existe para Alquiler ${id}, re-usándolo...`);
         // Opcional: podrías verificar si el monto cambió y actualizarlo
@@ -603,41 +603,41 @@ export async function pagarAlquiler(id: number) {
 
 
     // 3. Crear la Preferencia en Mercado Pago
-  const mpResponse = await preference.create({
-    body: {
-      items: [
-        {
-          id: alquiler.id.toString(),
-          title: `Reserva CanchaYA - Alquiler #${alquiler.id}`,
-          description: `Reserva de ${alquiler.turnos.length} turno(s)`,
-          quantity: 1,
-          unit_price: monto,
+    const mpResponse = await preference.create({ 
+      body: {
+        items: [
+          {
+            id: alquiler.id.toString(),
+            title: `Reserva CanchaYA - Alquiler #${alquiler.id}`,
+            description: `Reserva de ${alquiler.turnos.length} turno(s)`,
+            quantity: 1,
+            unit_price: monto,
             currency_id: 'ARS', 
           }
-      ],
-      payer: {
-        name: alquiler.cliente.nombre,
-        surname: alquiler.cliente.apellido,
-        email: alquiler.cliente.email,
-      },
-      external_reference: alquiler.id.toString(),
-      notification_url: `${process.env.RAILWAY_PUBLIC_URL}/api/webhooks/mercadopago`,
-      back_urls: {
+        ],
+        payer: {
+          name: alquiler.cliente.nombre,
+          surname: alquiler.cliente.apellido,
+          email: alquiler.cliente.email,
+        },
+        external_reference: alquiler.id.toString(),
+        notification_url: `${process.env.RAILWAY_PUBLIC_URL}/api/webhooks/mercadopago`,
+        back_urls: {
           success: `${process.env.FRONTEND_URL}/pago-exitoso`, 
           failure: `${process.env.FRONTEND_URL}/pago-fallido`, 
           pending: `${process.env.FRONTEND_URL}/pago-fallido`,
-      },
+        },
       }
-  });
+    });
 
     // 4. Actualizar nuestro Pago (sea nuevo o existente) con el *nuevo* ID de preferencia
-  await prisma.pago.update({
+    await prisma.pago.update({
         where: { id: pago.id },
         data: { mpPreferenceId: mpResponse.id } // Sobrescribimos el pref ID viejo
-  });
+    });
 
     // 5. Devolver el link de pago
-  return { init_point: mpResponse.init_point };
+    return { init_point: mpResponse.init_point };
 }
 // ^^^ REEMPLAZAR HASTA AQUÍ ^^^
 
