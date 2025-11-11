@@ -22,6 +22,28 @@ import migrationRoutes from './routes/migration.routes';
 import debugRoutes from './routes/debug.routes';
 
 import webhookRoutes from './routes/webhook.routes'
+import  MercadoPago,{MercadoPagoConfig} from 'mercadopago';
+
+// nuevo para mp
+// --- NUEVO: Inicializar Cliente de Mercado Pago ---
+// Lee el Access Token de tu archivo .env
+const mpAccessToken = process.env.MP_ACCESS_TOKEN;
+
+if (!mpAccessToken) {
+  console.error("❌ ERROR: MP_ACCESS_TOKEN no está definido en .env");
+  process.exit(1);
+}
+
+const client = new MercadoPagoConfig({ 
+  accessToken: mpAccessToken,
+  options: { timeout: 5000 }
+});
+
+// Hacemos el cliente accesible globalmente (o pasarlo a los servicios)
+export const mercadopago = new MercadoPago(client);
+// --- FIN NUEVO ---
+
+
 
 const app = express();
 
@@ -88,6 +110,10 @@ app.use('/api/alquileres',        alquilerRoutes);
 app.use('/api/admin',             migrationRoutes);
 app.use('/api',                   debugRoutes);
 app.use('/api/webhooks', webhookRoutes);
+
+import pagoRoutes from './routes/pago.routes';
+
+app.use('/api/pagos', pagoRoutes);
 
 // Middleware de manejo de errores global
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

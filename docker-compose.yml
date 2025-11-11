@@ -1,44 +1,28 @@
-# version: '3.8'
+# Borra la línea 'version: 3.8' (obsoleta)
 
-# services:
-#   backend:
-#     build:
-#       context: ./backend
-#       dockerfile: Dockerfile
-#     restart: always
-#     ports:
-#       - "3000:3000"
-#     environment:
-#       DATABASE_URL: ${DATABASE_URL}
-
-#   frontend:
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile
-#     restart: always
-#     ports:
-#       - "80:80"
-#     environment:
-#       VITE_BACKEND_URL: http://localhost:3000  ##esto habria que cambiarlo por la url que genera render
-
-# docker-compose.yml
-version: '3.8'
 services:
-  db:
-    image: postgres:15
-    container_name: canchaya-db-local
+  #--- SERVICIO 1: EL BACKEND ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - "5432:5432" # Expone el puerto de la DB a tu localhost
+      - "3000:3000"
     environment:
+      # Inyecta la URL de la BD desde el archivo /.env
       DATABASE_URL: ${DATABASE_URL}
 
-#   frontend:
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile
-#     restart: always
-#     ports:
-#       - "80:80"
-#     environment:
-#       VITE_BACKEND_URL: http://localhost:3000  ##esto habria que cambiarlo por la url que genera render
+  #--- SERVICIO 2: EL FRONTEND ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args: # <-- ¡ESTA ES LA SECCIÓN NUEVA/CLAVE!
+        # Le pasamos la URL del backend LOCAL al Dockerfile
+        VITE_API_URL_ARG: http://localhost:3000/api
+    restart: always
+    ports:
+      - "80:80"
+    # La variable 'environment' aquí no es necesaria
+    # porque la "horneamos" durante el build con 'args'.

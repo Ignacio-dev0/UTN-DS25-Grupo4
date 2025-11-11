@@ -6,6 +6,16 @@ import * as pagoController from "../controllers/pago.controller";
 
 const router = Router();
 
+// --- NUEVO: Endpoint para crear la preferencia de Mercado Pago ---
+router.post(
+  '/crear-preferencia',
+  authenticate, // Asegura que el usuario esté logueado
+  authorize('CLIENTE'), // Asegura que solo los clientes puedan pagar
+  // TODO: Faltaría un 'validate' para asegurar que nos mandan 'turnoId'
+  pagoController.crearPreferenciaDePago
+);
+// --- FIN NUEVO ---
+
 router.get(
   '/',
   authenticate,
