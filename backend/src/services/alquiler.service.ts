@@ -627,10 +627,11 @@ export async function pagarAlquiler(id: number) {
     }
 
     // 3. Definir URLs
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
-    // --- CORRECCIÓN 2: Usar una URL de webhook real (la de producción) como fallback ---
-    const notificationUrl = (process.env.RAILWAY_PUBLIC_URL || 'https://utn-ds25-grupo4-canchaya.up.railway.app') + '/api/webhooks/mercadopago';
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    // --- CORRECCIÓN 2: Usar la variable de entorno API_BASE_URL ---
+    const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+    const notificationUrl = `${apiBaseUrl}/api/webhooks/mercadopago`;
     // --- FIN CORRECCIÓN 2 ---
 
     console.log(`[MP Service] Alquiler ID: ${alquiler.id}, Pago ID: ${pago.id}`);
@@ -662,7 +663,7 @@ export async function pagarAlquiler(id: number) {
           surname: alquiler.cliente.apellido,
           email: alquiler.cliente.email,
         },
-        external_reference: pago.id.toString(), // Enviamos el ID de *nuestro* Pago
+        external_reference: alquiler.id.toString(), // Enviamos el ID de *nuestro* Pago
         notification_url: `${notificationUrl}?pagoId=${pago.id}&source_news=webhooks`,
         back_urls: {
           success: `${frontendUrl}/mis-reservas?pago=exitoso&alquilerId=${alquiler.id}`, 

@@ -73,11 +73,13 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
   // Esta URL es donde MP nos avisará si el pago fue aprobado (Webhook)
   // DEBE ser una URL pública (ej: Railway), ¡MP no puede ver tu localhost!
   // Por ahora usaremos una de NGROK o Railway como placeholder.
-  const notificationUrl = process.env.RAILWAY_PUBLIC_URL 
-    ? `${process.env.RAILWAY_PUBLIC_URL}/api/webhooks/mercadopago`
-    : 'https://TU_URL_DE_PRODUCCION/api/webhooks/mercadopago'; // ¡Cambiar esto en producción!
+const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+  
+  if (apiBaseUrl === 'http://localhost:3000') {
+    console.warn('API_BASE_URL no está definida, usando localhost para webhook. ¡Esto fallará en producción!');
+  }
 
-  console.log(`URL de Notificación (Webhook): ${notificationUrl}`);
+  const notificationUrl = `${apiBaseUrl}/api/webhooks/mercadopago`;
 
 
   // 4. Crear la preferencia de pago en Mercado Pago
@@ -104,7 +106,7 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
         },
         auto_return: 'approved', // Redirigir solo si es aprobado
         notification_url: `${notificationUrl}?pagoId=${pago.id}&source_news=webhooks`, // El Webhook
-        external_reference: pago.id.toString(), // ID de nuestro pago
+        external_reference: alquiler.id.toString(), // ID de nuestro pago
       }
     });
 
@@ -161,7 +163,7 @@ export async function obtenerPagoById(id: number): Promise<Pago> {
 
 export async function crearPago(data: CrearPagoRequest): Promise<Pago>{
 // Esta función es para pagos manuales (ej: Efectivo)
-    const created = await prisma.pago.create({
+    const created = await prisma.pago.create({
         data:{
             monto: data.monto,
             metodoPago: data.metodoPago,
