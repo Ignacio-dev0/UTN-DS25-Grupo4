@@ -4,7 +4,7 @@ import ComplejoInfo from '../components/ComplejoInfo.jsx';
 import ListaCanchasComplejo from '../components/ListaCanchasComplejo.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { API_BASE_URL } from '../config/api.js';
-import MpConnectWall from '../components/MpConnectWall.jsx'; // 1. IMPORTAR EL MURO
+import MpConnectWall from '../components/MpConnectWallPage.jsx'; // 1. IMPORTAR EL MURO
 
 function MiComplejoPage() {
     const { complejoId } = useParams();
