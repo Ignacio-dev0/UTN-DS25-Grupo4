@@ -17,7 +17,7 @@ import RutaProtegidaComplejo from './components/RutaProtegidaComplejo.jsx';
 import ComplejoDetallePage from './pages/ComplejoDetallePage.jsx';
 
 // --- IMPORTAR LA NUEVA PÁGINA DE CALLBACK ---
-import MpCallbackPage from './pages/MpCallbackPage.jsx';
+import MpCallbackPage from './components/MpConnectWallPage.jsx';
 
 function App() {
     return (
