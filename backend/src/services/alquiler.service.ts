@@ -5,8 +5,11 @@ import { CrearAlquilerData } from '../validations/alquiler.validation';
 import { validarLimiteCancelaciones, validarTiempoMinimoCancelacion } from '../utils/reservaValidations';
 import { getNowInArgentina } from '../utils/timezone';
 import { invalidateMultipleTurnosCache } from './turno.service';
-import { mercadopago } from '../app';
-import { Preference } from 'mercadopago';
+// --- INICIO DE CAMBIOS: Imports para MP Connect ---
+import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { decrypt } from './encriptacionmp.service'; // Servicio para desencriptar el token del dueño
+// --- FIN DE CAMBIOS ---
+
 
 export async function obtenerAlquileresPorComplejo(complejoId: number) {
     return await prisma.alquiler.findMany({
@@ -69,7 +72,6 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
     const turnoBase = turnosIds[0];
     const cantidadBloques = turnosIds.length;
     
-    // Verificar que todos los turnos sean el mismo (si envían múltiples)
     const todosIguales = turnosIds.every(id => id === turnoBase);
     
     if (!todosIguales) {
@@ -100,7 +102,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
         throw new Error('El turno seleccionado ya está reservado');
     }
     
-    // VALIDACIÓN 2: Verificar que el turno no haya finalizado (permitir reservar hasta el inicio del turno)
+    // VALIDACIÓN 2: Verificar que el turno no haya finalizado
     const ahora = getNowInArgentina();
     const fechaHoraTurno = new Date(
         turnoOriginal.fecha.getFullYear(),
@@ -132,24 +134,18 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
     let duracionFinal = 60; // Duración por defecto: 60 minutos
 
     if (horarioCronograma) {
-        // Si hay cronograma, calcular duración del turno en minutos usando horaFin - horaInicio
         const horaInicio = horarioCronograma.horaInicio;
         const horaFin = horarioCronograma.horaFin;
         const duracionMinutos = (horaFin.getUTCHours() * 60 + horaFin.getUTCMinutes()) - 
                                (horaInicio.getUTCHours() * 60 + horaInicio.getUTCMinutes());
         
-        console.log(`⏱️ DURACIÓN DEL TURNO (cronograma): ${duracionMinutos} minutos (${horaInicio.getUTCHours()}:${horaInicio.getUTCMinutes().toString().padStart(2, '0')} - ${horaFin.getUTCHours()}:${horaFin.getUTCMinutes().toString().padStart(2, '0')})`);
+        console.log(`⏱️ DURACIÓN DEL TURNO (cronograma): ${duracionMinutos} minutos`);
         
         if (duracionMinutos > 0) {
             duracionFinal = duracionMinutos;
         }
     } else {
         console.log('⚠️ NO SE ENCONTRÓ HORARIO EN CRONOGRAMA - Usando duración por defecto de 60 minutos');
-        console.log('🔍 HORARIOS DISPONIBLES EN CRONOGRAMA:', turnoOriginal.cancha.cronograma.map(c => ({
-            horaInicio: c.horaInicio,
-            horaFin: c.horaFin
-        })));
-        console.log('🔍 HORA DEL TURNO:', turnoOriginal.horaInicio);
     }
     
     console.log(`⏱️ DURACIÓN FINAL: ${duracionFinal} minutos`);
@@ -186,7 +182,6 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
         turnosConsecutivos.push(turnoConsecutivo);
     }
     
-    console.log('💰 CALCULANDO PRECIO TOTAL...');
     const precioTotal = turnosConsecutivos.reduce((total, turno) => total + turno.precio, 0);
     console.log('💰 PRECIO TOTAL:', precioTotal, 'para', turnosConsecutivos.length, 'bloques');
 
@@ -206,12 +201,11 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
     const montoTotal = turnosConsecutivos.reduce((sum, t) => sum + t.precio, 0);
     
     // El alquiler se crea siempre en PROGRAMADO, sin pago.
-    // El frontend decide si mostrar el modal de pago inmediatamente.
     const dataAlquiler: any = {
         cliente: { connect: { id: usuarioId } },
         turnos: { connect: turnosConsecutivos.map(t => ({ id: t.id })) },
-        estado: EstadoAlquiler.PROGRAMADO, // Siempre PROGRAMADO al crear
-        requierePagoInmediato: requierePagoInmediato // Flag para que frontend sepa si mostrar modal
+        estado: EstadoAlquiler.PROGRAMADO,
+        requierePagoInmediato: requierePagoInmediato
     };
     
     const nuevoAlquiler = await prisma.alquiler.create({
@@ -230,7 +224,6 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
     });
     
     // CRUCIAL: Marcar turnos como pendientes de pago (reservado=false)
-    // El pago se confirma en un paso posterior (pagarAlquiler)
     await prisma.turno.updateMany({
         where: {
             id: { in: turnosConsecutivos.map(t => t.id) }
@@ -243,15 +236,9 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
     
     console.log('✅ ALQUILER CREADO:', {
         id: nuevoAlquiler.id,
-        turnos: nuevoAlquiler.turnos.length,
-        cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
         estado: '⏳ PROGRAMADO (pendiente pago)',
         requierePagoInmediato: requierePagoInmediato,
         monto: montoTotal,
-        horasRestantes: horasRestantes.toFixed(2),
-        mensaje: requierePagoInmediato ? 
-            '🚨 FRONTEND DEBE MOSTRAR MODAL DE PAGO INMEDIATAMENTE' : 
-            '✅ Usuario puede pagar después desde Mis Reservas'
     });
 
     return nuevoAlquiler;
@@ -271,25 +258,21 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
     console.log('🎯 TURNOS ENCONTRADOS:', turnos.length, 'de', turnosIds.length);
     
     if (turnos.length !== turnosIds.length) {
-        console.log('❌ ALGUNOS TURNOS NO EXISTEN');
         throw new Error('Algunos turnos no existen');
     }
 
     const turnosReservados = turnos.filter(t => t.reservado);
     if (turnosReservados.length > 0) {
-        console.log('❌ TURNOS YA RESERVADOS:', turnosReservados.map(t => t.id));
         throw new Error('Algunos turnos ya están reservados');
     }
 
     const canchasDistintas = new Set(turnos.map(t => t.cancha.id));
     if (canchasDistintas.size > 1) {
-        console.log('❌ CANCHAS DIFERENTES:', Array.from(canchasDistintas));
         throw new Error('No se puede seleccionar turnos de distintas canchas');
     }
     
     const fechasDistintas = new Set(turnos.map(t => t.fecha.toDateString()));
     if (fechasDistintas.size > 1) {
-        console.log('❌ FECHAS DIFERENTES:', Array.from(fechasDistintas));
         throw new Error('No se puede seleccionar turnos de distintas fechas');
     }
     if (turnos.length > 1) {
@@ -309,7 +292,6 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
             const diferencia = horariosOrdenados[i + 1].hora - horariosOrdenados[i].hora;
             console.log(`  Gap entre turno ${i} y ${i + 1}: ${diferencia} minutos`);
             
-            // Asume gaps de 60 minutos
             if (diferencia !== 60) {
                 console.log(`  ❌ Gap no válido: ${diferencia} minutos (esperado: 60)`);
                 consecutivos = false;
@@ -318,18 +300,16 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
         }
         
         if (!consecutivos) {
-            console.log('❌ TURNOS NO CONSECUTIVOS - Rechazando alquiler');
             throw new Error('Los turnos no son consecutivos. Solo se pueden seleccionar turnos en horarios seguidos.');
         }
         
         console.log('✅ TURNOS CONSECUTIVOS VÁLIDOS');
     }
 
-    console.log('💰 CALCULANDO PRECIO TOTAL...');
     const precioTotal = turnos.reduce((total, turno) => total + turno.precio, 0);
     console.log('💰 PRECIO TOTAL:', precioTotal, 'para', turnos.length, 'turnos');
 
-    // DETERMINAR SI REQUIERE PAGO INMEDIATO (menos de 2 horas de anticipación)
+    // DETERMINAR SI REQUIERE PAGO INMEDIATO
     const primerTurno = turnos[0];
     const validacionTiempoPago = validarTiempoMinimoCancelacion(primerTurno.fecha, primerTurno.horaInicio);
     const requierePagoInmediato = !validacionTiempoPago.valido;
@@ -337,7 +317,7 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
     
     console.log(`⏰ VALIDACIÓN TIEMPO PAGO:`, {
         horasRestantes: horasRestantes.toFixed(2),
-        requierePagoInmediato: requierePagoInmediato ? '✅ SÍ (PAGO INMEDIATO REQUERIDO)' : '❌ NO (PUEDE PAGAR DESPUÉS)'
+        requierePagoInmediato: requierePagoInmediato
     });
 
     console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
@@ -364,7 +344,6 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
     });
     
     // IMPORTANTE: Marcar turnos como reservado=false (pendiente de pago)
-    console.log('🔒 MARCANDO TURNOS...');
     await prisma.turno.updateMany({
         where: { id: { in: turnos.map(t => t.id) } },
         data: { 
@@ -372,19 +351,11 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
             alquilerId: nuevoAlquiler.id 
         }
     });
-    console.log(`✅ TURNOS MARCADOS: reservado=false (pendiente pago)`);
     
     console.log('✅ ALQUILER CREADO:', {
         id: nuevoAlquiler.id,
-        turnos: nuevoAlquiler.turnos.length,
-        cliente: nuevoAlquiler.cliente.nombre + ' ' + nuevoAlquiler.cliente.apellido,
         estado: '⏳ PROGRAMADO (pendiente pago)',
-        requierePagoInmediato: requierePagoInmediato,
         monto: precioTotal,
-        horasRestantes: horasRestantes.toFixed(2),
-        mensaje: requierePagoInmediato ? 
-            '🚨 FRONTEND DEBE MOSTRAR MODAL DE PAGO INMEDIATAMENTE' : 
-            '✅ Usuario puede pagar después desde Mis Reservas'
     });
 
     return nuevoAlquiler;
@@ -458,9 +429,9 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
             resenia: true // Incluir reseña para verificar si ya fue reseñado
         },
         orderBy: {
-            createdAt: 'desc' // Más recientes primero
+            createdAt: 'desc'
         },
-        take: 100 // Limitar a los últimos 100 alquileres
+        take: 100
     });
 
     if (!alquileres) {
@@ -472,22 +443,19 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
     // Para alquileres cancelados sin turnos, buscar los turnos históricos
     const alquileresConTurnos = await Promise.all(
         alquileres.map(async (alq) => {
-            // Si el alquiler está cancelado y no tiene turnos, buscar turnos históricos
             if (alq.estado === EstadoAlquiler.CANCELADO && alq.turnos.length === 0) {
                 console.log(`🔍 Alquiler ${alq.id} cancelado sin turnos, buscando historial...`);
                 // TODO: Implementar auditlog o campo turnosSnapshot en schema
             }
-            
             return alq;
         })
     );
     
-    // Optimización: Hacer una sola consulta para obtener todas las canchas con reseñas del usuario
+    // Optimización: Obtener reseñas del usuario para las canchas en cuestión
     const canchasIds = alquileresConTurnos
         .filter(alq => alq.turnos.length > 0)
         .map(alq => alq.turnos[0].cancha.id);
     
-    // Obtener todas las reseñas del usuario para las canchas en cuestión (una sola query)
     const reseñasUsuario = canchasIds.length > 0 ? await prisma.resenia.findMany({
         where: {
             alquiler: {
@@ -536,6 +504,7 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 /**
  * Inicia el proceso de pago para un alquiler existente (PROGRAMADO).
  * Crea o reutiliza un registro de Pago y genera una preferencia de Mercado Pago.
+ * USA EL TOKEN DEL DUEÑO (MP CONNECT) Y COBRA COMISIÓN.
  */
 export async function pagarAlquiler(id: number) {
     const alquiler = await prisma.alquiler.findUnique({
@@ -545,7 +514,12 @@ export async function pagarAlquiler(id: number) {
                 include: {
                     cancha: {
                         include: {
-                            complejo: true
+                            complejo: {
+                                // 1. Incluimos el 'usuario' (dueño) del complejo
+                                include: {
+                                    usuario: true 
+                                }
+                            }
                         }
                     }
                 }
@@ -566,26 +540,27 @@ export async function pagarAlquiler(id: number) {
         throw error;
     }
 
-    // Obtener el primer turno y sus datos (para la descripción de MP)
     if (!alquiler.turnos || alquiler.turnos.length === 0) {
         const error = new Error('Este alquiler no tiene turnos asociados.');
         (error as any).statusCode = 400;
         throw error;
     }
+    
+    // 2. Obtener los datos del dueño y del complejo
     const primerTurno = alquiler.turnos[0];
     const cancha = primerTurno.cancha;
     const complejo = cancha.complejo;
+    const duenio = complejo.usuario; // Este es el Usuario (rol DUENIO)
 
-    const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0)
+    const monto = alquiler.turnos.reduce( (acum, t) => acum + t.precio, 0);
 
-    // 1. Buscar si ya existe un pago PENDIENTE para este alquiler
+    // 3. Buscar o crear el registro de Pago
     let pago = await prisma.pago.findFirst({
         where: { 
             alquilerId: id,
         } 
     });
 
-    // 2. Si no existe pago, crearlo.
     if (!pago) {
         console.log(`No existe pago para Alquiler ${id}, creando uno nuevo...`);
         pago = await prisma.pago.create({
@@ -593,12 +568,11 @@ export async function pagarAlquiler(id: number) {
                 monto: monto,
                 metodoPago: MetodoPago.MERCADOPAGO,
                 alquiler: { connect: { id } },
-                estadoPago: 'PENDING' // Estado inicial
+                estadoPago: 'PENDING'
             }
         });
     } else {
         console.log(`Pago ${pago.id} ya existe para Alquiler ${id}, re-usándolo...`);
-        // Si el monto cambió (ej. se actualizó precio de turno), actualizar el pago
         if (pago.monto !== monto) {
             pago = await prisma.pago.update({
                 where: { id: pago.id },
@@ -607,23 +581,42 @@ export async function pagarAlquiler(id: number) {
         }
     }
 
-    // 3. Definir URLs
+    // 4. Definir URLs
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
-    // URL del Webhook (donde MP nos avisa la confirmación del pago)
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
     const notificationUrl = `${apiBaseUrl}/api/webhooks/mercadopago`;
 
     console.log(`[MP Service] Alquiler ID: ${alquiler.id}, Pago ID: ${pago.id}`);
-    console.log(`[MP Service] Frontend URL (Back URLs): ${frontendUrl}`);
     console.log(`[MP Service] Webhook URL (Notification): ${notificationUrl}`);
 
-    if (!process.env.MP_ACCESS_TOKEN) {
-        throw new Error("MP_ACCESS_TOKEN no está configurado");
+    // --- INICIO LÓGICA MP CONNECT ---
+    
+    // 5. Verificar y desencriptar el token del DUEÑO
+    if (!duenio.mpAccessToken) {
+        throw new Error(`El dueño del complejo ${complejo.nombre} no tiene una cuenta de MP conectada.`);
+    }
+    
+    let duenioAccessToken: string;
+    try {
+        duenioAccessToken = decrypt(duenio.mpAccessToken);
+    } catch (error) {
+        console.error("Error al desencriptar el token del dueño:", error);
+        throw new Error("Error interno al procesar las credenciales del dueño.");
     }
 
-    // 4. Crear la Preferencia en Mercado Pago
-    const preference = new Preference(mercadopago);
+    // 6. Crear un cliente de MP *solo para esta transacción*
+    const duenioMpClient = new MercadoPagoConfig({ 
+        accessToken: duenioAccessToken 
+    });
+    
+    // 7. Definir la comisión de la plataforma (ej: 10%)
+    // ¡Asegúrate de que 'monto' sea un número válido!
+    const comisionCanchaYa = Math.round((monto * 0.10) * 100) / 100; // Redondear a 2 decimales
+    
+    // --- FIN LÓGICA MP CONNECT ---
+
+    // 8. Crear la Preferencia en Mercado Pago
+    const preference = new Preference(duenioMpClient); // <-- Usar el cliente del DUEÑO
     const mpResponse = await preference.create({ 
         body: {
             items: [
@@ -641,6 +634,7 @@ export async function pagarAlquiler(id: number) {
                 surname: alquiler.cliente.apellido,
                 email: alquiler.cliente.email,
             },
+            marketplace_fee: comisionCanchaYa, // ¡Cobrar la comisión!
             external_reference: alquiler.id.toString(), // Enviamos el ID del Alquiler
             notification_url: `${notificationUrl}?pagoId=${pago.id}&source_news=webhooks`,
             back_urls: {
@@ -654,13 +648,13 @@ export async function pagarAlquiler(id: number) {
 
     console.log(`[MP Service] Preferencia creada: ${mpResponse.id}`);
 
-    // 5. Actualizar nuestro Pago con el *nuevo* ID de preferencia
+    // 9. Actualizar nuestro Pago con el *nuevo* ID de preferencia
     await prisma.pago.update({
         where: { id: pago.id },
         data: { mpPreferenceId: mpResponse.id }
     });
 
-    // 6. Devolver el link de pago
+    // 10. Devolver el link de pago
     return { init_point: mpResponse.init_point };
 }
 
@@ -687,7 +681,6 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
         console.log(`🕐 Validando tiempo para cancelación del alquiler ${id}...`);
         
         const primerTurno = alquiler.turnos[0];
-        
         let esCancelacionPenalizada = false;
         
         if (primerTurno) {
@@ -700,7 +693,6 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
                 throw error;
             }
             
-            // La cancelación NO cuenta como penalizada si se hace con 2+ horas de anticipación
             esCancelacionPenalizada = (validacionTiempo.horasRestantes || 0) < 2;
             
             console.log(`✅ Cancelación permitida: ${validacionTiempo.horasRestantes?.toFixed(2)} horas de anticipación`);
@@ -710,14 +702,10 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
         (data as any).cancelacionPenalizada = esCancelacionPenalizada;
         
         console.log(`🔓 LIBERANDO TURNOS - Alquiler ${id} cancelado, liberando ${alquiler.turnos.length} turno(s)`);
-        console.log(`📋 Turnos a liberar:`, alquiler.turnos.map(t => ({ id: t.id, canchaId: t.canchaId })));
         
-        // Obtener las canchas afectadas para invalidar su caché
         const canchasAfectadas = [...new Set(alquiler.turnos.map(turno => turno.canchaId))];
-        console.log(`🎯 Canchas afectadas para invalidar caché:`, canchasAfectadas);
         
-        // Al cancelar, marcamos los turnos como no reservados pero mantenemos
-        // la relación con el alquiler para mantener el historial.
+        // Al cancelar, marcamos los turnos como no reservados
         await prisma.turno.updateMany({
             where: {
                 alquilerId: id
@@ -729,12 +717,10 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
         });
         
         // Invalidar el caché de las canchas afectadas
-        console.log(`🗑️ Invalidando caché ANTES...`);
+        console.log(`🗑️ Invalidando caché para canchas: [${canchasAfectadas.join(', ')}]`);
         invalidateMultipleTurnosCache(canchasAfectadas);
-        console.log(`🗑️ Cache invalidado para ${canchasAfectadas.length} cancha(s): [${canchasAfectadas.join(', ')}]`);
         
         console.log(`✅ TURNOS LIBERADOS - ${alquiler.turnos.length} turno(s) ahora disponibles`);
-        console.log(`ℹ️  Los turnos mantienen alquilerId=${id} para historial.`);
     }
     
     return await prisma.alquiler.update({

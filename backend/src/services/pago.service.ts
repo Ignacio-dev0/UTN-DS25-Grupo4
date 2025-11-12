@@ -1,9 +1,16 @@
 import prisma from '../config/prisma';
 import { Prisma, Pago, MetodoPago, EstadoAlquiler } from '@prisma/client';
 import { CrearPagoRequest, actualizarPagoRequest } from '../types/pago.types';
-import { mercadopago } from '../app';
-import { Preference } from 'mercadopago';
+// --- INICIO DE CAMBIOS: Imports para MP Connect ---
+import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { decrypt } from './encriptacionmp.service'; // Servicio para desencriptar el token del dueño
+// --- FIN DE CAMBIOS ---
 
+/**
+ * DEPRECADO: Esta función crea un alquiler Y un pago en una sola transacción.
+ * El nuevo flujo (pagarAlquiler) es más robusto.
+ * Se actualiza para usar MP Connect.
+ */
 export async function crearPreferenciaDePago(turnoId: number, clienteId: number) {
     console.log(`Iniciando creación de preferencia para turnoId: ${turnoId} y clienteId: ${clienteId}`);
 
@@ -17,7 +24,12 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
         include: {
             cancha: {
                 include: {
-                    complejo: true
+                    complejo: {
+                        // 1. Incluimos el 'usuario' (dueño) del complejo
+                        include: {
+                            usuario: true 
+                        }
+                    }
                 }
             }
         }
@@ -29,11 +41,13 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
         throw error;
     }
 
-    console.log(`Turno encontrado: ${turno.cancha.nombre} a las ${turno.horaInicio}, Precio: ${turno.precio}`);
+    // 2. Obtener los datos del dueño
+    const duenio = turno.cancha.complejo.usuario;
+    const monto = turno.precio;
+    console.log(`Turno encontrado: ${turno.cancha.nombre}, Precio: ${monto}`);
 
-    // 2. Crear Alquiler y Pago en PENDIENTE (todo en una transacción)
+    // 3. Crear Alquiler y Pago en PENDIENTE (todo en una transacción)
     const { alquiler, pago } = await prisma.$transaction(async (tx) => {
-        // Crear Alquiler
         const nuevoAlquiler = await tx.alquiler.create({
             data: {
                 estado: EstadoAlquiler.PROGRAMADO,
@@ -44,19 +58,18 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
             }
         });
 
-        // Marcar el turno como reservado
+        // Marcar el turno como reservado (lógica vieja, pero la mantenemos)
         await tx.turno.update({
             where: { id: turnoId },
             data: { reservado: true }
         });
 
-        // Crear Pago (asociado al alquiler)
         const nuevoPago = await tx.pago.create({
             data: {
                 metodoPago: MetodoPago.MERCADOPAGO,
-                monto: turno.precio,
+                monto: monto,
                 alquilerId: nuevoAlquiler.id,
-                estadoPago: 'PENDING', // Estado inicial
+                estadoPago: 'PENDING',
             }
         });
 
@@ -64,11 +77,8 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
         return { alquiler: nuevoAlquiler, pago: nuevoPago };
     });
 
-    // 3. Definir URLs
+    // 4. Definir URLs
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
-    // URL del Webhook (donde MP nos avisa la confirmación del pago)
-    // Debe ser una URL pública, definida en la variable de entorno API_BASE_URL
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
     
     if (apiBaseUrl === 'http://localhost:3000') {
@@ -76,9 +86,34 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
     }
     const notificationUrl = `${apiBaseUrl}/api/webhooks/mercadopago`;
 
-    // 4. Crear la preferencia de pago en Mercado Pago
+    // --- INICIO LÓGICA MP CONNECT ---
+    
+    // 5. Verificar y desencriptar el token del DUEÑO
+    if (!duenio.mpAccessToken) {
+        throw new Error(`El dueño del complejo ${turno.cancha.complejo.nombre} no tiene una cuenta de MP conectada.`);
+    }
+    
+    let duenioAccessToken: string;
     try {
-        const preference = await new Preference(mercadopago).create({
+        duenioAccessToken = decrypt(duenio.mpAccessToken);
+    } catch (error) {
+        console.error("Error al desencriptar el token del dueño:", error);
+        throw new Error("Error interno al procesar las credenciales del dueño.");
+    }
+
+    // 6. Crear un cliente de MP *solo para esta transacción*
+    const duenioMpClient = new MercadoPagoConfig({ 
+        accessToken: duenioAccessToken 
+    });
+    
+    // 7. Definir la comisión de la plataforma (ej: 10%)
+    const comisionCanchaYa = Math.round((monto * 0.10) * 100) / 100; // Redondear a 2 decimales
+    
+    // --- FIN LÓGICA MP CONNECT ---
+
+    // 8. Crear la preferencia de pago en Mercado Pago
+    try {
+        const preference = await new Preference(duenioMpClient).create({ // <-- USAR CLIENTE DEL DUEÑO
             body: {
                 items: [
                     {
@@ -86,16 +121,17 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
                         title: `Reserva de cancha: ${turno.cancha.nombre} en ${turno.cancha.complejo.nombre}`,
                         description: `Turno para el ${turno.fecha.toLocaleDateString()} a las ${new Date(turno.horaInicio).toLocaleTimeString()}`,
                         quantity: 1,
-                        unit_price: turno.precio,
+                        unit_price: monto,
                         currency_id: 'ARS'
                     }
                 ],
+                marketplace_fee: comisionCanchaYa, // ¡Cobrar la comisión!
                 back_urls: {
                     success: `${frontendUrl}/mis-reservas?pago=exitoso&alquilerId=${alquiler.id}`,
                     failure: `${frontendUrl}/mis-reservas?pago=fallido&alquilerId=${alquiler.id}`,
                     pending: `${frontendUrl}/mis-reservas?pago=pendiente&alquilerId=${alquiler.id}`
                 },
-                auto_return: 'approved', // Redirigir solo si es aprobado
+                auto_return: 'approved',
                 notification_url: `${notificationUrl}?pagoId=${pago.id}&source_news=webhooks`,
                 external_reference: alquiler.id.toString(), // ID del Alquiler (para el webhook)
             }
@@ -103,13 +139,13 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
 
         console.log(`Preferencia de MP creada: ${preference.id}`);
 
-        // 5. Guardar el ID de la preferencia en nuestro Pago
+        // 9. Guardar el ID de la preferencia en nuestro Pago
         await prisma.pago.update({
             where: { id: pago.id },
             data: { mpPreferenceId: preference.id }
         });
 
-        // 6. Devolver la URL de pago (init_point) al controlador
+        // 10. Devolver la URL de pago (init_point) al controlador
         return {
             preferenceId: preference.id,
             init_point: preference.init_point
@@ -183,14 +219,14 @@ export async function actualizarPago(id: number, updateData: actualizarPagoReque
             throw error;
         }
         throw e;
-    }    
+    }    
 };
 
 export async function EliminarPago(id : number): Promise<Pago> {
     try {
         const eliminado = await prisma.pago.delete({where: {id}});
         return eliminado;
-    }  catch (e : any){
+    } catch (e : any){
         if (e.code === 'PS2025') {
             const error = new Error('Pago No Encontrado');
             (error as any).statusCode(400);
