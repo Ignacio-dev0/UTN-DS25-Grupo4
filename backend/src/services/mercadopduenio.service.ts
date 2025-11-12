@@ -9,7 +9,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL; // ¡Variable de entorno!
 //Genera la URL para que el dueño inicie el Oauth.
 
 export async function generarUrlConexion(usuarioId: number) {
-    const redirectUri = `${FRONTEND_URL}/dashboard/dueño/mp-callback`;
+    const redirectUri = `${FRONTEND_URL}/dashboard/duenio/mp-callback`;
     const state = usuarioId.toString(); // Pasamos el ID del usuario
 
     const url = `https://auth.mercadopago.com.ar/authorization` +
