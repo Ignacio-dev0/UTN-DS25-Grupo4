@@ -6,35 +6,35 @@ import bcrypt from 'bcrypt';
 import { getNowInArgentina } from '../utils/timezone';
 
 export async function getAllUsuarios(): Promise<Usuario[]> {
-  const usuarios = await prisma.usuario.findMany({
-    orderBy: { nombre: 'asc' },
-    include: {
-      complejo: true,
-      reservas: true
-    }
-  });
-  return usuarios;
+    const usuarios = await prisma.usuario.findMany({
+        orderBy: { nombre: 'asc' },
+        include: {
+            complejo: true,
+            reservas: true
+        }
+    });
+    return usuarios;
 }
 
 export async function getUsuarioById(id: number): Promise<Usuario | null>{
     const usuario = await prisma.usuario.findUnique({ 
         where: { id },
         include: {
-          complejo: true,
-          reservas: {
-            include: {
-              turnos: {
+            complejo: true,
+            reservas: {
                 include: {
-                  cancha: {
-                    include: {
-                      complejo: true,
-                      deporte: true
+                    turnos: {
+                        include: {
+                            cancha: {
+                                include: {
+                                    complejo: true,
+                                    deporte: true
+                                }
+                            }
+                        }
                     }
-                  }
                 }
-              }
             }
-          }
         }
     });
     
@@ -246,7 +246,6 @@ export async function getEstadisticasCancelaciones(): Promise<{ usuarioId: numbe
     hace30Dias.setDate(hace30Dias.getDate() - 30);
 
     // Obtener solo los alquileres cancelados QUE CUENTAN (penalizados) en los últimos 30 días
-    // cancelacionPenalizada = true significa que la cancelación se hizo con menos de 2 horas
     const alquileresCancelados = await prisma.alquiler.findMany({
         where: {
             estado: 'CANCELADO',
@@ -274,9 +273,7 @@ export async function getEstadisticasCancelaciones(): Promise<{ usuarioId: numbe
 }
 
 /**
- * Suspender o reactivar un usuario mediante un campo personalizado
- * Nota: Como Usuario no tiene campo 'estado' en el schema, usamos el campo 'direccion' 
- * con un valor especial para marcar usuarios suspendidos
+ * Suspender o reactivar un usuario
  */
 export async function suspenderUsuario(id: number, suspendido: boolean): Promise<Usuario> {
     try {
@@ -309,4 +306,39 @@ export async function suspenderUsuario(id: number, suspendido: boolean): Promise
 }
 
 
+// --- ✨ NUEVA FUNCIÓN (agregada al final) ✨ ---
+/**
+ * Obtiene los datos de un usuario por su ID, formateados para el AuthContext.
+ * Esta es una versión "segura" que no expone la contraseña.
+ */
+export async function getUsuarioParaContext(id: number) {
+    const usuario = await prisma.usuario.findUnique({
+        where: { id },
+        select: { // Usar 'select' para no exponer la contraseña
+            id: true,
+            email: true,
+            nombre: true,
+            apellido: true,
+            rol: true,
+            suspendido: true,
+            mpAccessToken: true, // <-- El campo clave que necesitamos
+            complejo: {
+                select: {
+                    id: true,
+                    estado: true
+                }
+            }
+        }
+    });
 
+    if (!usuario) {
+        return null;
+    }
+
+    // Devolver datos seguros para el frontend
+    return {
+        ...usuario,
+        // Enviar solo 'true' o 'false' (si el token existe)
+        mpAccessToken: !!usuario.mpAccessToken 
+    };
+}
