@@ -1,5 +1,4 @@
 // Configuración de la API
-// TEMPORAL: Hardcodeamos la URL de producción para Railway
 const PRODUCTION_API_URL = 'https://utn-ds25-grupo4-canchaya.up.railway.app/api';
 export const API_BASE_URL = import.meta.env.VITE_API_URL || PRODUCTION_API_URL;
 

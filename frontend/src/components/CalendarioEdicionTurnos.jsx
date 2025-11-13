@@ -51,10 +51,10 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
     }
   }, [canchaId]);
   
-  // El dueño puede ver 8 días: hoy (0) hasta día 7
+  // El dueño puede ver 8 días en adelante apartir del dia de hoy
   const maxDias = 7; // hoy + 7 días = 8 días totales
   
-  // Calcular las 8 fechas a mostrar (de hoy hasta día+7)
+  // Calcular las 8 fechas a mostrar
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   
@@ -73,7 +73,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
   // Extraer los días de la semana para las 8 fechas
   // IMPORTANTE: Sin acentos para que coincida con los turnos formateados
   const diasSemanaMostrar = fechas8Dias.map(fecha => {
-    const diaJS = fecha.getDay(); // 0=Dom, 1=Lun, etc.
+    const diaJS = fecha.getDay();
     const diasArray = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
     return diasArray[diaJS];
   });
@@ -94,7 +94,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
   const dias = diasSemanaMostrar;
 
   // Funciones de navegación - ELIMINADAS (el dueño solo ve estos 8 días fijos)
-  // No hay navegación anterior/siguiente
+ 
 
   // Editar precio de un turno específico
   const handleEditarPrecio = async (dia, hora) => {
@@ -117,7 +117,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
 
     // Si existe el turno, actualizarlo en la base de datos
     if (turnoExistente && turnoExistente.id) {
-      // ACTUALIZACIÓN INSTANTÁNEA: Actualizar estado local PRIMERO (optimistic update)
+      // ACTUALIZACIÓN INSTANTÁNEA: Actualizar estado local
       const turnosActualizados = turnos.map(t => 
         t.id === turnoExistente.id 
           ? { ...t, precio: nuevoPrecio }
@@ -142,7 +142,7 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
     } else {
       // Crear nuevo turno con actualización optimista
       
-      // 1. Actualizar estado local inmediatamente (optimistic update)
+      // 1. Actualizar estado local inmediatamente 
       const turnoTemporal = {
         id: `temp-${Date.now()}`, // ID temporal hasta que se sincronice con BD
         dia: dia,
@@ -543,9 +543,6 @@ function CalendarioEdicionTurnos({ turnos, onTurnosChange, canchaId, onPrecioDes
       
       // Actualizar la lista local de horarios deshabilitados
       setHorariosDeshabilitados(prev => [...prev, horarioData.horarioDeshabilitado]);
-      
-      // NOTA: No necesitamos hacer DELETE del turno porque el backend ya lo eliminó
-      // automáticamente al crear el horario deshabilitado
       
       // Actualizar localmente removiendo el turno
       const turnosActualizados = turnos.filter(t => t.id !== turno.id);

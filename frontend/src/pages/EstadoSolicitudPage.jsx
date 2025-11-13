@@ -24,11 +24,9 @@ function EstadoSolicitudPage() {
         if (response.ok) {
           const data = await response.json();
           // El backend devuelve complejos, no solicitudes
-          // Adaptamos la estructura para que funcione con el código existente
           const complejoUsuario = data.solicitudes?.find(c => c.usuarioId === user.id);
           
           if (complejoUsuario) {
-            // Adaptar estructura: el complejo ES la solicitud
             const solicitudAdaptada = {
               ...complejoUsuario,
               complejo: complejoUsuario, // Agregar referencia a sí mismo como "complejo"

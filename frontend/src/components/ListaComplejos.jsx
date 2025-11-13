@@ -1,4 +1,4 @@
-// src/components/ListaComplejos.jsx
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ModalConfirmacion from './ModalConfirmacion';
@@ -41,7 +41,6 @@ function ListaComplejos({ complejos, onRemove }) {
                 </button>
               </Link>
               <button 
-                // onClick={() => handleSuspend(complejo)}
                 className="text-yellow-600 hover:text-yellow-800 p-2 rounded-full hover:bg-yellow-100"
                 title="Suspender Complejo"
               >

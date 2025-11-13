@@ -184,8 +184,6 @@ export const calcularInfoReseñas = () => {
     return { promedio: 0, cantidad: 0 };
 };
 
-// src/utils/calculos.js
-
 /**
  * Genera un precio aleatorio para un turno de cancha.
  * @param {string} hora - La hora del turno (ej: "19:00").

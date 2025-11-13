@@ -114,7 +114,7 @@ function GestionUsuarios() {
       if (response.ok) {
         const data = await response.json();
         console.log('Usuarios cargados:', data);
-        // Filtrar usuarios con rol ADMINISTRADOR
+        // Filtrar usuarios con rol administrador
         const usuariosFiltrados = (data.usuarios || data || []).filter(u => u.rol !== 'ADMINISTRADOR');
         setUsuarios(usuariosFiltrados);
       } else {

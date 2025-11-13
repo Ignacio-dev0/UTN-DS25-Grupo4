@@ -91,7 +91,6 @@ const generarGrillaDeTurnosFija = (complejoId, precioDesde) => {
 
       horariosDelDia.forEach((hora, index) => {
         if (estados[index]) {
-          // --- MODIFICACIÓN CLAVE: Se agrega la propiedad 'precio' a cada turno ---
           turnosSemanales.push({ 
             dia, 
             hora, 
@@ -219,6 +218,3 @@ export const datosDeportes = [
     ],
   },
 ];
-
-// Ya no es necesario el último bucle forEach porque los precios se generan dinámicamente
-// al llamar a generarGrillaDeTurnosFija.

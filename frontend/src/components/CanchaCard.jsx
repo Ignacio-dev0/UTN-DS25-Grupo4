@@ -147,7 +147,6 @@ function CanchaCard({ cancha }) {
         });
 
       // Eliminamos log repetitivo
-      // console.log(`Horarios del cronograma desde las ${currentHour}:${currentMinute.toString().padStart(2, '0')}:`, horariosDelDia);
       return horariosDelDia;
     }
 
@@ -238,9 +237,6 @@ function CanchaCard({ cancha }) {
   const precioDesde = cancha.precioDesde > 0 ? cancha.precioDesde : null;
   
   // Eliminamos logs repetitivos - solo para debug detallado
-  // console.log('CanchaCard - turnosHoy:', turnosHoy);
-  // console.log('CanchaCard - precioDesde:', precioDesde);
-  // console.log('CanchaCard - loadingTurnos:', loadingTurnos);
 
   return (
     <Link to={`/reserva/${cancha.id}`} className="block bg-secondary rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1 group relative">

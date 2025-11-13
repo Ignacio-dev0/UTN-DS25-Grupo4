@@ -109,7 +109,6 @@ function MisReservasPage() {
         };
     }, [isAuthenticated, usuario?.id]);
 
-    // NUEVO: Detectar si se requiere pago inmediato (viene de ReservaPage)
     useEffect(() => {
         const pagarAhoraId = searchParams.get('pagarAhora');
         if (pagarAhoraId && reservas.length > 0) {
