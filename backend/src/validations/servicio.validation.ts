@@ -1,4 +1,4 @@
-// backend/src/validations/servicio.validation.ts
+
 import { z } from 'zod';
 
 export const createServicioSchema = z.object({

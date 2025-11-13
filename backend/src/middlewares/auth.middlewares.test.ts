@@ -17,8 +17,8 @@ beforeEach(() => {
   mockReq = {
     headers: {}, // Por defecto, no hay headers
   };
-  mockRes = {}; // No lo usamos, pero lo pasamos
-  mockNext = jest.fn(); // Esta es la función espía
+  mockRes = {};
+  mockNext = jest.fn();
   
   // Limpiamos cualquier mock residual de 'jsonwebtoken'
   (jwt.verify as jest.Mock).mockClear();
@@ -81,7 +81,7 @@ describe('authenticate middleware', () => {
     mockReq.headers = { authorization: 'Bearer expired-token' };
     (jwt.verify as jest.Mock).mockImplementation(() => {
       const error = new Error('jwt expired');
-      error.name = 'TokenExpiredError'; // Esto es lo único que le importa al middleware
+      error.name = 'TokenExpiredError';
       throw error;
     });
 
@@ -155,7 +155,6 @@ describe('authorize middleware', () => {
     test('debe llamar a next(error) si req.usuario no está definido', () => {
         // 1. Arrange
         const middleware = authorize('ADMINISTRADOR');
-        // mockReq.usuario no está definido (por el beforeEach)
 
         // 2. Act
         middleware(mockReq as Request, mockRes as Response, mockNext);

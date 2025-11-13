@@ -1,5 +1,5 @@
 // Script para consolidar administradores
-// Elimina la tabla Administrador y migra todo a Usuario con rol ADMINISTRADOR
+// Elimina la tabla Administrador y migra todo a Usuario con rol administrador
 
 import prisma from '../config/prisma';
 import bcrypt from 'bcrypt';
@@ -45,7 +45,7 @@ async function consolidarAdministradores() {
       console.log(`\n📦 Admin ${admin.email} tiene ${complejosDelAdmin.length} complejos asignados`);
 
       if (complejosDelAdmin.length > 0) {
-        // Asignar todos sus complejos a null (sin administrador específico)
+        // Asignar todos sus complejos a null 
         await prisma.complejo.updateMany({
           where: { administradorId: admin.id },
           data: { administradorId: null }

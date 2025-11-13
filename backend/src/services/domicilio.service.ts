@@ -8,7 +8,6 @@ export async function crearDomicilio(data: crearDomicilioRequest): Promise<Domic
             calle: data.calle,
             altura: data.altura,
             localidad: {connect:{id:data.localidadId}},
-            //no puse localidad el complejo necesita domicilio para existir
         },
     });
     return created;

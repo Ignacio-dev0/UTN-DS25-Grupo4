@@ -5,9 +5,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 
-/**
- * Función helper para detectar errores de conectividad de base de datos
- */
+// Función helper para detectar errores de conectividad de base de datos
+
 export function isDatabaseConnectionError(error: any): boolean {
     return error && 
            error.message && 
@@ -16,9 +15,8 @@ export function isDatabaseConnectionError(error: any): boolean {
             error.message.includes("timeout"));
 }
 
-/**
- * Maneja errores de conectividad devolviendo respuestas vacías apropiadas
- */
+// Maneja errores de conectividad devolviendo respuestas vacías apropiadas
+
 export function handleDatabaseConnectionError(
     error: any,
     req: Request,
@@ -40,9 +38,8 @@ export function handleDatabaseConnectionError(
     next(error);
 }
 
-/**
- * Wrapper para controladores que automaticamente maneja errores de DB
- */
+// Wrapper para controladores que automaticamente maneja errores de DB
+ 
 export function withDatabaseErrorHandling(
     controllerFn: (req: Request, res: Response, next: NextFunction) => Promise<void>,
     emptyResponse: any
@@ -56,9 +53,6 @@ export function withDatabaseErrorHandling(
     };
 }
 
-/**
- * Respuestas vacías típicas para diferentes endpoints
- */
 export const EMPTY_RESPONSES = {
     canchas: {
         canchas: [],

@@ -43,7 +43,6 @@ export async function actualizarPago(id: number, updateData: actualizarPagoReque
                 ...(updateData.codigoTransaccion !== undefined ? {codigoTransaccion: updateData.codigoTransaccion} : {}),
                 ...(updateData.monto !== undefined ? {monto: updateData.monto} : {}),
                 ...(updateData.metodoPago !== undefined ? {metodoPago: updateData.metodoPago} : {}),
-                // ...(updateData.alquiler !== undefined ? {alquiler: updateData.alquiler} : {}),
                 ...(updateData.alquilerId !== undefined ? { alquiler: {connect:{id:updateData.alquilerId}}} : {})
             }
         });

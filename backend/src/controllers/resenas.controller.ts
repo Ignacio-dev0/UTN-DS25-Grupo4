@@ -1,4 +1,4 @@
-// backend/src/controllers/resenas.controller.ts
+
 import { Request, Response, NextFunction } from 'express';
 import * as resenasService from '../services/resenas.service';
 import { CreateReseniaRequest, UpdateReseniaRequest, ReseniaResponse, ReseniaListResponse } from '../types/resenia.types';

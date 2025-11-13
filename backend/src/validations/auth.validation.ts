@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Schema específico para registro público (más flexible)
+// Schema específico para registro público
 export const registroSchema = z.object({
     nombre: z.string()
       .min(1, "El nombre es requerido")

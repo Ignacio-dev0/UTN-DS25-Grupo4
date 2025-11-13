@@ -1,7 +1,7 @@
-// backend/src/services/deportes.service.ts
+
 import { CreateDeporteResquest, UpdateDeporteResquest } from "../types/deporte.types";
 
-// DATOS MOCK TEMPORALES hasta sincronizar la base de datos
+
 const DEPORTES_MOCK = [
     { id: 1, nombre: "Fútbol 5", icono: "⚽" },
     { id: 2, nombre: "Fútbol 11", icono: "🥅" },

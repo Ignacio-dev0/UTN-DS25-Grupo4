@@ -17,7 +17,7 @@ async function generarTurnosDelDiaSiguiente() {
         // Calcular la fecha del día 8 (para que el dueño pueda editar antes de que salga al público)
         const hoy = new Date();
         const dia8 = new Date(hoy);
-        dia8.setDate(hoy.getDate() + 7); // El octavo día desde hoy (día 0, 1, 2, 3, 4, 5, 6, 7)
+        dia8.setDate(hoy.getDate() + 7); // El octavo día desde hoy
         
         const fechaSoloFecha = new Date(dia8);
         fechaSoloFecha.setHours(0, 0, 0, 0);
@@ -49,7 +49,6 @@ async function generarTurnosDelDiaSiguiente() {
                     ? `${cronograma.horaInicio.getHours().toString().padStart(2, '0')}:00`
                     : cronograma.horaInicio;
 
-                // ⛔ VERIFICAR SI EL HORARIO ESTÁ DESHABILITADO PERMANENTEMENTE
                 const estaDeshabilitado = await estaHorarioDeshabilitado(
                     cancha.id,
                     diaSemanaEnum as DiaSemana,

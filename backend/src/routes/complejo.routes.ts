@@ -1,4 +1,4 @@
-// backend/src/routes/complejo.routes.ts
+
 import { Router } from 'express';
 import validate from '../middlewares/validate';
 import { authenticate, authorize } from "../middlewares/auth.middleware";

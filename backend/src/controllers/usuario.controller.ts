@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-// TEMPORALMENTE usando mock en lugar del servicio real
 import * as usuarioService from "../services/usuario.service";
 import { UsuarioListResponse, UsuarioResponse } from "../types/usuario.type";
 import bcrypt from 'bcrypt';
@@ -281,7 +280,6 @@ export async function register(req: Request, res: Response) {
     // Si es dueño, intentar crear la solicitud automáticamente
     if (rol === 'DUENIO' && req.body.solicitudComplejo) {
       try {
-        // solicitudComplejo debe tener: cuit, nombreComplejo, calle, altura, localidadId, imagen (opcional)
         const { cuit, nombreComplejo, calle, altura, localidadId, imagen } = req.body.solicitudComplejo;
         if (!cuit || !nombreComplejo || !calle || !altura || !localidadId) {
           // Rollback usuario
@@ -374,7 +372,7 @@ export async function registerWithImage(req: Request, res: Response) {
       calle, 
       altura, 
       localidadId,
-      imagen  // Base64 image
+      imagen  // Base64 imagen
     } = req.body;
     
     // La imagen ahora viene como base64 en lugar de archivo

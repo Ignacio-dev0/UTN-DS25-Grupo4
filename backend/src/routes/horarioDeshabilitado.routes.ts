@@ -4,12 +4,10 @@ import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-/**
- * Rutas para gestionar horarios deshabilitados permanentemente
- * Base path: /api/horarios-deshabilitados
- */
+// Rutas para gestionar horarios deshabilitados permanentemente
+// Base path: /api/horarios-deshabilitados
 
-// GET /api/horarios-deshabilitados/cancha/:canchaId
+
 // Obtener todos los horarios deshabilitados de una cancha
 router.get('/cancha/:canchaId', horarioDeshabilitadoController.obtenerHorariosDeshabilitadosPorCancha);
 
@@ -22,7 +20,7 @@ router.post(
   horarioDeshabilitadoController.deshabilitarHorario
 );
 
-// DELETE /api/horarios-deshabilitados/:id
+// Eliminar /api/horarios-deshabilitados/:id
 // Habilitar un horario (remover de la lista de deshabilitados)
 router.delete(
   '/:id',

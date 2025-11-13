@@ -151,9 +151,9 @@ export async function getTurnosPorSemana(req: Request, res: Response) {
         
         const turnosConDia = turnos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
-            const fechaStr = turno.fecha.toISOString().split('T')[0]; // "2025-10-22"
+            const fechaStr = turno.fecha.toISOString().split('T')[0]; // formato "2025-10-22"
             const [year, month, day] = fechaStr.split('-').map(Number);
-            const fecha = new Date(year, month - 1, day); // month es 0-indexed
+            const fecha = new Date(year, month - 1, day); // mes es 0-indexed
             
             const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
             const dia = diasSemana[fecha.getDay()]; // getDay() usa timezone local
@@ -255,9 +255,9 @@ export async function getTurnosDisponiblesPorSemana(req: Request, res: Response)
         // Agregar el campo 'dia' y 'yaPaso' a cada turno
         const turnosConDia = turnosFuturos.map(turno => {
             // Parsear fecha como componentes locales para evitar problemas de timezone
-            const fechaStr = turno.fecha.toISOString().split('T')[0]; // "2025-10-22"
+            const fechaStr = turno.fecha.toISOString().split('T')[0]; // formato "2025-10-22"
             const [year, month, day] = fechaStr.split('-').map(Number);
-            const fecha = new Date(year, month - 1, day); // month es 0-indexed
+            const fecha = new Date(year, month - 1, day); // mes es 0-indexed
             
             const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
             const dia = diasSemana[fecha.getDay()]; // getDay() usa timezone local

@@ -1,4 +1,4 @@
-// backend/src/routes/servicio.routes.ts
+
 import { Router } from 'express';
 import * as servicioController from '../controllers/servicio.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';

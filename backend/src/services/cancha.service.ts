@@ -1,4 +1,4 @@
-// backend/src/services/cancha.service.ts
+
 import prisma from '../config/prisma';
 import { CanchaFull } from '../types/cancha.types'
 import { Prisma, EstadoAlquiler } from '@prisma/client';
@@ -208,14 +208,14 @@ export async function obtenerCanchasConFiltros(
         console.log('   Primera cancha:', JSON.stringify(canchas[0], null, 2));
     }
 
-    // Filtros adicionales para fecha y hora (requieren lógica especial)
+    // Filtros adicionales para fecha y hora
     let canchasFiltradas = canchas;
 
     if (filtros.fecha || filtros.hora) {
         canchasFiltradas = await filtrarPorFechaYHora(canchas, filtros.fecha, filtros.hora);
     }
 
-    // OPTIMIZACIÓN: Usar campo precalculado precioDesde en lugar de calcular dinámicamente
+
     const canchasConPrecios = canchasFiltradas.map(cancha => ({
         ...cancha,
         precioDesde: cancha.precioDesde || cancha.precioHora || 0
@@ -244,7 +244,7 @@ async function filtrarPorFechaYHora(canchas: any[], fecha?: string, hora?: strin
             const [horas, minutos = '00'] = horaLimpia.split(':');
             const horaConsulta = new Date(`1970-01-01T${horas.padStart(2, '0')}:${minutos.padStart(2, '0')}:00.000Z`);
             
-            // PRIMERO: Verificar turnos existentes para esa fecha y hora específica
+            // Verificar turnos existentes para esa fecha y hora específica
             const turnoDisponible = await prisma.turno.findFirst({
                 where: {
                     canchaId: cancha.id,
@@ -257,7 +257,7 @@ async function filtrarPorFechaYHora(canchas: any[], fecha?: string, hora?: strin
             if (turnoDisponible) {
                 tieneDisponibilidad = true;
             } else {
-                // SEGUNDO: Si no hay turno específico, verificar cronograma regular
+                // Si no hay turno específico, verificar cronograma regular
                 const cronogramasDelDia = cancha.cronograma.filter(c => c.diaSemana === diaConsulta);
                 
                 for (const cronograma of cronogramasDelDia) {
@@ -284,7 +284,7 @@ async function filtrarPorFechaYHora(canchas: any[], fecha?: string, hora?: strin
             const fechaConsulta = new Date(fecha);
             const diaConsulta = diasSemana[fechaConsulta.getDay()];
             
-            // PRIMERO: Verificar si hay turnos disponibles para esa fecha
+            // Verificar si hay turnos disponibles para esa fecha
             const turnosDisponibles = await prisma.turno.findMany({
                 where: {
                     canchaId: cancha.id,
@@ -296,7 +296,7 @@ async function filtrarPorFechaYHora(canchas: any[], fecha?: string, hora?: strin
             if (turnosDisponibles.length > 0) {
                 tieneDisponibilidad = true;
             } else {
-                // SEGUNDO: Si no hay turnos específicos, verificar cronograma
+                // Si no hay turnos específicos, verificar cronograma
                 const cronogramasDelDia = cancha.cronograma.filter(c => c.diaSemana === diaConsulta);
                 tieneDisponibilidad = cronogramasDelDia.length > 0;
             }
@@ -306,7 +306,7 @@ async function filtrarPorFechaYHora(canchas: any[], fecha?: string, hora?: strin
             const [horas, minutos = '00'] = horaLimpia.split(':');
             const horaConsulta = new Date(`1970-01-01T${horas.padStart(2, '0')}:${minutos.padStart(2, '0')}:00.000Z`);
             
-            // PRIMERO: Verificar turnos con esa hora (cualquier fecha futura)
+            // Verificar turnos con esa hora (cualquier fecha futura)
             const turnosConHora = await prisma.turno.findMany({
                 where: {
                     canchaId: cancha.id,
@@ -319,7 +319,7 @@ async function filtrarPorFechaYHora(canchas: any[], fecha?: string, hora?: strin
             if (turnosConHora.length > 0) {
                 tieneDisponibilidad = true;
             } else {
-                // SEGUNDO: Verificar en cronograma regular
+                // Verificar en cronograma regular
                 for (const cronograma of cancha.cronograma) {
                     if (cronograma.horaInicio <= horaConsulta && cronograma.horaFin > horaConsulta) {
                         tieneDisponibilidad = true;
@@ -454,7 +454,7 @@ export async function obtenerCanchasPorComplejoId(
   });
 
   // El precioDesde ya está calculado y guardado en la BD por recalcularPrecioDesde()
-  // Solo necesitamos devolverlo tal cual
+
   console.log('🖼️ CANCHA SERVICE - Canchas con precios:', 
     canchas.map(c => ({ 
       id: c.id, 

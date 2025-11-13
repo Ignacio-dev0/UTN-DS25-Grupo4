@@ -1,4 +1,4 @@
-// backend/src/services/resenas.service.ts
+
 import prisma from '../config/prisma';
 import { Resenia } from '@prisma/client';
 import { CreateReseniaRequest, UpdateReseniaRequest } from '../types/resenia.types';
@@ -373,7 +373,7 @@ export async function deleteResenia(id: number): Promise<Resenia> {
     }
 }
 
-// Función optimizada para obtener solo puntajes (para cálculos de frontend)
+// Función optimizada para obtener solo puntajes 
 export async function getReseniasPuntajesByCanchaId(canchaId: number): Promise<{puntaje: number}[]> {
     const resenas = await prisma.resenia.findMany({
         where: {

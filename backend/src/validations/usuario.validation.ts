@@ -1,4 +1,4 @@
-// src/validations/usuario.validation.ts
+
 import { z } from 'zod';
 import { Rol } from '@prisma/client';
 

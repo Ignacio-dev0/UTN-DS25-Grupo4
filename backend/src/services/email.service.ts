@@ -22,11 +22,6 @@ export const enviarEmailBienvenida = async (emailDestino: string, nombreDestino:
     { email: emailDestino, name: nombreDestino }
   ];
 
-  // opcion 1: 'subject' y 'htmlContent' fijos
-  // sendSmtpEmail.subject = '¡Bienvenido a CanchaYA!';
-  // sendSmtpEmail.htmlContent = `<html><body><h1>Hola ${nombreDestino},</h1><p>Gracias por registrarte.</p></body></html>`;
-
-  // O usar una plantilla de Brevo
   sendSmtpEmail.templateId = 1;
   sendSmtpEmail.params = {
     nombre: nombreDestino,
@@ -60,8 +55,3 @@ export const enviarEmailComplejoAprobado = async (emailDuenio: string, nombreCom
   }
 };
 
-
-
-// agregar más funciones como:
-// - enviarEmailReservaConfirmada
-// - enviarEmailPasswordReset

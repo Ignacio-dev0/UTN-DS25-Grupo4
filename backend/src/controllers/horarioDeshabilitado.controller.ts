@@ -2,11 +2,10 @@ import { Request, Response } from 'express';
 import * as horarioDeshabilitadoService from '../services/horarioDeshabilitado.service';
 import { DiaSemana } from '@prisma/client';
 
-/**
- * Controlador para gestionar horarios deshabilitados permanentemente
- */
+// Controlador para gestionar horarios deshabilitados permanentemente
+ 
 
-// GET /api/horarios-deshabilitados/cancha/:canchaId
+
 export const obtenerHorariosDeshabilitadosPorCancha = async (req: Request, res: Response) => {
   try {
     const canchaId = parseInt(req.params.canchaId);
@@ -24,7 +23,7 @@ export const obtenerHorariosDeshabilitadosPorCancha = async (req: Request, res: 
   }
 };
 
-// POST /api/horarios-deshabilitados
+
 export const deshabilitarHorario = async (req: Request, res: Response) => {
   try {
     const { canchaId, dia, hora, motivo } = req.body;
@@ -68,7 +67,7 @@ export const deshabilitarHorario = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE /api/horarios-deshabilitados/:id
+
 export const habilitarHorario = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);

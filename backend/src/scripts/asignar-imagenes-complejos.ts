@@ -1,5 +1,5 @@
 // Script para asignar imágenes a los complejos desde sus canchas
-// Para complejos sin canchas, asigna una imagen random de cualquier cancha
+
 
 import prisma from '../config/prisma';
 
@@ -21,7 +21,7 @@ async function asignarImagenesComplejos() {
 
     console.log(`📊 Total de complejos encontrados: ${complejos.length}\n`);
 
-    // 2. Obtener todas las imágenes de canchas disponibles (para usar como fallback)
+    // 2. Obtener todas las imágenes de canchas disponibles
     const todasLasCanchas = await prisma.cancha.findMany({
       where: {
         image: {
@@ -66,7 +66,7 @@ async function asignarImagenesComplejos() {
 
       // Caso 2: El complejo NO tiene canchas o ninguna cancha tiene imagen
       if (!imagenAsignada) {
-        // Asignar una imagen random de cualquier cancha
+        // Asignar una imagen aleatoria de cualquier cancha
         const imagenRandom = imagenesDisponibles[Math.floor(Math.random() * imagenesDisponibles.length)];
         imagenAsignada = imagenRandom;
         console.log(`🎲 Complejo "${complejo.nombre}" (ID: ${complejo.id}): Usando imagen random (sin canchas)`);

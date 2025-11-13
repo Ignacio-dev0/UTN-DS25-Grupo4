@@ -43,7 +43,7 @@ export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
         console.log(`🔄 Regenerando turnos para cancha ${canchaIdNum} desde ${inicioSemana.toISOString().split('T')[0]} hasta ${finSemana.toISOString().split('T')[0]}`);
 
         await prisma.$transaction(async (tx) => {
-            // 1. RESETEAR turnos pasados a "disponible" (no borrar, solo resetear estado)
+            // 1. Resetear turnos pasados a "disponible"
             const ahora = new Date();
             await tx.turno.updateMany({
                 where: {
@@ -58,7 +58,7 @@ export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
                 }
             });
 
-            // 2. ELIMINAR turnos futuros para regenerar (solo los disponibles)
+            // 2. Eliminar turnos futuros para regenerar (solo los disponibles)
             await tx.turno.deleteMany({
                 where: {
                     canchaId: canchaIdNum,
@@ -70,7 +70,7 @@ export const regenerarTurnosSemanales = async (req: Request, res: Response) => {
                 }
             });
 
-            // 3. GENERAR nuevos turnos para las próximas 2 semanas
+            // 3. Generar nuevos turnos para las próximas 2 semanas
             const turnosData = [];
             const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
@@ -230,7 +230,7 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
         }
 
         // Convertir día y hora a fecha dentro de los próximos 7 días
-        // IMPORTANTE: Sin acentos para coincidir con el enum DiaSemana de Prisma
+        // IMPORTANTE: Sin acentos para coincidir con la enumerativa DiaSemana de Prisma
         const diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
         const indiceDia = diasSemana.indexOf(dia.toUpperCase());
         
@@ -238,7 +238,7 @@ export const crearTurnoIndividual = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Día inválido" });
         }
 
-        // Crear fecha para los próximos 7 días (como en el calendario) usando Argentina timezone
+        // Crear fecha para los próximos 7 días (como en el calendario) usando horario de Argentina 
         const hoy = getNowInArgentina(); // Usar hora de Argentina en lugar de UTC
         
         console.log('📅 DEBUG CREAR TURNO:');

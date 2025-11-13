@@ -1,4 +1,4 @@
-// backend/src/routes/deportes.routes.ts
+
 import { Router } from 'express';
 import * as deporteController from '../controllers/deportes.controller';
 import { authenticate, authorize } from "../middlewares/auth.middleware";

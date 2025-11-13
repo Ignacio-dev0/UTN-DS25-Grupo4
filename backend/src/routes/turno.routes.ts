@@ -8,7 +8,7 @@ import { authenticate, authorize } from "../middlewares/auth.middleware";
 
 const router = Router()
 
-// Sistema de turnos automáticos (NUEVO)
+// Sistema de turnos automáticos 
 router.post(
   '/regenerar/:canchaId',
   authenticate,
@@ -37,7 +37,7 @@ router.delete(
   turnoAutomaticoController.eliminarTurnoIndividual
 );
 
-// Generar turnos automáticamente (LEGACY)
+// Generar turnos automáticamente 
 router.post(
   '/generar',
   authenticate,
@@ -94,7 +94,7 @@ router.post(
   turnoController.habilitarTurno
 );
 
-// Ruta para liberar turnos con pago pendiente (cron job)
+// Ruta para liberar turnos con pago pendiente 
 router.post(
   '/liberar-pago-pendiente',
   authenticate,

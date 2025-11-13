@@ -83,7 +83,7 @@ async function arreglarResenas() {
       continue;
     }
 
-    // Generar calificación y comentario (80% positivas)
+    // Generar calificación y comentario 
     const puntaje = Math.random() > 0.15 
       ? Math.floor(Math.random() * 2) + 4 // 80% entre 4-5
       : Math.floor(Math.random() * 3) + 2; // 20% entre 2-4

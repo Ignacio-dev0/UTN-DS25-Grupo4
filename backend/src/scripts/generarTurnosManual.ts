@@ -22,7 +22,7 @@ async function generarTurnosManual() {
     
     const turnosACrear = [];
     
-    // Generar para los próximos 8 días (día 0 = hoy, hasta día 7)
+    // Generar para los próximos 8 días
     for (let dia = 0; dia <= 7; dia++) {
       const fecha = new Date(hoy);
       fecha.setDate(hoy.getDate() + dia);

@@ -1,4 +1,4 @@
-// backend/src/services/deportes.service.ts
+
 import prisma from '../config/prisma';
 import { Deporte } from '@prisma/client';
 import { CreateDeporteResquest, UpdateDeporteResquest } from "../types/deporte.types";
@@ -67,7 +67,6 @@ export async function createDeporte(data: CreateDeporteResquest): Promise<Deport
             nombre: data.name
         });
         
-        // Si es un error de constraint en el ID, probablemente la secuencia está desincronizada
         if (e.code === 'P2002' && e.meta?.target?.includes('id')) {
             const error = new Error('Error interno: la secuencia de IDs está desincronizada. Contacta al administrador.');
             (error as any).statusCode = 500;

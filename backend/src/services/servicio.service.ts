@@ -1,4 +1,4 @@
-// backend/src/services/servicio.service.ts
+
 import prisma from '../config/prisma';
 
 export const getAllServicios = async () => {

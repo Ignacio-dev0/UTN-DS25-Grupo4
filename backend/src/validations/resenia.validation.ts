@@ -1,4 +1,4 @@
-// src/validations/resenia.validation.ts
+
 import { z } from 'zod';
 
 export const crearReseniaSchema = z.object({

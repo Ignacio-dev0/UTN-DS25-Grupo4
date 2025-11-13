@@ -1,5 +1,5 @@
 // Script para normalizar los nombres de imágenes en la base de datos
-// Convierte futbol5_01.jpg -> futbol5_1.jpg
+
 
 import prisma from '../config/prisma';
 
@@ -19,7 +19,6 @@ async function normalizarImagenes() {
     // Normalizar cada imagen del array
     const imagenesNormalizadas = cancha.image.map((img: string) => {
       // Convertir números con leading zero a números sin leading zero
-      // futbol5_01.jpg -> futbol5_1.jpg
       return img.replace(/(_)0(\d)(\.[a-z]+)$/i, '$1$2$3');
     });
 
@@ -39,7 +38,7 @@ async function normalizarImagenes() {
     }
   }
 
-  // También normalizar imágenes de complejos (String simple, no array)
+  // También normalizar imágenes de complejos
   const complejos = await prisma.complejo.findMany();
 
   console.log(`\n📋 Encontrados ${complejos.length} complejos\n`);

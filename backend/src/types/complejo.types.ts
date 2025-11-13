@@ -23,7 +23,6 @@ export interface UpdateComplejoRequest {
     image?: string;
     horarios?: string;
     servicios?: number[]; // Array de IDs de servicios
-    // Nota: puntaje se calcula automáticamente desde las reseñas, no debe ser editable
 }
 
 export interface ComplejoResponse {

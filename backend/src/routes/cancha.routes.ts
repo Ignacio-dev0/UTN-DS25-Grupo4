@@ -6,7 +6,6 @@ import * as canchaController from '../controllers/cancha.controller';
 
 const router = Router();
 
-// Ej: GET /api/canchas  o  GET /api/canchas?complejoId=1
 router.get(
   '/',
   canchaController.obtenerCanchas
@@ -42,7 +41,7 @@ router.put(
   canchaController.actualizarCancha
 );
 
-// Ruta para actualización parcial de una cancha (ej: solo precioDesde)
+// Ruta para actualización parcial de una cancha
 router.patch(
   '/:id',
   authenticate,

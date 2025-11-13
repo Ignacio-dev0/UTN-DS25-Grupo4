@@ -183,14 +183,14 @@ async function main() {
     for (let i = 0; i < complejosData.length; i++) {
       const data = complejosData[i];
       
-      // Crear complejo APROBADO (sin imagen por ahora, se asignará después)
+      // Crear complejo aprobado
       const complejo = await prisma.complejo.create({
         data: {
           nombre: data.nombre,
           descripcion: data.descripcion,
           puntaje: data.puntaje,
           cuit: data.cuit,
-          image: null, // Se asignará después
+          image: null, 
           horarios: data.horarios,
           domicilioId: domicilios[i].id,
           usuarioId: duenios[i].id,
@@ -201,7 +201,7 @@ async function main() {
       complejos.push(complejo);
     }
 
-    // 8. Crear 5 complejos PENDIENTES (sin aprobar aún)
+    // 8. Crear 5 complejos pendientes
     console.log('📝 Creando 5 complejos pendientes...');
     
     const complejosPendientesData = [
@@ -403,7 +403,6 @@ async function main() {
       const cronogramasDelDia = cronogramas.filter(c => c.diaSemana === diaSemanaActual);
       
       for (const cronograma of cronogramasDelDia) {
-        // 75% de probabilidad de crear el turno
         if (Math.random() > 0.25) {
           turnosData.push({
             fecha: fecha,
@@ -473,7 +472,7 @@ async function main() {
       console.log(`   Procesados ${Math.min(i + 50, turnosSeleccionados.length)} de ${turnosSeleccionados.length} alquileres...`);
     }
 
-        // 14. Crear 10 reseñas por cancha (640 reseñas total)
+        // 14. Crear 10 reseñas por cancha
     console.log('⭐ Creando 10 reseñas por cancha (640 total)...');
     
     const comentariosPositivos = [

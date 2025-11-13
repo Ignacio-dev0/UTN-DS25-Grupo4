@@ -6,7 +6,7 @@ import { authenticate, authorize } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-// Rutas de autenticación (públicas, manejadas por auth.routes.ts pero mantenidas por compatibilidad)
+// Rutas de autenticación
 router.post('/login', usuarioController.login);
 router.post('/register', usuarioController.register);
 router.post('/register-with-image', usuarioController.registerWithImage);
@@ -27,7 +27,7 @@ router.get(
   usuarioController.obtenerUsuarios
 );
 
-// Ruta para obtener estadísticas de cancelaciones (admin) - debe ir antes de /:id
+// Ruta para obtener estadísticas de cancelaciones
 router.get(
   "/estadisticas/cancelaciones",
   authenticate,

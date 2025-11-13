@@ -1,4 +1,4 @@
-// backend/src/routes/resenas.routes.ts
+
 import { Router } from 'express';
 import * as resenasController from '../controllers/resenas.controller';
 import validate from '../middlewares/validate';
@@ -29,9 +29,6 @@ router.get(
   authorize('ADMINISTRADOR', 'DUENIO', 'CLIENTE'),
   resenasController.obtenerReseniaPorId
 );
-
-// Las reseñas deberían poder modificarse ¿¿¿
-// router.put('/:id', validate(reseniaIdSchema), validate(actualizarReseniaSchema), resenasController.actualizarResenia);
 
 router.delete(
   '/:id',

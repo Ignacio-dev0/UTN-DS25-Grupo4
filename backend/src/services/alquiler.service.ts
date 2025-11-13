@@ -195,7 +195,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 
 	console.log('💾 CREANDO ALQUILER EN BASE DE DATOS...');
 	
-	// DETERMINAR SI REQUIERE PAGO INMEDIATO (menos de 2 horas de anticipación)
+	// DETERMINAR SI REQUIERE PAGO INMEDIATO
 	const primerTurno = turnosConsecutivos[0];
 	const validacionTiempoPago = validarTiempoMinimoCancelacion(primerTurno.fecha, primerTurno.horaInicio);
 	const requierePagoInmediato = !validacionTiempoPago.valido; // Si no hay 2 horas, requiere pago inmediato
@@ -209,7 +209,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 	// Calcular monto total
 	const montoTotal = turnosConsecutivos.reduce((sum, t) => sum + t.precio, 0);
 	
-	// NUEVO FLUJO: SIEMPRE crear en PROGRAMADO sin pago
+
 	// El frontend mostrará el modal de pago inmediatamente si requierePagoInmediato=true
 	const dataAlquiler: any = {
 		cliente: { connect: { id: usuarioId } },
@@ -261,7 +261,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
 	return nuevoAlquiler;
 }
 
-// Función auxiliar para manejar turnos distintos (lógica original)
+// Función auxiliar para manejar turnos distintos
 async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 	const { usuarioId, turnosIds } = data;
 	
@@ -295,7 +295,7 @@ async function crearAlquilerTurnosDistintos(data: CreateAlquilerRequest) {
 		throw new Error('No se puede seleccionar turnos de distintas fechas');
 	}
 	if (turnos.length > 1) {
-		/* Validar que los turnos sean consecutivos - permitir múltiples turnos consecutivos */
+		// Validar que los turnos sean consecutivos - permitir múltiples turnos consecutivos
 		const horariosOrdenados = turnos
 		.map(t => ({
 			hora: t.horaInicio.getHours() * 60 + t.horaInicio.getMinutes(),
@@ -472,25 +472,20 @@ export async function obtenerAlquileresPorClienteId(clienteId: number) {
 		throw error;
 	}
 	
-	// Para alquileres cancelados sin turnos, buscar los turnos históricos
-	// (esto ocurre porque al cancelar se desvincula alquilerId)
+
 	const alquileresConTurnos = await Promise.all(
 		alquileres.map(async (alq) => {
 			// Si el alquiler está cancelado y no tiene turnos, buscar turnos históricos
 			if (alq.estado === EstadoAlquiler.CANCELADO && alq.turnos.length === 0) {
 				console.log(`🔍 Alquiler ${alq.id} cancelado sin turnos, buscando historial...`);
 				
-				// Buscar en el log de turnos (auditoria) o reconstruir desde createdAt
-				// Por ahora, simplemente logueamos que está vacío
-				// TODO: Implementar auditlog o campo turnosSnapshot en schema
+
 			}
 			
 			return alq;
 		})
 	);
 	
-	// Optimización: Hacer una sola consulta para obtener todas las canchas con reseñas del usuario
-	// en lugar de hacer una consulta por cada alquiler
 	const canchasIds = alquileresConTurnos
 		.filter(alq => alq.turnos.length > 0)
 		.map(alq => alq.turnos[0].cancha.id);
@@ -631,7 +626,7 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 				throw error;
 			}
 			
-			// NUEVA LÓGICA: La cancelación NO cuenta si se hace con 2+ horas de anticipación
+
 			// Solo penaliza si alguien intenta forzar cancelación muy cercana (aunque está bloqueado arriba)
 			esCancelacionPenalizada = (validacionTiempo.horasRestantes || 0) < 2;
 			
@@ -649,17 +644,14 @@ export async function actualizarAlquiler(id: number, data: UpdateAlquilerRequest
 		const canchasAfectadas = [...new Set(alquiler.turnos.map(turno => turno.canchaId))];
 		console.log(`🎯 Canchas afectadas para invalidar caché:`, canchasAfectadas);
 		
-		// ESTRATEGIA: Mantener alquilerId para historial, pero marcar reservado=false
-		// El frontend debe verificar el estado del alquiler (CANCELADO) para determinar disponibilidad
-		// CAMBIO: Solo marcar los turnos como no reservados
-		// NO eliminamos alquilerId para mantener el historial de la cancelación
+
 		await prisma.turno.updateMany({
 			where: {
 				alquilerId: id
 			},
 			data: {
 				reservado: false
-				// Mantenemos alquilerId para que el historial funcione
+
 			}
 		});
 		

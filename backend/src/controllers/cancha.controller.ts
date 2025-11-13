@@ -1,4 +1,4 @@
-// backend/src/controllers/cancha.controller.ts
+
 import { Request, Response, NextFunction } from 'express';
 import { CanchaResponse, CanchaListResponse, CanchaFull } from '../types/cancha.types';
 import * as canchaService from '../services/cancha.service';
@@ -7,7 +7,7 @@ import * as complejoService from '../services/complejo.service';
 export async function crearCancha(req: Request, res: Response<CanchaResponse>, next: NextFunction) {
   try {
     const complejo = await complejoService.getComplejoById(req.body.complejoId);
-    // Permitir si es ADMINISTRADOR o si es dueño del complejo
+    // Permitir si es administrador o si es dueño del complejo
     if (req.usuario.rol !== 'ADMINISTRADOR' && complejo.usuarioId !== req.usuario.id) {
       throw new Error('No tienes permiso para crear una cancha en este complejo.');
     }
@@ -108,7 +108,7 @@ export async function actualizarCancha(req: Request, res: Response<CanchaRespons
       } as any);
     }
     
-    // Permitir si es ADMINISTRADOR o si es dueño de la cancha
+    // Permitir si es administrador o si es dueño de la cancha
     if(usuario.rol !== 'ADMINISTRADOR') {
       const esDuenio = await canchaService.esDuenioDeCancha(canchaId, usuario.id);
       console.log('🔑 Es dueño de la cancha?', esDuenio);

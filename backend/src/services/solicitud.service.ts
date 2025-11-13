@@ -1,5 +1,3 @@
-// Servicio de Solicitudes - Adaptado al nuevo esquema sin modelo Solicitud
-// Ahora usa Complejo.estado directamente (PENDIENTE, APROBADO, RECHAZADO)
 
 import prisma from "../config/prisma";
 import { EstadoComplejo } from '@prisma/client';
@@ -119,7 +117,7 @@ export async function createSolicitudWithComplejo(data: any) {
         cuit: data.cuit,
         domicilioId: nuevoDomicilio.id,
         usuarioId: data.usuarioId,
-        estado: 'PENDIENTE' // Estado inicial - reemplaza a Solicitud
+        estado: 'PENDIENTE' // Estado inicial
       },
       include: {
         usuario: true,
@@ -135,7 +133,7 @@ export async function createSolicitudWithComplejo(data: any) {
   });
 }
 
-// Crear solicitud simple (deprecado - usar createSolicitudWithComplejo)
+// Crear solicitud simple 
 export async function createSolicitud(data: any) {
   throw new Error('createSolicitud deprecado - usar createSolicitudWithComplejo');
 }

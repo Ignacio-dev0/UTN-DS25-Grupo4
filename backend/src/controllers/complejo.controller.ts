@@ -1,4 +1,4 @@
-// backend/src/controllers/complejo.controller.ts
+
 import { Request, Response, NextFunction } from 'express';
 import * as complejoService from '../services/complejo.service';
 
@@ -80,7 +80,7 @@ export const actualizarComplejo = async (req: Request, res: Response, next:NextF
     console.log('🔍 [CONTROLLER] Body recibido:', JSON.stringify(req.body, null, 2));
     console.log('🔍 [CONTROLLER] Usuario:', { id: req.usuario.id, rol: req.usuario.rol });
 
-    // Permitir actualización si es ADMINISTRADOR o si es el dueño del complejo
+    // Permitir actualización si es administrador o si es el dueño del complejo
     if(req.usuario.rol !== 'ADMINISTRADOR' && !await complejoService.esDuenioDeComplejo(complejoId, req.usuario.id)) {
       throw new Error('No tienes permiso para actualizar este complejo.');
     }

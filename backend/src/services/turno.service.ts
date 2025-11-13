@@ -184,7 +184,6 @@ export async function getTurnosByCancha(canchaId: number): Promise<Turno[]> {
         
         console.log(`💾 Cache miss: Consultando base de datos para cancha ${canchaId}`);
         
-        // Consulta optimizada con select específico en lugar de include
         const turnos = await prisma.turno.findMany({
             where: { canchaId },
             select: {
@@ -315,7 +314,7 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
     try {
         console.log(`🔍 Servicio getTurnosPorSemana: cancha ${canchaId}, semana offset ${semanaOffset}`);
         
-        // Calcular fechas de inicio y fin de la semana EN ARGENTINA
+        // Calcular fechas de inicio y fin de la semana en Argentina
         const hoy = getTodayStartInArgentina();
         
         const inicioSemana = new Date(hoy);
@@ -385,7 +384,7 @@ export async function getTurnosPorSemana(canchaId: number, semanaOffset: number 
 }
 
 /**
- * Obtener todos los turnos con pago pendiente (alquilerId presente pero reservado=false)
+ * Obtener todos los turnos con pago pendiente
  * Estos turnos deben ser liberados si han pasado 2 horas desde la hora del turno
  */
 export async function getTurnosConPagoPendiente() {

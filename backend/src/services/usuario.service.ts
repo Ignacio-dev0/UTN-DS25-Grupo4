@@ -1,4 +1,4 @@
-// backend/src/services/usuario.service.ts
+
 import prisma from '../config/prisma';
 import { Prisma, Usuario} from '@prisma/client';
 import { CrearUsuarioData, ActualizarUsuarioData } from '../validations/usuario.validation';
@@ -96,7 +96,6 @@ export async function createUsuario(data: CrearUsuarioData): Promise<Usuario>{
 
 export async function updateUsuario(id: number, updateData: ActualizarUsuarioData): Promise<Usuario>{
     try {
-        // Si se actualiza la contraseña, hashearla
         const dataToUpdate: any = { ...updateData };
         if (updateData.password) {
             dataToUpdate.password = await bcrypt.hash(updateData.password, 10);

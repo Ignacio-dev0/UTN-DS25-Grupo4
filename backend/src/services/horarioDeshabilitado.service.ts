@@ -1,10 +1,9 @@
 import prisma from '../config/prisma';
 import { DiaSemana } from '@prisma/client';
 
-/**
- * Servicio para gestionar horarios deshabilitados permanentemente
- * Estos horarios NO serán creados automáticamente por el scheduler
- */
+// Servicio para gestionar horarios deshabilitados permanentemente
+
+
 
 // Obtener todos los horarios deshabilitados de una cancha
 export const obtenerHorariosDeshabilitados = async (canchaId: number) => {

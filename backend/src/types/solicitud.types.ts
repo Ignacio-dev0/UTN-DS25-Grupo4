@@ -1,5 +1,3 @@
-// Tipos adaptados al nuevo modelo sin Solicitud
-// Ahora usamos EstadoComplejo en lugar de EstadoSolicitud
 
 import { EstadoComplejo, Usuario } from '@prisma/client';
 
@@ -15,11 +13,11 @@ export interface UpdateSolicitudRequest {
 }
 
 export interface SolicitudResponse {
-  solicitud: any; // Ahora es un Complejo con estado
+  solicitud: any; 
   message: string;
 }
 
 export interface SolicitudListResponse{
-    solicitudes: any[]; // Ahora son Complejos con estado PENDIENTE
+    solicitudes: any[];
     total: number;
 }
