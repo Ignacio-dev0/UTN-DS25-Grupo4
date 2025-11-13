@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api.js';
-import { useAuth } from '../context/AuthContext.jsx';
+import { API_BASE_URL } from '../config/api';
+import { useAuth } from '../context/AuthContext';
 
-// Asumo el mismo 'api' helper que en el componente MpConnectWall
+// Helper simple para la API
 const api = {
     post: async (endpoint, body, token) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -27,8 +27,8 @@ function MpCallbackPage() {
     const [error, setError] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
-    // Asumo que tu context tiene 'getToken' y 'fetchUser' (o 'refreshUser')
-    const { getToken, fetchUser } = useAuth(); 
+    // Solo necesitamos 'getToken'
+    const { getToken } = useAuth(); 
 
     useEffect(() => {
         const procesarCodigo = async () => {
@@ -51,26 +51,19 @@ function MpCallbackPage() {
                     token
                 );
                 
-                // 2. Refrescar los datos del usuario en el AuthContext
-                // para que 'user' ahora tenga 'mpAccessToken'
-                if (fetchUser) {
-                    await fetchUser(); 
-                }
-
-                // 3. ¡Éxito!
+                // 2. ¡Éxito!
                 setMensaje('¡Tu cuenta de Mercado Pago se conectó con éxito!');
                 
-                // 4. Redirigir al panel del dueño
-                // El backend actualizó el complejo a 'APROBADO'
-                // y el 'fetchUser' actualizó el 'user'.
-                // Necesitamos volver a la página de "MiComplejo"
-                // PERO no sabemos el ID del complejo desde aquí fácilmente.
-                // La forma más fácil es navegar a una ruta "genérica" de dashboard
-                // que se encargue de buscar el complejo del dueño.
-                // Por ahora, te mando a una ruta genérica.
+                // --- INICIO DE LA SOLUCIÓN ---
+                // 3. Forzar un "Hard Refresh" en lugar de un 'navigate'
+                // Esto obliga a React a reiniciar el AuthContext y
+                // cargar el nuevo estado del usuario (con el token de MP).
                 setTimeout(() => {
-                    navigate('/dashboard-dueño'); // Cambia esto por tu ruta principal de dueño
+                    // Usamos window.location.href para la recarga.
+                    // Te redirige a la ruta que ya tenías en App.jsx
+                    window.location.href = '/dashboard-dueño'; 
                 }, 2500);
+                // --- FIN DE LA SOLUCIÓN ---
 
             } catch (err) {
                 console.error("Error al procesar callback de MP", err);
@@ -79,7 +72,8 @@ function MpCallbackPage() {
         };
 
         procesarCodigo();
-    }, [location, navigate, getToken, fetchUser]);
+    // Quitamos fetchUser de las dependencias
+    }, [location, navigate, getToken]); 
 
     return (
         <div className="flex justify-center items-center min-h-screen">
