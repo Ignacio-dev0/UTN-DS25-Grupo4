@@ -23,7 +23,7 @@ import debugRoutes from './routes/debug.routes';
 
 import webhookRoutes from './routes/webhook.routes';
 // Importamos las nuevas rutas de MP Connect
-import mercadopagoRoutes from './routes/mercadopduenio.routes';
+import mercadopagoRoutes from './routes/mercadopduenio.routes'; // Asumo que se llama así
 
 // --- INICIO DEL CAMBIO ---
 // El bloque de código que chequeaba MP_ACCESS_TOKEN y creaba
@@ -33,6 +33,7 @@ import mercadopagoRoutes from './routes/mercadopduenio.routes';
 // --- FIN DEL CAMBIO ---
 
 const app = express();
+
 
 // Configuración CORS
 const allowedOrigins = [

@@ -46,7 +46,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
         throw new Error('No se puede seleccionar más de tres turnos');
     }
     
-    // VALIDACIÓN 1: Verificar límite de cancelaciones del usuario (máximo 2 en los últimos 30 días)
+    // VALIDACIÓN 1: Verificar límite de cancelaciones del usuario
     const hace30Dias = new Date(getNowInArgentina());
     hace30Dias.setDate(hace30Dias.getDate() - 30);
     
@@ -68,7 +68,7 @@ export async function crearAlquiler(usuarioId: number, data: CrearAlquilerData) 
     
     console.log(`✅ Usuario ${usuarioId} tiene ${cancelacionesRecientes} cancelaciones en los últimos 30 días`);
     
-    // Si se envía el mismo turno múltiples veces, interpretamos que quiere bloques consecutivos
+    // Lógica para bloques consecutivos
     const turnoBase = turnosIds[0];
     const cantidadBloques = turnosIds.length;
     
@@ -586,8 +586,8 @@ export async function pagarAlquiler(id: number) {
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
     const notificationUrl = `${apiBaseUrl}/api/webhooks/mercadopago`;
 
-    console.log(`[MP Service] Alquiler ID: ${alquiler.id}, Pago ID: ${pago.id}`);
-    console.log(`[MP Service] Webhook URL (Notification): ${notificationUrl}`);
+    console.log(`[MP Connect] Alquiler ID: ${alquiler.id}, Pago ID: ${pago.id}`);
+    console.log(`[MP Connect] Webhook URL (Notification): ${notificationUrl}`);
 
     // --- INICIO LÓGICA MP CONNECT ---
     
@@ -606,13 +606,14 @@ export async function pagarAlquiler(id: number) {
 
     // 6. Crear un cliente de MP *solo para esta transacción*
     const duenioMpClient = new MercadoPagoConfig({ 
-        accessToken: duenioAccessToken 
+        accessToken: duenioAccessToken,
+        options: { timeout: 5000 }
     });
     
     // 7. Definir la comisión de la plataforma (ej: 10%)
-    // ¡Asegúrate de que 'monto' sea un número válido!
     const comisionCanchaYa = Math.round((monto * 0.10) * 100) / 100; // Redondear a 2 decimales
     
+    console.log(`[MP Connect] Cobrando comisión de ${comisionCanchaYa} (10%) sobre ${monto}`);
     // --- FIN LÓGICA MP CONNECT ---
 
     // 8. Crear la Preferencia en Mercado Pago
@@ -646,7 +647,7 @@ export async function pagarAlquiler(id: number) {
         }
     });
 
-    console.log(`[MP Service] Preferencia creada: ${mpResponse.id}`);
+    console.log(`[MP Connect] Preferencia creada: ${mpResponse.id}`);
 
     // 9. Actualizar nuestro Pago con el *nuevo* ID de preferencia
     await prisma.pago.update({

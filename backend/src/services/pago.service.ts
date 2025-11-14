@@ -103,12 +103,14 @@ export async function crearPreferenciaDePago(turnoId: number, clienteId: number)
 
     // 6. Crear un cliente de MP *solo para esta transacción*
     const duenioMpClient = new MercadoPagoConfig({ 
-        accessToken: duenioAccessToken 
+        accessToken: duenioAccessToken,
+        options: { timeout: 5000 }
     });
     
     // 7. Definir la comisión de la plataforma (ej: 10%)
     const comisionCanchaYa = Math.round((monto * 0.10) * 100) / 100; // Redondear a 2 decimales
     
+    console.log(`[MP Connect] Cobrando comisión de ${comisionCanchaYa} (10%) sobre ${monto}`);
     // --- FIN LÓGICA MP CONNECT ---
 
     // 8. Crear la preferencia de pago en Mercado Pago
@@ -213,7 +215,7 @@ export async function actualizarPago(id: number, updateData: actualizarPagoReque
         });
         return actualizacion;
     } catch (e : any) {
-        if (e.code === 'PS2025'){
+        if (e.code === 'P2025'){
             const error = new Error('Pago No Encontrado');
             (error as any).statusCode(404);
             throw error;
