@@ -34,7 +34,7 @@ function App() {
                         <Route path="/resultados" element={<ResultadosPage />} />
                         <Route path="/complejo/:complejoId" element={<ComplejoDetallePage />} /> 
                         
-                        {/* --- RUTA DE CALLBACK DE MP (Ahora es pública/global) --- */}
+                        {/* --- RUTA DE CALLBACK DE MP (Ahora es pública y usa la URL simple) --- */}
                         <Route 
                             path="/mp-callback" 
                             element={<MpCallbackPage />} 
