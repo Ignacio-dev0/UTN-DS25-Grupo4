@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config/api';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from 'react';
+// --- CORRECCIÓN: Añadidas extensiones .js y .jsx a las rutas ---
+import { API_BASE_URL } from '../config/api.js'; 
+import { useAuth } from '../context/AuthContext.jsx';
 
 // Helper simple para la API
 const api = {
     post: async (endpoint, body, token) => {
+        // --- CORRECCIÓN: Quitado el '/api' duplicado ---
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
@@ -22,76 +23,64 @@ const api = {
     }
 };
 
-function MpCallbackPage() {
-    const [mensaje, setMensaje] = useState('Verificando conexión, por favor espera...');
+function MpConnectWall() {
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const location = useLocation();
-    const navigate = useNavigate();
-    // Solo necesitamos 'getToken'
-    const { getToken } = useAuth(); 
+    const { getToken } = useAuth(); // Asumimos que 'getToken' existe en tu AuthContext
 
-    useEffect(() => {
-        const procesarCodigo = async () => {
-            const params = new URLSearchParams(location.search);
-            const code = params.get('code');
-            const state = params.get('state'); // El ID del usuario que pasamos
+    const handleConnectMP = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = getToken ? getToken() : localStorage.getItem('token');
 
-            if (!code) {
-                setError('Error: No se recibió el código de autorización.');
-                return;
+            // 1. Pedirle al backend la URL de autorización
+            const response = await api.post(
+                '/mercadopago/connect-url', // La URL ya no tiene /api
+                {}, // El body está vacío, el ID de usuario lo toma el backend del JWT
+                token
+            );
+            
+            const { authUrl } = response;
+
+            // 2. Redirigir al usuario a Mercado Pago
+            if (authUrl) {
+                window.location.href = authUrl;
+            } else {
+                throw new Error('No se recibió la URL de autorización');
             }
-
-            try {
-                const token = getToken ? getToken() : localStorage.getItem('token');
-
-                // 1. Enviamos el código al backend para que lo cambie por el token
-                await api.post(
-                    '/mercadopago/authorize-connect', 
-                    { code, state },
-                    token
-                );
-                
-                // 2. ¡Éxito!
-                setMensaje('¡Tu cuenta de Mercado Pago se conectó con éxito!');
-                
-                // --- INICIO DE LA SOLUCIÓN ---
-                // 3. Forzar un "Hard Refresh" en lugar de un 'navigate'
-                // Esto obliga a React a reiniciar el AuthContext y
-                // cargar el nuevo estado del usuario (con el token de MP).
-                setTimeout(() => {
-                    // Usamos window.location.href para la recarga.
-                    // Te redirige a la ruta que ya tenías en App.jsx
-                    window.location.href = '/dashboard-dueño'; 
-                }, 2500);
-                // --- FIN DE LA SOLUCIÓN ---
-
-            } catch (err) {
-                console.error("Error al procesar callback de MP", err);
-                setError(err.message || 'Hubo un error al conectar tu cuenta. Por favor, intenta de nuevo desde tu panel.');
-            }
-        };
-
-        procesarCodigo();
-    // Quitamos fetchUser de las dependencias
-    }, [location, navigate, getToken]); 
+        } catch (err) {
+            console.error("Error al generar link de MP", err);
+            setError(err.message || 'No se pudo generar el link de conexión. Intenta de nuevo.');
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className="flex justify-center items-center min-h-screen">
-            <div className="text-center p-8 bg-white rounded-lg shadow-md">
-                {error ? (
-                    <>
-                        <h2 className="text-2xl font-bold text-red-600 mb-4">Error de Conexión</h2>
-                        <p className="text-gray-700">{error}</p>
-                    </>
-                ) : (
-                    <>
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                        <h2 className="text-2xl font-bold text-gray-800">{mensaje}</h2>
-                    </>
-                )}
-            </div>
+        <div className="max-w-2xl mx-auto my-10 p-8 bg-white rounded-lg shadow-xl text-center">
+            <img 
+                src="https://logodownload.org/wp-content/uploads/2018/02/mercado-pago-logo-1.png" 
+                alt="Mercado Pago" 
+                className="h-12 mx-auto mb-6"
+            />
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">¡Un último paso!</h2>
+            <p className="text-gray-600 mb-6">
+                Para poder publicar tus canchas y recibir pagos directamente en tu cuenta,
+                necesitamos que conectes tu cuenta de Mercado Pago.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+                (Serás redirigido a la página oficial de Mercado Pago para iniciar sesión de forma segura).
+            </p>
+                <button
+                    onClick={handleConnectMP}
+                    disabled={loading}
+                    className="w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                {loading ? 'Generando link...' : 'Conectar con Mercado Pago'}
+                </button>
+                {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
         </div>
     );
 }
 
-export default MpCallbackPage;
+export default MpConnectWall;
