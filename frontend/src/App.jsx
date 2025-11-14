@@ -12,6 +12,8 @@ import MisReservasPage from './pages/MisReservasPage.jsx';
 import LogInPage from './pages/LogInPage.jsx';
 import SignUpPage from './pages/SignUpPage.jsx';
 import EditarCanchaPage from "./pages/EditarCanchaPage";
+import RecuperarPasswordPage from './pages/RecuperarPasswordPage.jsx';
+import RestablecerPasswordPage from './pages/RestablecerPasswordPage.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
 import RutaProtegidaComplejo from './components/RutaProtegidaComplejo.jsx';
 import ComplejoDetallePage from './pages/ComplejoDetallePage.jsx';
@@ -26,6 +28,8 @@ function App() {
             {/* --- Rutas Públicas --- */}
             <Route path="/login" element={<LogInPage />} />
             <Route path="/registro" element={<SignUpPage />} />
+            <Route path="/recuperar-contraseña" element={<RecuperarPasswordPage />} />
+            <Route path="/restablecer-contraseña" element={<RestablecerPasswordPage />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/reserva/:canchaId" element={<ReservaPage />} />
             <Route path="/resultados" element={<ResultadosPage />} />
