@@ -46,7 +46,7 @@ function MpCallbackPage() {
 
                 // 1. Enviamos el código al backend para que lo cambie por el token
                 await api.post(
-                    '/api/mercadopago/authorize-connect', 
+                    '/mercadopago/authorize-connect', 
                     { code, state },
                     token
                 );
