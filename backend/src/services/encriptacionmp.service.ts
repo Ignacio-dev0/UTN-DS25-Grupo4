@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
 
-// ¡ASEGÚRATE DE PONER ESTO EN TUS VARIABLES DE ENTORNO!
 // Debe ser una clave de 32 bytes (ej: "un-secreto-muy-largo-de-32-bytes")
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; 
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
