@@ -29,7 +29,7 @@ export async function generarUrlConexion(usuarioId: number) {
 
 export async function autorizarConexion(code: string, state: string) {
     const usuarioId = parseInt(state);
-    const redirectUri = `${FRONTEND_URL}/dashboard/dueño/mp-callback`;
+    const redirectUri = `${FRONTEND_URL}/mp-callback`;
 
     console.log(`Autorizando MP Connect para usuarioId: ${usuarioId}`);
 
