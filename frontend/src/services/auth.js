@@ -303,6 +303,67 @@ export const updateUserProfile = async (userData) => {
   }
 };
 
+export const requestPasswordReset = async (email) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/password/forgot`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    return {
+      ok: response.ok && data.success,
+      message: data.message || 'Si el correo está registrado, recibirás un código de verificación.',
+      resetToken: data.resetToken || null,
+      error: data.error || null,
+    };
+  } catch (error) {
+    console.error('Error en requestPasswordReset:', error);
+    return {
+      ok: false,
+      message: 'No pudimos procesar la solicitud. Intenta nuevamente en unos minutos.',
+      resetToken: null,
+      error: 'Error de conexión con el servidor',
+    };
+  }
+};
+
+export const resetPassword = async ({ email, code, newPassword, resetToken }) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/password/reset`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        codigo: code,
+        nuevaPassword: newPassword,
+        resetToken,
+      }),
+    });
+
+    const data = await response.json();
+
+    return {
+      ok: response.ok && data.success,
+      message: data.message || 'Contraseña restablecida correctamente.',
+      error: data.error || null,
+    };
+  } catch (error) {
+    console.error('Error en resetPassword:', error);
+    return {
+      ok: false,
+      message: 'No pudimos actualizar la contraseña. Intenta más tarde.',
+      error: 'Error de conexión con el servidor',
+    };
+  }
+};
+
 /**
  * Función de logout
  */
