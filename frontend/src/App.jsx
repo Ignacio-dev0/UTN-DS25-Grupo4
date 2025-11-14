@@ -17,7 +17,7 @@ import RutaProtegidaComplejo from './components/RutaProtegidaComplejo';
 import ComplejoDetallePage from './pages/ComplejoDetallePage';
 
 // 1. Importar la nueva página de callback
-import MpCallbackPage from './pages/MpCallbackPage'; // Asumo que está en /pages
+import MpCallbackPage from './components/MpCallbackPage.jsx'; // Asumo que está en /pages
 
 function App() {
     return (
